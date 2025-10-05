@@ -3,42 +3,87 @@ const { getConnection, oracledb } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
 const router = express.Router();
 
-// Books - list books for the authenticated user
-router.get('/', requireAuth, async (req, res) => {
-  const page = parseInt(req.query.page, 10) || 1;
-  const pageSize = parseInt(req.query.pageSize, 10) || 10;
-  const offset = (page - 1) * pageSize;
 
+// search and pagination for books
+router.get('/', requireAuth, async (req, res) => {
+  const { page = 1, pageSize = 10, search = '' } = req.query;
   const conn = await getConnection();
   try {
-    // First, get the total count of books for the user
-    const countResult = await conn.execute(
-      `SELECT COUNT(*) AS total FROM books WHERE owner_id=:oid`,
-      { oid: Number(req.user.id) }
-    );
-    const totalItems = countResult.rows[0].TOTAL;
+    const offset = (page - 1) * pageSize;
 
-    // Then, fetch the paginated data
-    const r = await conn.execute(
-      `SELECT id, owner_id, name, max_customers, is_active, start_month_iso 
-       FROM books 
-       WHERE owner_id=:oid 
-       ORDER BY id DESC
+    // Filter by search if provided
+    const result = await conn.execute(
+      `SELECT * FROM books 
+       WHERE owner_id = :owner_id 
+       AND LOWER(name) LIKE LOWER(:search)
+       ORDER BY id
        OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`,
-      { oid: Number(req.user.id), offset, pageSize }
+      { owner_id: req.user.id, search: `%${search}%`, offset: Number(offset), pageSize: Number(pageSize) }
     );
-    const rows = r.rows.map(row => ({
-      id: String(row.ID),
-      ownerId: String(row.OWNER_ID),
+
+    // Total count for pagination
+    const countResult = await conn.execute(
+      `SELECT COUNT(*) AS CNT FROM books 
+       WHERE owner_id = :owner_id 
+       AND LOWER(name) LIKE LOWER(:search)`,
+      { owner_id: req.user.id, search: `%${search}%` }
+    );
+
+    const books = result.rows.map(row => ({
+      id: row.ID,
       name: row.NAME,
       maxCustomers: row.MAX_CUSTOMERS,
       isActive: row.IS_ACTIVE === 1,
-      startMonthIso: row.START_MONTH_ISO
+      startMonthIso: row.START_MONTH_ISO,
     }));
-    res.json({ items: rows, totalItems });
-  } catch (e) { console.error('List books error:', e); res.status(500).json({ error: 'internal error' }); }
-  finally { await conn.close(); }
+
+    res.json({ data: books, total: Number(countResult.rows[0].CNT) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch books' });
+  } finally {
+    if (conn) await conn.close();
+  }
 });
+
+
+// Books - list books for the authenticated user
+// router.get('/', requireAuth, async (req, res) => {
+//   const page = parseInt(req.query.page, 10) || 1;
+//   const pageSize = parseInt(req.query.pageSize, 10) || 10;
+//   const offset = (page - 1) * pageSize;
+
+//   const conn = await getConnection();
+//   try {
+//     // First, get the total count of books for the user
+//     const countResult = await conn.execute(
+//       `SELECT COUNT(*) AS total FROM books WHERE owner_id=:oid`,
+//       { oid: Number(req.user.id) }
+//     );
+//     const totalItems = countResult.rows[0].TOTAL;
+
+//     // Then, fetch the paginated data
+//     const r = await conn.execute(
+//       `SELECT id, owner_id, name, max_customers, is_active, start_month_iso 
+//        FROM books 
+//        WHERE owner_id=:oid 
+//        ORDER BY id DESC
+//        OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`,
+//       { oid: Number(req.user.id), offset, pageSize }
+//     );
+//     const rows = r.rows.map(row => ({
+//       id: String(row.ID),
+//       ownerId: String(row.OWNER_ID),
+//       name: row.NAME,
+//       maxCustomers: row.MAX_CUSTOMERS,
+//       isActive: row.IS_ACTIVE === 1,
+//       startMonthIso: row.START_MONTH_ISO
+//     }));
+//     res.json({ items: rows, totalItems });
+//   } catch (e) { console.error('List books error:', e); res.status(500).json({ error: 'internal error' }); }
+//   finally { await conn.close(); }
+// });
+
 
 // Get a single book by ID
 router.get('/:bookId', requireAuth, async (req, res) => {
