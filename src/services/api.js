@@ -89,9 +89,10 @@ export const changePassword = (data, token) =>
         headers: { Authorization: `Bearer ${token}` }
     });
 
-export const getWinners = (token) =>
+export const getWinners = (token, search) =>
     axios.get(`${API_URL}/winners`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: { search: search || undefined }
     });
 
 export const getEligibleCustomers = (token, search) =>
