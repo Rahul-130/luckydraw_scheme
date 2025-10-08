@@ -8,10 +8,10 @@ export const signup = (data) =>
 export const login = (data) => 
     axios.post(`${API_URL}/auth/login`, data);
 
-export const getBooksPaginated = (token, { page, pageSize }) => 
+export const getBooksPaginated = (token, { page, pageSize, search }) => 
     axios.get(`${API_URL}/books`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { page: page + 1, pageSize } // DataGrid is 0-indexed, API is 1-indexed
+        params: { page: page + 1, pageSize , search} // DataGrid is 0-indexed, API is 1-indexed
     });
 
 export const getBook = (bookId, token) =>

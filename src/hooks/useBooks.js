@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getBooksPaginated } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-export const useBooks = () => {
+export const useBooks = (searchText) => {
   const { token } = useAuth();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,8 @@ export const useBooks = () => {
     try {
       const response = await getBooksPaginated(token, {
         page: paginationModel.page,       // send 0-indexed page
-        pageSize: paginationModel.pageSize,
+        pageSize: searchText ? 1000: paginationModel.pageSize,
+        search: searchText || undefined,
       });
 
       // Map backend data to DataGrid expected format
@@ -42,7 +43,7 @@ export const useBooks = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, paginationModel.page, paginationModel.pageSize]);
+  }, [token, paginationModel.page, paginationModel.pageSize, searchText]);
 
   useEffect(() => {
     fetchBooks();

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   createBook,
   editBook,
@@ -35,10 +35,31 @@ import {
   Visibility,
   ToggleOn,
   ToggleOff,
+  Search,
 } from "@mui/icons-material";
+
+// Utility: debounce function to delay API calls
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
 
 export default function BooksPage() {
   const { token } = useAuth();
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState();
+
+  // debounce search input to avoid excessive API calls
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchText);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchText]);
+
   const {
     books,
     loading: booksLoading,
@@ -47,7 +68,7 @@ export default function BooksPage() {
     paginationModel,
     setPaginationModel,
     refetch: refetchBooks,
-  } = useBooks();
+  } = useBooks(debouncedSearch);
 
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -67,6 +88,7 @@ export default function BooksPage() {
 
   const navigate = useNavigate();
 
+  // create book
   const handleCreate = async () => {
     try {
       await createBook(form, token);
@@ -77,6 +99,7 @@ export default function BooksPage() {
     }
   };
 
+  // edit book
   const handleEdit = async () => {
     try {
       await editBook(editForm.id, editForm, token);
@@ -87,11 +110,13 @@ export default function BooksPage() {
     }
   };
 
+  // delete book with confirmation
   const handleDelete = async (bookId) => {
     setBookToDelete(bookId);
     setConfirmOpen(true);
   };
 
+  // confirm deletion
   const handleConfirmDelete = async () => {
     if (!bookToDelete) return;
     try {
@@ -104,6 +129,7 @@ export default function BooksPage() {
     }
   };
 
+  // toggle book active status
   const handleToggle = async (bookId) => {
     try {
       await toggleBookActive(bookId, token);
@@ -238,6 +264,23 @@ export default function BooksPage() {
             sx={{ mb: 2 }}
           >
             <Stack direction="row" spacing={1}>
+              <TextField
+                label="Search Books"
+                variant="outlined"
+                size="small"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                sx={{
+                  width: { xs: "100%", sm: "400px", md: "600px" },
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 1.5,
+                  },
+                }}
+                InputProps={{
+                  startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
+                }}
+              />
+            
               <Button
                 variant="contained"
                 startIcon={<Add />}
