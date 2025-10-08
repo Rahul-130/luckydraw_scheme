@@ -62,8 +62,6 @@ export default function EligibleCustomersPage() {
                 });
                 showSnackbar(`Marked ${customer.customerName} as a winner!`, 'success');
                 refetchEligibleCustomers(); // Refetch to update the list
-                // Update the local state to remove the marked winner from the list
-                setCustomers(prev => prev.filter(c => c.id !== customer.id));
             } catch (err) {
                 showSnackbar(err.response?.data?.error || 'Failed to mark customer as winner', 'error');
             }
