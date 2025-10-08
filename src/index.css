@@ -27,11 +27,8 @@ a:hover {
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply bg-gradient-to-r from-slate-100 to-slate-200;
+    /* Or a solid color if you prefer */
 }
 
 h1 {

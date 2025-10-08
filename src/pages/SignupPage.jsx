@@ -7,7 +7,6 @@ import {
   Typography,
   Box,
   Alert,
-  Paper,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { PersonAdd } from "@mui/icons-material";
@@ -78,46 +77,48 @@ export default function SignupPage() {
     form.password !== form.confirmPassword;
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
-      }}
-    >
-      <Container component="main" maxWidth="sm">
-        <Paper
-          elevation={8}
-          sx={{
-            p: 4,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            borderRadius: 3,
-          }}
-        >
-          <PersonAdd color="primary" sx={{ fontSize: 40, mb: 1 }} />
-          <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: "bold" }}>
-            Sign Up
-          </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: "100%" }}>
-            <TextField name="name" label="Full Name" fullWidth margin="normal" value={form.name} onChange={handleChange} required autoFocus />
-            <TextField name="phone" label="Phone Number" fullWidth margin="normal" value={form.phone} onChange={handleChange} required inputProps={{ maxLength: 10 }} error={form.phone.length > 0 && form.phone.length !== 10} helperText={form.phone.length > 0 && form.phone.length !== 10 ? "Phone number must be 10 digits" : ""} />
-            <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required />
-            <TextField name="password" label="Password" type="password" fullWidth margin="normal" value={form.password} onChange={handleChange} required error={form.password.length > 0 && form.password.length < 8} helperText={form.password.length > 0 && form.password.length < 8 ? "Password must be at least 8 characters" : ""} />
-            <TextField name="confirmPassword" label="Confirm Password" type="password" fullWidth margin="normal" value={form.confirmPassword} onChange={handleChange} required error={form.confirmPassword.length > 0 && form.password !== form.confirmPassword} helperText={form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? "Passwords do not match" : ""} />
-            {error && <Alert severity="error" sx={{ mt: 2, width: "100%" }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ mt: 2, width: "100%" }}>{success}</Alert>}
-            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2, py: 1.5 }} disabled={isButtonDisabled}>Sign Up</Button>
-            <Typography variant="body2" align="center">
+    <div className="flex flex-wrap min-h-screen">
+      {/* Left side - Form */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center bg-slate-100 p-6 sm:p-12">
+        <div className="w-full max-w-md mx-auto">
+          <div className="flex flex-col items-center">
+            <PersonAdd color="primary" className="!text-4xl mb-2" />
+            <Typography component="h1" variant="h4" className="!mb-4 !font-bold text-center text-gray-800">
+              Create Your Account
+            </Typography>
+          </div>
+          <form onSubmit={handleSubmit} className="mt-4">
+            <div className="space-y-4">
+              <TextField name="name" label="Full Name" fullWidth margin="normal" value={form.name} onChange={handleChange} required autoFocus />
+              <TextField name="phone" label="Phone Number" fullWidth margin="normal" value={form.phone} onChange={handleChange} required inputProps={{ maxLength: 10 }} error={form.phone.length > 0 && form.phone.length !== 10} helperText={form.phone.length > 0 && form.phone.length !== 10 ? "Phone number must be 10 digits" : ""} />
+              <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required />
+              <TextField name="password" label="Password" type="password" fullWidth margin="normal" value={form.password} onChange={handleChange} required error={form.password.length > 0 && form.password.length < 8} helperText={form.password.length > 0 && form.password.length < 8 ? "Password must be at least 8 characters" : ""} />
+              <TextField name="confirmPassword" label="Confirm Password" type="password" fullWidth margin="normal" value={form.confirmPassword} onChange={handleChange} required error={form.confirmPassword.length > 0 && form.password !== form.confirmPassword} helperText={form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? "Passwords do not match" : ""} />
+            </div>
+            {error && <Alert severity="error" className="!mt-4 w-full">{error}</Alert>}
+            {success && <Alert severity="success" className="!mt-4 w-full">{success}</Alert>}
+            <Button type="submit" fullWidth variant="contained" className="!mt-6 !py-3" disabled={isButtonDisabled}>
+              Sign Up
+            </Button>
+            <Typography variant="body2" className="!mt-4 text-center text-gray-500">
               Already have an account?{" "}
               <Button onClick={() => navigate("/login")} size="small">Login</Button>
             </Typography>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+          </form>
+        </div>
+      </div>
+
+      {/* Right side - Image/Branding */}
+      <div className="hidden md:flex md:w-1/2 items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 p-12 text-white">
+        <div className="text-center">
+          <Typography variant="h3" component="h2" className="!font-bold !mb-4">
+            Join Us!
+          </Typography>
+          <Typography variant="h6">
+            Become a part of our community and start managing your lucky draws with ease and confidence.
+          </Typography>
+        </div>
+      </div>
+    </div>
   );
 }

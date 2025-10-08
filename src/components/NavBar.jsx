@@ -1,40 +1,106 @@
-import { AppBar, Toolbar, Button, Box } from '@mui/material';
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import {
+  AppBar,
+  Toolbar,
+  Button,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  useMediaQuery,
+  Typography,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import MenuIcon from "@mui/icons-material/Menu";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function NavBar() {
-    const { token, logout } = useAuth();
-    const navigate = useNavigate();
+  const { token, logout } = useAuth();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-    const handleLogout = () => {
-        logout();
-        // sessionStorage.removeItem('token');
-        navigate('/login');
-    };
+  const [anchorEl, setAnchorEl] = useState(null);
+  const menuOpen = Boolean(anchorEl);
 
-    return (
-        <AppBar position="static">
-            <Toolbar>
-                <Box sx={{ flexGrow: 1, display: 'flex' }}>
-                    <Button color="inherit" component={Link} to="/books" sx={{ mr: 1 }}>Books</Button>
-                    <Button color="inherit" component={Link} to="/eligible-customers" sx={{ mr: 1 }}>Eligible Customers</Button>
-                    <Button color="inherit" component={Link} to="/winners" sx={{ mr: 1 }}>Winners</Button>
-                    <Button color="inherit" component={Link} to="/lucky-draw" sx={{ mr: 1 }}>Lucky Draw</Button>
-                </Box>
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
 
-                {!token ? (
-                    <Button color="inherit" component={Link} to="/login">Login</Button>
-                ) : (
-                    <>
-                    <Button color="inherit" component={Link} to="/change-password" sx={{ mr: 1 }}>
-                        Change Password
-                    </Button>
-                    <Button color="inherit" onClick={handleLogout}>Logout</Button>
-                    </>
-                )}
-                 
-            </Toolbar>
-        </AppBar>
-    );
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    handleMenuClose();
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+    navigate("/login");
+  };
+
+  const navItems = [
+    { label: "Books", path: "/books" },
+    { label: "Eligible Customers", path: "/eligible-customers" },
+    { label: "Winners", path: "/winners" },
+    { label: "Lucky Draw", path: "/lucky-draw" },
+  ];
+
+  return (
+    <AppBar position="static">
+      <Toolbar>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          Lucky Draw
+        </Typography>
+        {isMobile ? (
+          <>
+            <IconButton
+              size="large"
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              onClick={handleMenuOpen}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={menuOpen}
+              onClose={handleMenuClose}
+            >
+              {navItems.map((item) => (
+                <MenuItem key={item.label} onClick={() => handleNavigate(item.path)}>
+                  {item.label}
+                </MenuItem>
+              ))}
+              {token && (
+                <MenuItem onClick={() => handleNavigate("/change-password")}>
+                  Change Password
+                </MenuItem>
+              )}
+              <MenuItem onClick={token ? handleLogout : () => handleNavigate("/login")}>
+                {token ? "Logout" : "Login"}
+              </MenuItem>
+            </Menu>
+          </>
+        ) : (
+          <Box>
+            {navItems.map((item) => (
+              <Button key={item.label} color="inherit" component={Link} to={item.path}>
+                {item.label}
+              </Button>
+            ))}
+            {token && <Button color="inherit" component={Link} to="/change-password">Change Password</Button>}
+            <Button color="inherit" onClick={token ? handleLogout : () => navigate("/login")}>
+              {token ? "Logout" : "Login"}
+            </Button>
+          </Box>
+        )}
+      </Toolbar>
+    </AppBar>
+  );
 }
