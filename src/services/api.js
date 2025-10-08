@@ -94,9 +94,10 @@ export const getWinners = (token) =>
         headers: { Authorization: `Bearer ${token}` }
     });
 
-export const getEligibleCustomers = (token) =>
+export const getEligibleCustomers = (token, search) =>
     axios.get(`${API_URL}/eligible-customers`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: { search: search || undefined }
     });
 
 

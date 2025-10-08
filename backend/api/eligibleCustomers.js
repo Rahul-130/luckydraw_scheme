@@ -13,6 +13,7 @@ const addMonths = (iso, n) => {
 // Get all customers eligible for the lucky draw
 router.get('/', requireAuth, async (req, res) => {
   const conn = await getConnection();
+  const { search = '' } = req.query;
   try {
     console.log('Get eligible customers endpoint called');
 
@@ -34,6 +35,13 @@ router.get('/', requireAuth, async (req, res) => {
     
     //Intialize an array to hold eligible customers
     const eligibleCustomersList = [];
+
+    const searchClause = search ? `
+      AND (
+        LOWER(c.name) LIKE LOWER(:search) OR 
+        LOWER(c.phone) LIKE LOWER(:search) LIKE LOWER(:search) OR
+        LOWER(c.address) LIKE LOWER(:search)
+      )` : '';
 
     //Loop through each eligible book
     for (const book of eligibleBooks) {
@@ -60,7 +68,7 @@ router.get('/', requireAuth, async (req, res) => {
         //A customer is eligible if they have missed at most 1 payment
         if (totalMonths - paidCount <= 1) {
           eligibleCustomersList.push({
-            id: `${book.ID}-${cust.ID}`,  //Create a unique ID
+            id: `${book.ID}-${cust.ID}`, //Create a unique ID
             bookName: book.NAME,
             customerName: cust.NAME,
             phone: cust.PHONE,
@@ -69,8 +77,17 @@ router.get('/', requireAuth, async (req, res) => {
         }
       }
     }
+
+    // Apply frontend search filter if provided
+    const filteredCustomers = eligibleCustomersList.filter(customer => {
+      if (!search) return true;
+      const lowerCaseSearch = search.toLowerCase();
+      return customer.customerName.toLowerCase().includes(lowerCaseSearch) ||
+             customer.phone.toLowerCase().includes(lowerCaseSearch) ||
+             customer.address.toLowerCase().includes(lowerCaseSearch);
+    });
     // Send the list of eligible customers as a JSON response
-    res.json(eligibleCustomersList);
+    res.json(filteredCustomers);
   } catch (e) { console.error('Get eligible customers error:', e); res.status(500).json({ error: 'Internal server error' }); } finally { if (conn) await conn.close(); }
 }); 
 
