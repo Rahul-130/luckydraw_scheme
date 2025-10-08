@@ -3,10 +3,17 @@ import { runLuckyDraw } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useSnackbar } from '../context/SnackbarContext';
 import { Container, Typography, Button, TextField, Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions, } from '@mui/material';
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Box,
+    Stack,
+    Paper,
+    CircularProgress,
+} from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { EmojiEvents } from '@mui/icons-material';
+
 
 export default function LuckyDrawPage() {
   const { token } = useAuth();
@@ -57,66 +64,103 @@ export default function LuckyDrawPage() {
   };
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" sx={{ mb: 2 }}>
-        Lucky Draw
-      </Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        py: 4,
+        px: 2,
+        background: 'linear-gradient(to right, #f0f4f8, #d9e2ec)',
+      }}
+    >
+      <Container maxWidth="lg">
+        <Typography variant="h4" className="text-center mb-2 font-bold text-2xl text-gray-900">
+          Lucky Draw
+        </Typography>
 
-      <Button
-        variant="contained"
-        color="primary"
-        sx={{ mb: 2 }}
-        onClick={() => setDialogOpen(true)}
-        disabled={loading}
-      >
-        {loading ? 'Running...' : 'Run Lucky Draw'}
-      </Button>
-
-      <div style={{ height: 400, width: '100%' }}>
-        <DataGrid
-          rows={winners.map((w, idx) => ({ id: idx + 1, ...w }))}
-          columns={[
-            { field: 'bookId', headerName: 'Book ID', width: 100 },
-            { field: 'bookName', headerName: 'Book Name', width: 180 },
-            { field: 'customerId', headerName: 'Customer ID', width: 120 },
-            { field: 'customerName', headerName: 'Customer Name', width: 180 },
-            { field: 'address', headerName: 'Address', width: 200 },
-            { field: 'phone', headerName: 'Phone', width: 150 },
-          ]}
-          pageSize={5}
-          rowsPerPageOptions={[5]}
-          disableSelectionOnClick
-        />
-      </div>
-
-      {/* Confirmation Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <DialogTitle>Confirm Lucky Draw</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 1 }}>
-            Are you sure you want to run the lucky draw? Please enter the admin password to confirm.
-          </Typography>
-          <TextField
-            label="Password"
-            type="password"
-            fullWidth
-            margin="normal"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+        <Stack direction="row" justifyContent="center" sx={{ mb: 3 }}>
           <Button
             variant="contained"
             color="primary"
-            onClick={handleConfirmRun}
-            disabled={!password.trim() || loading}
+            size="large"
+            onClick={() => setDialogOpen(true)}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <EmojiEvents />}
+            sx={{
+              px: 4,
+              py: 1.5,
+              borderRadius: 2,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
+              },
+            }}
           >
-            Confirm
+            {loading ? 'Running...' : 'Run Lucky Draw'}
           </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+        </Stack>
+
+        <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: '#fff' }}>
+          <Box sx={{ height: 500, width: '100%' }}>
+            <DataGrid
+              rows={winners.map((w, idx) => ({ id: idx + 1, ...w }))}
+              columns={[
+                { field: 'bookId', headerName: 'Book ID', width: 100 },
+                { field: 'bookName', headerName: 'Book Name', width: 180 },
+                { field: 'customerId', headerName: 'Customer ID', width: 120 },
+                { field: 'customerName', headerName: 'Customer Name', width: 180 },
+                { field: 'address', headerName: 'Address', width: 200 },
+                { field: 'phone', headerName: 'Phone', width: 150 },
+              ]}
+              loading={loading}
+              pageSizeOptions={[5, 10, 20]}
+              sx={{
+                '& .MuiDataGrid-row:hover': {
+                  backgroundColor: 'rgba(0, 123, 255, 0.08)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                },
+                '& .MuiDataGrid-row.Mui-even': { backgroundColor: '#f9f9f9' },
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: '#fff',
+                  color: '#000',
+                  fontWeight: 'bold',
+                },
+                borderRadius: 2,
+                '& .MuiDataGrid-cell': { py: 1.2 },
+              }}
+            />
+          </Box>
+        </Paper>
+
+        {/* Confirmation Dialog */}
+        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
+          <DialogTitle>Confirm Lucky Draw</DialogTitle>
+          <DialogContent>
+            <Typography sx={{ mb: 1 }}>
+              Are you sure you want to run the lucky draw? Please enter the admin password to confirm.
+            </Typography>
+            <TextField
+              label="Password"
+              type="password"
+              fullWidth
+              margin="normal"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleConfirmRun}
+              disabled={!password.trim() || loading}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
   );
 }

@@ -87,7 +87,8 @@ router.post('/', requireAuth, async (req, res) => {
             customerId: String(winnerId),
             customerName: winner.NAME,
             address: winner.ADDRESS,
-            phone: winner.PHONE
+            phone: winner.PHONE,
+            drawDate: new Date().toISOString().split('T')[0] // Add drawDate
         });
       }
     }
