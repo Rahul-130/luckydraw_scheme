@@ -12,6 +12,11 @@ SELECT * FROM winner;
 
 describe books
 
+-- alter user table add columns name phoneno email
+ALTER TABLE users ADD (name VARCHAR2(255), phone VARCHAR2(20));
+
+--
+
 -- delete records from customers where name is 'cust4'
 DELETE FROM customers WHERE name = 'cust4';
 

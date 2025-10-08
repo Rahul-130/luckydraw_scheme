@@ -8,8 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 // Auth
 router.post('/signup', async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'email and password required' });
+  const { name, phone, email, password } = req.body || {};
+  if (!email || !password || !name || !phone) return res.status(400).json({ error: 'name, phone, email and password required' });
   const conn = await getConnection();
   try {
     const lower = String(email).toLowerCase();
@@ -17,13 +17,13 @@ router.post('/signup', async (req, res) => {
     if (check.rows.length) return res.status(409).json({ error: 'email already exists' });
     const hash = await bcrypt.hash(String(password), 10);
     const result = await conn.execute(
-      `INSERT INTO users (email, password_hash) VALUES (:email, :hash) RETURNING id INTO :id`,
-      { email, hash, id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
+      `INSERT INTO users (name, phone, email, password_hash) VALUES (:name, :phone, :email, :hash) RETURNING id INTO :id`,
+      { name, phone, email, hash, id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
     );
     await conn.commit();
     const userId = String(result.outBinds.id[0]);
     const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: userId, email } });
+    res.json({ token, user: { id: userId, name, phone, email } });
   } catch (e) {
     console.error('Signup error:', e);
     res.status(500).json({ error: 'internal error', details: e.message });

@@ -2,8 +2,16 @@ import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext';
 import { login } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Container, Typography, Box, Alert } from '@mui/material';
-
+import {
+  TextField,
+  Button,
+  Container,
+  Typography,
+  Box,
+  Alert,
+  Paper,
+} from "@mui/material";
+import { Login as LoginIcon } from "@mui/icons-material";
 
 export default function LoginPage() {
     const { login: loginUser } = useAuth();
@@ -24,20 +32,46 @@ export default function LoginPage() {
     };
 
   return (
-    <Container maxWidth="xs" className="flex flex-col items-center justify-center min-h-screen">
-        <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography component="h1" variant="h5">Login</Typography>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
+      }}
+    >
+      <Container component="main" maxWidth="sm">
+        <Paper
+          elevation={8}
+          sx={{
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            borderRadius: 3,
+          }}
+        >
+          <LoginIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+          <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: "bold" }}>
+            Login
+          </Typography>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{ mt: 1, width: "100%" }}
+          >
             {error && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{error}</Alert>}
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
-                <TextField margin="normal" required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
-                <TextField margin="normal" required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-                <Button type="submit" fullWidth variant="contained" className="mt-3 mb-2" sx={{ mt: 3, mb: 2 }}> Login </Button>
-            </Box>
-        </Box>
-        {/* if dont have account create account link to singup page */}
-        <Typography variant="body2" sx={{ mt: 2 }}>
-            Don't have an account? <Button onClick={() => navigate('/signup')}>Sign Up</Button>
-        </Typography>
-    </Container>
-  )
+            <TextField margin="normal" required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+            <TextField margin="normal" required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2, py: 1.5 }}>Login</Button>
+            <Typography variant="body2" align="center">
+              Don't have an account?{" "}
+              <Button onClick={() => navigate("/signup")} size="small">Sign Up</Button>
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
+  );
 }
