@@ -1,24 +1,59 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { addCustomer, getCustomers, editCustomer, deleteCustomer } from "../services/api";
 import { useCustomers } from "../hooks/useCustomers";
 import { useBooks } from "../hooks/useBooks";
-import { DataGrid } from '@mui/x-data-grid';
-import { Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
-import { useNavigate } from 'react-router-dom';
+import { DataGrid } from "@mui/x-data-grid";
+import {
+  Button,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Typography,
+  Box,
+  Stack,
+  Paper,
+  IconButton,
+  Alert,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { Add, Edit, Delete, Payment, Search } from "@mui/icons-material";
+
+// Utility: debounce function to delay API calls
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
 
 export default function CustomersPage() {
+  const { token } = useAuth();
+  const { bookId } = useParams();
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-    const {token} = useAuth();
-    const {bookId} = useParams();
-    const { customers, loading: customersLoading, error: customersError, refetch: refetchCustomers } = useCustomers(bookId);
-    const { books } = useBooks();
-    const book = books.find(b => b.id === bookId);
-    const [open, setOpen] = useState(false);
-    const [editOpen, setEditOpen] = useState(false);
-    const [form, setForm] = useState({
+  // debounce search input to avoid excessive API calls
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchText);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchText]);
+
+  const { customers, loading: customersLoading, error: customersError, refetch: refetchCustomers } = useCustomers(bookId, debouncedSearch);
+  const { books } = useBooks(); // Assuming useBooks fetches all books and is available in context or similar
+  const book = useMemo(() => books.find((b) => String(b.id) === bookId), [books, bookId]);
+
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [form, setForm] = useState({
         name: '',
         phone: '',
         address: ''
@@ -94,58 +129,159 @@ export default function CustomersPage() {
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 350,
+            width: 225,
             renderCell: (params) => (
-                <>
+                <Stack direction="row" spacing={0.5}>
                     <Button
-                        variant="outlined"
-                        color="success"
-                        size="small"
+                        startIcon={<Payment fontSize="small" />}
                         onClick={() => navigate(`/books/${bookId}/customers/${params.row.id}/payments`)}
-                        style={{ marginRight: 8 }}
+                        sx={{
+                            backgroundColor: "#e3f2fd",
+                            "&:hover": { backgroundColor: "#bbdefb", transform: "scale(1.05)" },
+                            borderRadius: 1.5,
+                            padding: 0.7,
+                            color: "#1976d2",
+                            transition: "all 0.2s",
+                          }}
                     >
-                        View Payments
+                        Payments
                     </Button>
-                    <Button
-                        variant="outlined"
-                        color="primary"
-                        size="small"
+                    <IconButton
                         onClick={() => handleEdit(params.row)}
-                        style={{ marginRight: 8 }}
+                        sx={{
+                            backgroundColor: "#e0f7fa",
+                            "&:hover": { backgroundColor: "#b2ebf2", transform: "scale(1.05)" },
+                            borderRadius: 1.5,
+                            padding: 0.7,
+                            color: "#0288d1",
+                            transition: "all 0.2s",
+                          }}
                     >
-                        Edit
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
+                        <Edit fontSize="small" />
+                    </IconButton>
+                    <IconButton
                         onClick={() => handleDelete(params.row.id)}
+                        sx={{
+                            backgroundColor: "#ffebee",
+                            "&:hover": { backgroundColor: "#ffcdd2", transform: "scale(1.05)" },
+                            borderRadius: 1.5,
+                            padding: 0.7,
+                            color: "#d32f2f",
+                            transition: "all 0.2s",
+                          }}
                     >
-                        Delete
-                    </Button>
-                </>
+                        <Delete fontSize="small" />
+                    </IconButton>
+                </Stack>
             )
         }
     ], [bookId, navigate, handleEdit, handleDelete]);
 
   return (
-    <Container maxWidth="lg">
-        {/* ... existing JSX ... */}
-        <Typography variant="h4" sx={{ my: 2 }}>
-            Customers
-        </Typography>
-        <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
-            Book: {book?.name}
-        </Typography>
-        <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={() => setOpen(true)}>Add Customer</Button> {/* Consistent margin */}
-        <div style={{ height: 400, width: '100%' }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        py: 4,
+        px: 2,
+        background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
+      }}
+    >
+      <Container maxWidth="lg">
+        {!token && <Navigate to="/login" replace />}
+        {!bookId && <Navigate to="/books" replace />}
+        {bookId && !book && <Alert severity="error">Book not found or you do not have access to it.</Alert>}
+
+        <Box
+  sx={{
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 1.5, // spacing between text
+    mb: 2,
+  }}
+>
+  <Typography
+    variant="h4"
+    sx={{ fontWeight: "bold", color: "#222" }}
+  >
+    Customers
+  </Typography>
+
+  <Typography
+    variant="h5"
+    sx={{ color: "text.secondary" }}
+  >
+    for Book: {book?.name}
+  </Typography>
+</Box>
+
+        
+
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          justifyContent="space-between"
+          sx={{ mb: 2 }}
+        >
+          <Stack direction="row" spacing={1}>
+            <TextField
+              label="Search Customers"
+              variant="outlined"
+              size="small"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              sx={{
+                width: { xs: "100%", sm: "400px", md: "600px" },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 1.5,
+                },
+              }}
+              InputProps={{
+                startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
+              }}
+            />
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              color="primary"
+              onClick={() => setOpen(true)}
+            >
+              Add Customer
+            </Button>
+          </Stack>
+        </Stack>
+
+        <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
+          <Box sx={{ height: 500, width: "100%" }}>
             <DataGrid
                 rows={customers}
                 columns={columns}
                 loading={customersLoading}
-                pageSizeOptions={[5, 10, 20]} // Added pageSizeOptions
+                pageSizeOptions={[5, 10, 20]}
+                sx={{
+                  "& .MuiDataGrid-row:hover": {
+                    backgroundColor: "rgba(0, 123, 255, 0.08)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  },
+                  "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
+                  "& .MuiDataGrid-columnHeaders": {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontWeight: "bold",
+                  },
+                  borderRadius: 2,
+                  "& .MuiDataGrid-cell": { py: 1.2 },
+                }}
             />
-        </div>
+          </Box>
+        </Paper>
+
+        {customersError && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            Failed to load customers.
+          </Alert>
+        )}
+
         <Dialog open={open} onClose={() => setOpen(false)}>
             <DialogTitle>Add Customer to "{book?.name}"</DialogTitle>
             <DialogContent>
@@ -207,12 +343,32 @@ export default function CustomersPage() {
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogContent>
                 <TextField label="Name" fullWidth margin="normal" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
-                <TextField label="Phone" fullWidth margin="normal" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                <TextField
+                    label="Phone"
+                    fullWidth
+                    margin="normal"
+                    value={editForm.phone}
+                    onChange={e => {
+                        const value = e.target.value.replace(/\D/g, ""); // keep only digits
+                        setEditForm({ ...editForm, phone: value });
+                    }}
+                    inputProps={{ minLength: 10, maxLength: 10, inputMode: "numeric", pattern: "[0-9]*" }}
+                    error={editForm.phone.length > 0 && editForm.phone.length !== 10}
+                    helperText={
+                        editForm.phone.length > 0 && editForm.phone.length !== 10
+                            ? "Phone number must be exactly 10 digits"
+                            : ""
+                    }
+                />
                 <TextField label="Address" fullWidth margin="normal" value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} />
             </DialogContent>
             <DialogActions>
                 <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-                <Button onClick={handleEditSave} variant="contained">Save</Button>
+                <Button onClick={handleEditSave} variant="contained"
+                    disabled={
+                        !editForm.name.trim() || !editForm.address.trim() || editForm.phone.length !== 10
+                    }
+                >Save</Button>
             </DialogActions>
         </Dialog>
         {/* Delete Confirmation Dialog */}
@@ -226,6 +382,7 @@ export default function CustomersPage() {
                 <Button onClick={handleConfirmDelete} variant="contained" color="error">Delete</Button>
             </DialogActions>
         </Dialog>
-    </Container>
+      </Container>
+    </Box>
   )
 }

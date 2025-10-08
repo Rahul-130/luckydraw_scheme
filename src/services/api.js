@@ -39,9 +39,10 @@ export const toggleBookActive = (bookId, token) =>
         headers: { Authorization: `Bearer ${token}` }
     });
 
-export const getCustomers = (bookId, token) => 
+export const getCustomers = (bookId, token, search) => 
     axios.get(`${API_URL}/customers/${bookId}`, { 
-        headers: { Authorization: `Bearer ${token}` } 
+        headers: { Authorization: `Bearer ${token}` },
+        params: { search: search || undefined }
     });
 
 export const addCustomer = (bookId, data, token) => 

@@ -5,28 +5,36 @@ const router = express.Router();
 
 // Customers - to list all customers for a book
 router.get('/:bookId', requireAuth, async (req, res) => {
+  const { search = '' } = req.query;
   const conn = await getConnection();
   try {
 
     const book = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
     if (!book.rows.length) return res.status(404).json({ error: 'book not found' });
 
+    const searchClause = `AND (
+      LOWER(c.name) LIKE LOWER(:search) OR 
+      LOWER(c.phone) LIKE LOWER(:search) OR
+      LOWER(c.address) LIKE LOWER(:search)
+    )`;
+
     // This complex query calculates eligibility for each customer.
     // It counts the number of payments a customer has made and compares it to the
     // number of months that have passed since the book started.
     const r = await conn.execute(`
       SELECT 
-    c.id,
-    c.name,
-    c.phone,
-    c.address,
-    c.is_frozen,
-    (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id) as payment_count,
-    FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
-  FROM customers c
-  JOIN books b ON c.book_id = b.id
-  WHERE c.book_id = :bid
-  ORDER BY c.id`, { bid: Number(req.params.bookId) });
+        c.id,
+        c.name,
+        c.phone,
+        c.address,
+        c.is_frozen,
+        (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id) as payment_count,
+        FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
+      FROM customers c
+      JOIN books b ON c.book_id = b.id
+      WHERE c.book_id = :bid
+      ${search ? searchClause : ''}
+      ORDER BY c.id`, { bid: Number(req.params.bookId), ...(search && { search: `%${search}%` }) });
 
     console.log(r.rows);
     

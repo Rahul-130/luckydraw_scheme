@@ -2,17 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { getCustomers as fetchCustomersApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-export function useCustomers(bookId) {
+export function useCustomers(bookId, searchText) {
     const { token } = useAuth();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const fetchCustomers = useCallback(async () => {
-        if (!token || !bookId) return;
+        if (!token || !bookId) { setCustomers([]); setLoading(false); return; }
         try {
             setLoading(true);
-            const response = await fetchCustomersApi(bookId, token);
+            const response = await fetchCustomersApi(bookId, token, searchText);
             setCustomers(response.data);
             setError(null);
         } catch (err) {
@@ -21,7 +21,7 @@ export function useCustomers(bookId) {
         } finally {
             setLoading(false);
         }
-    }, [token, bookId]);
+    }, [token, bookId, searchText]);
 
     useEffect(() => {
         fetchCustomers();
@@ -29,4 +29,3 @@ export function useCustomers(bookId) {
 
     return { customers, loading, error, refetch: fetchCustomers };
 }
-
