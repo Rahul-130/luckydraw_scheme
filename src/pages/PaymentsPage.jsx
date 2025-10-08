@@ -1,15 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { addPayment, getPayments, getCustomers, editPayment, deletePayment, getBook } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../context/SnackbarContext';
-import { List, ListItem, ListItemText } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, MenuItem } from '@mui/material';
-import { useEffect, useState } from 'react';
+import {
+  Button,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Typography,
+  MenuItem,
+  Box,
+  Paper,
+  Stack,
+  IconButton,
+} from '@mui/material';
+import { Add, Edit, Delete, ArrowBack } from "@mui/icons-material";
 
 
 export default function PaymentsPage() {
@@ -25,6 +38,7 @@ export default function PaymentsPage() {
     const { showSnackbar } = useSnackbar();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [paymentToDelete, setPaymentToDelete] = useState(null);
+    const navigate = useNavigate();
     const [is_frozen, setIsFrozen] = useState(false);
 
     useEffect(() => {
@@ -83,42 +97,120 @@ export default function PaymentsPage() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Container maxWidth="lg">
-        <Typography variant="h4" sx={{ my: 2 }}>
-          Payments for {customer?.name}
-        </Typography>
-        <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
-          Book: {book?.name}
-        </Typography>
-        <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={() => setOpen(true)}>Add Payment</Button> {/* Consistent margin */}
-        <div style={{ height: 400, width: '100%' }}>
-          <DataGrid
-            rows={payments}
-            columns={[
-              { field: 'id', headerName: 'ID', width: 90 },
-              { field: 'amount', headerName: 'Amount', width: 150 },
-              { field: 'monthIso', headerName: 'Month', width: 150 },
-              { field: 'paymentDate', headerName: 'Date', width: 150 },
-              { field: 'receiptNo', headerName: 'Receipt No.', width: 150 },
-              {
-                  field: 'actions',
-                  headerName: 'Actions',
-                  width: 200,
-                  renderCell: (params) => (
-                      <>
-                          <Button variant="outlined" color="primary" size="small" onClick={() => handleEdit(params.row)}>Edit</Button>
-                          <Button variant="outlined" color="error" size="small" onClick={() => handleDelete(params.row.id)}>Delete</Button>
-                      </>
-                  )
-              }
-            ]}
-            pageSize={10}
-          />
-        </div>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          py: 4,
+          px: 2,
+          background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
+        }}
+      >
+        <Container maxWidth="lg">
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+            <IconButton onClick={() => navigate(`/books/${bookId}/customers`)}>
+              <ArrowBack />
+            </IconButton>
+            <Typography variant="h5" component="h1" className='text-gray-800 font-bold justify-center flex flex-wrap items-center gap-1 w-full text-center'>
+              <Box component="span" className='text-black font-semibold'>
+                Payments
+              </Box>
+              <Box component="span" className='text-gray-500'>for customer</Box>
+              <Box component="span" className='text-gray-700 font-semibold'>
+                {customer?.name}
+              </Box>
+              <Typography variant="subtitle1" component="span" className='text-gray-500 pt-1'>
+                (Book: {book?.name})
+              </Typography>
+            </Typography>
+          </Stack>
+
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            justifyContent="space-between"
+            sx={{ mb: 2 }}
+          >
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              color="primary"
+              onClick={() => setOpen(true)}
+            >
+              Add Payment
+            </Button>
+          </Stack>
+
+          <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
+            <Box sx={{ height: 500, width: "100%" }}>
+              <DataGrid
+                rows={payments}
+                columns={[
+                  { field: 'id', headerName: 'ID', width: 90 },
+                  { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (params) => `₹ ${params}` },
+                  { field: 'monthIso', headerName: 'Month', width: 150 },
+                  { field: 'paymentDate', headerName: 'Date', width: 150 },
+                  { field: 'receiptNo', headerName: 'Receipt No.', width: 150 },
+                  {
+                      field: 'actions',
+                      headerName: 'Actions',
+                      width: 150,
+                      sortable: false,
+                      renderCell: (params) => (
+                        <Stack direction="row" spacing={0.5}>
+                          <IconButton
+                            onClick={() => handleEdit(params.row)}
+                            sx={{
+                                backgroundColor: "#e0f7fa",
+                                "&:hover": { backgroundColor: "#b2ebf2", transform: "scale(1.05)" },
+                                borderRadius: 1.5,
+                                padding: 0.7,
+                                color: "#0288d1",
+                                transition: "all 0.2s",
+                              }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => handleDelete(params.row.id)}
+                            sx={{
+                                backgroundColor: "#ffebee",
+                                "&:hover": { backgroundColor: "#ffcdd2", transform: "scale(1.05)" },
+                                borderRadius: 1.5,
+                                padding: 0.7,
+                                color: "#d32f2f",
+                                transition: "all 0.2s",
+                              }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      )
+                  }
+                ]}
+                pageSizeOptions={[5, 10, 20]}
+                sx={{
+                  "& .MuiDataGrid-row:hover": {
+                    backgroundColor: "rgba(0, 123, 255, 0.08)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  },
+                  "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
+                  "& .MuiDataGrid-columnHeaders": {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontWeight: "bold",
+                  },
+                  borderRadius: 2,
+                  "& .MuiDataGrid-cell": { py: 1.2 },
+                }}
+              />
+            </Box>
+          </Paper>
+
+        </Container>
+      {/* Dialogs */}
         <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm"> {/* Added fullWidth and maxWidth */}
           <DialogTitle>Add Payment</DialogTitle>
           <DialogContent>
-            {/* <TextField label="Amount" type="number" fullWidth margin="normal" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /> */}
             <TextField select label="Amount" fullWidth margin="normal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}>
                 {[500, 1000, 1500, 2000, 2500].map((amt) => (
                   <MenuItem key={amt} value={amt}>
@@ -165,6 +257,7 @@ export default function PaymentsPage() {
                 views={['year', 'month']}
                 inputFormat="yyyy-MM"
                 value={editForm.monthIso ? new Date(editForm.monthIso) : null}
+                disabled={true}
                 onChange={(newValue) => {
                   if (newValue) {
                     const year = newValue.getFullYear();
@@ -182,7 +275,7 @@ export default function PaymentsPage() {
               <Button onClick={handleEditSave} variant="contained">Save</Button>
           </DialogActions>
         </Dialog> {/* Added fullWidth and maxWidth */}
-        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} fullWidth maxWidth="xs">
+        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogContent>
                 <Typography>Are you sure you want to delete this payment?</Typography>
@@ -192,7 +285,7 @@ export default function PaymentsPage() {
                 <Button onClick={handleConfirmDelete} variant="contained" color="error">Delete</Button>
             </DialogActions>
         </Dialog>
-      </Container>
+      </Box>
     </LocalizationProvider>
   )
 }
