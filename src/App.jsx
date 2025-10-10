@@ -11,13 +11,9 @@ import PaymentsPage from './pages/PaymentsPage';
 import LuckyDrawPage from './pages/LuckyDrawPage';
 import WinnersListPage from './pages/WinnersListPage';
 import EligibleCustomersPage from './pages/EligibleCustomersPage';
-import MainLayout from './MainLayout';
 import ChangePasswordPage from './pages/ChangePasswordPage';
-
-function PrivateRoute({ children }) {
-  const { token } = useAuth();
-  return token ? children : <Navigate to="/login" />;
-}
+import ProtectedRoute from './components/ProtectedRoute';
+import Setup2FAPage from './pages/Setup2FAPage';
 
 export default function App() {
   return (
@@ -28,9 +24,10 @@ export default function App() {
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/setup-2fa" element={<Setup2FAPage />} />
   
             {/* Private routes using the MainLayout */}
-            <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
+            <Route element={<ProtectedRoute />}>
               <Route path="/books" element={<BooksPage />} />
               <Route path="/books/:bookId/customers" element={<CustomersPage />} />
               <Route path="/books/:bookId/customers/:customerId/payments" element={<PaymentsPage />} />

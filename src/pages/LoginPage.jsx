@@ -1,30 +1,101 @@
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext';
-import { login } from '../services/api';
+import { login, loginWithOTP, requestPasswordReset, completePasswordReset } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import {
   TextField,
   Button,
   Typography,
   Alert,
+  ToggleButtonGroup,
+  ToggleButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Link,
 } from "@mui/material";
-import { Login as LoginIcon } from "@mui/icons-material";
+import { Login as LoginIcon, VpnKey, Lock } from "@mui/icons-material";
 
 export default function LoginPage() {
     const { login: loginUser } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
+    const [loginMethod, setLoginMethod] = useState('password');
     const navigate = useNavigate();
+
+    // State for Password Reset Modal
+    const [resetModalOpen, setResetModalOpen] = useState(false);
+    const [resetStep, setResetStep] = useState('request'); // 'request' or 'complete'
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetOtp, setResetOtp] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [resetError, setResetError] = useState('');
+    const [resetSuccess, setResetSuccess] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         try {
-            const res = await login({ email, password });
+            let res;
+            if (loginMethod === 'password') {
+                res = await login({ email, password });
+            } else {
+                res = await loginWithOTP(email, otp);
+            }
             loginUser(res.data.user, res.data.token);
+            // Let ProtectedRoute handle the redirection logic
             navigate('/books');
-        } catch { 
-            setError('Invalid email or password');
+        } catch (err) { 
+            setError(err.response?.data?.message || 'Invalid credentials. Please try again.');
+        }
+    };
+
+    const handleResetRequest = async () => {
+        setResetError('');
+        try {
+            await requestPasswordReset(resetEmail);
+            setResetStep('complete');
+        } catch (err) {
+            setResetError(err.response?.data?.message || 'Could not process request. Ensure user exists and has 2FA enabled.');
+        }
+    };
+
+    const handleResetComplete = async () => {
+        setResetError('');
+        setResetSuccess('');
+        try {
+            await completePasswordReset(resetEmail, resetOtp, newPassword);
+            setResetSuccess('Password has been reset successfully! You can now close this and log in.');
+            setTimeout(() => {
+                handleCloseResetModal();
+            }, 2000);
+        } catch (err) {
+            setResetError(err.response?.data?.message || 'Invalid OTP or password. Please try again.');
+        }
+    };
+
+    const handleCloseResetModal = () => {
+        setResetModalOpen(false);
+        // Reset modal state for next time
+        setTimeout(() => {
+            setResetStep('request');
+            setResetEmail('');
+            setResetOtp('');
+            setNewPassword('');
+            setResetError('');
+            setResetSuccess('');
+        }, 300);
+    };
+
+    const handleLoginMethodChange = (event, newMethod) => {
+        if (newMethod !== null) {
+            setLoginMethod(newMethod);
+            setError(''); // Clear errors when switching
+            setPassword('');
+            setOtp('');
         }
     };
 
@@ -39,22 +110,77 @@ export default function LoginPage() {
               Welcome Back!
             </Typography>
           </div>
+          <ToggleButtonGroup
+            value={loginMethod}
+            exclusive
+            onChange={handleLoginMethodChange}
+            fullWidth
+            className="!mt-6"
+          >
+            <ToggleButton value="password" aria-label="login with password">
+              <Lock className="!mr-2" />
+              Password
+            </ToggleButton>
+            <ToggleButton value="otp" aria-label="login with otp">
+              <VpnKey className="!mr-2" />
+              OTP
+            </ToggleButton>
+          </ToggleButtonGroup>
           <form onSubmit={handleSubmit} className="mt-4">
             <div className="space-y-4">
               {error && <Alert severity="error" className="w-full">{error}</Alert>}
-              <TextField margin="normal" required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
-              <TextField margin="normal" required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+              <TextField required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+              {loginMethod === 'password' ? (
+                <TextField required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+              ) : (
+                <TextField required fullWidth label="Authenticator OTP" type="text" value={otp} onChange={(e) => setOtp(e.target.value)} />
+              )}
             </div>
             <Button type="submit" fullWidth variant="contained" className="!mt-6 !py-3">
               Login
             </Button>
-            <Typography variant="body2" className="!mt-4 text-center text-gray-500">
-              Don't have an account?{" "}
-              <Button onClick={() => navigate("/signup")} size="small">Sign Up</Button>
-            </Typography>
+            <div className="flex justify-between items-center !mt-4">
+                <Link component="button" variant="body2" onClick={() => setResetModalOpen(true)}>
+                    Forgot Password?
+                </Link>
+                <Typography variant="body2" className="text-gray-500">
+                    Don't have an account?{" "}
+                    <Button onClick={() => navigate("/signup")} size="small">Sign Up</Button>
+                </Typography>
+            </div>
           </form>
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      <Dialog open={resetModalOpen} onClose={handleCloseResetModal}>
+        <DialogTitle>{resetStep === 'request' ? 'Reset Password' : 'Enter Details'}</DialogTitle>
+        <DialogContent>
+            {resetError && <Alert severity="error" className="!mb-4">{resetError}</Alert>}
+            {resetSuccess && <Alert severity="success" className="!mb-4">{resetSuccess}</Alert>}
+            {resetStep === 'request' ? (
+                <>
+                    <Typography variant="body2" className="!mb-4">Enter your email to begin the reset process. 2FA must be enabled on your account.</Typography>
+                    <TextField autoFocus margin="dense" label="Email Address" type="email" fullWidth variant="standard" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                </>
+            ) : (
+                <>
+                    <Typography variant="body2" className="!mb-4">Enter the OTP from your authenticator app and your new password.</Typography>
+                    <TextField margin="dense" label="Authenticator OTP" type="text" fullWidth variant="standard" value={resetOtp} onChange={(e) => setResetOtp(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""}/>
+                    <TextField margin="dense" label="New Password" type="password" fullWidth variant="standard" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                    
+                </>
+            )}
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={handleCloseResetModal}>Cancel</Button>
+            {resetStep === 'request' ? (
+                <Button onClick={handleResetRequest} variant="contained">Request Reset</Button>
+            ) : (
+                <Button onClick={handleResetComplete} variant="contained" disabled={!!resetSuccess}>Complete Reset</Button>
+            )}
+        </DialogActions>
+      </Dialog>
 
       {/* Right side - Image/Branding */}
       <div className="hidden md:flex md:w-1/2 items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 p-12 text-white">

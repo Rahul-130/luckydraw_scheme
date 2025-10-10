@@ -10,10 +10,20 @@ SELECT * FROM customers;
 SELECT * FROM payments;
 SELECT * FROM winner;
 
-describe books
+describe users;
+describe books;
+describe customers;
+describe payments;
+describe winner;
+
+--
 
 -- alter user table add columns name phoneno email
 ALTER TABLE users ADD (name VARCHAR2(255), phone VARCHAR2(20));
+-- is_2fa_enabled NUMBER(1) DEFAULT 0 NOT NULL and ALTER TABLE users ADD two_fa_secret VARCHAR2(255)
+ALTER TABLE users ADD (is_2fa_enabled NUMBER(1) DEFAULT 0 NOT NULL);
+ALTER TABLE users ADD (two_fa_secret VARCHAR2(255));
+
 
 --
 

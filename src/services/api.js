@@ -111,3 +111,31 @@ export const unmarkCustomerAsWinner = (token, data) =>
     axios.post(`${API_URL}/winners/unmark`, data, {
         headers: { Authorization: `Bearer ${token}` }
     });
+    
+// --- 2FA ---
+
+export const generate2FA = (token) =>
+    axios.post(`${API_URL}/auth/2fa/generate`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+export const enable2FA = (token, otp) =>
+    axios.post(`${API_URL}/auth/2fa/enable`, { otp }, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+export const loginWithOTP = (username, otp) =>
+    axios.post(`${API_URL}/auth/login-otp`, { username, otp });
+
+
+// --- Password Reset using 2FA ---
+
+export const requestPasswordReset = (username) =>
+    axios.post(`${API_URL}/auth/reset-password/request`, { username });
+
+export const completePasswordReset = (username, otp, newPassword) =>
+    axios.post(`${API_URL}/auth/reset-password/complete`, {
+        username,
+        otp,
+        newPassword
+    });
