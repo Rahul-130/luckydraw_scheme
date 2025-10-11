@@ -25,6 +25,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       SELECT 
         c.id,
         c.name,
+        c.relation_info,
         c.phone,
         c.address,
         c.is_frozen,
@@ -42,6 +43,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       id: String(row.ID),
       bookId: String(req.params.bookId),
       name: row.NAME,
+      relationInfo: row.RELATION_INFO,
       phone: row.PHONE,
       address: row.ADDRESS,
       isFrozen: row.IS_FROZEN === 1,
@@ -56,7 +58,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
 
 // Customers - to create a new customer for a book - if all the fields are same as existing customer, return error
 router.post('/:bookId', requireAuth, async (req, res) => {
-  const { name, phone, address } = req.body || {};
+  const { name, relationInfo, phone, address } = req.body || {};
   const conn = await getConnection();
   try {
     // 1. Check book ownership and limits
@@ -95,13 +97,14 @@ router.post('/:bookId', requireAuth, async (req, res) => {
 
     // 4. Insert new customer
     const result = await conn.execute(
-      `INSERT INTO customers (book_id, name, phone, address)
-       VALUES (:bid, :name, :phone, :address)
+      `INSERT INTO customers (book_id, name, relation_info, phone, address)
+       VALUES (:bid, :name, :relationInfo, :phone, :address)
 
        RETURNING id INTO :id`,
       {
         bid: Number(req.params.bookId),
         name: String(name),
+        relationInfo: String(relationInfo || ''),
         phone: String(phone),
         address: String(address),
         id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
@@ -115,6 +118,7 @@ router.post('/:bookId', requireAuth, async (req, res) => {
       id: String(result.outBinds.id[0]),
       bookId: String(req.params.bookId),
       name: String(name),
+      relationInfo: String(relationInfo || ''),
       phone: String(phone),
       address: String(address)
     });
@@ -128,7 +132,7 @@ router.post('/:bookId', requireAuth, async (req, res) => {
 
 // Edit customer - only name, phone, address can be updated
 router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => {
-  const { name, phone, address } = req.body || {};
+  const { name, relationInfo, phone, address } = req.body || {};
   const conn = await getConnection();
   try {
     // 1. Check book ownership
@@ -138,8 +142,8 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     );
     if (!bookR.rows.length)
       return res.status(404).json({ error: 'book not found' });
-    if (!name && !phone && !address)
-      return res.status(400).json({ error: 'at least one of name, phone, or address is required' });
+    if (!name && !phone && !address && relationInfo === undefined)
+      return res.status(400).json({ error: 'at least one field is required' });
     // 2. Check customer exists
     const custR = await conn.execute(
       `SELECT id FROM customers WHERE id=:cid AND book_id=:bid`,
@@ -151,6 +155,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     const fields = [];
     const binds = { cid: Number(req.params.customerId), bid: Number(req.params.bookId) };
     if (name) { fields.push('name=:name'); binds.name = String(name); }
+    if (relationInfo !== undefined) { fields.push('relation_info=:relationInfo'); binds.relationInfo = String(relationInfo); }
     if (phone) { fields.push('phone=:phone'); binds.phone = String(phone); }
     if (address) { fields.push('address=:address'); binds.address = String(address); }
     const sql = `UPDATE customers SET ${fields.join(', ')} WHERE id=:cid AND book_id=:bid`;

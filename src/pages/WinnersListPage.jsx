@@ -67,6 +67,7 @@ export default function WinnersListPage() {
     const columns = useMemo(() => [
         { field: 'id', headerName: 'ID', width: 80 },
         { field: 'customerName', headerName: 'Winner Name', width: 200 },
+        { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
         { field: 'bookName', headerName: 'Book', width: 150 },
         { field: 'address', headerName: 'Address', width: 200 },
         { field: 'phone', headerName: 'Phone', width: 150 },

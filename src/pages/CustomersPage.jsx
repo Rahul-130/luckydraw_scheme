@@ -55,10 +55,11 @@ export default function CustomersPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({
         name: '',
+        relationInfo: '',
         phone: '',
         address: ''
     });
-    const [editForm, setEditForm] = useState({ id: '', name: '', phone: '', address: '' });
+    const [editForm, setEditForm] = useState({ id: '', name: '', relationInfo: '', phone: '', address: '' });
     const { showSnackbar } = useSnackbar();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [customerToDelete, setCustomerToDelete] = useState(null);
@@ -105,6 +106,7 @@ export default function CustomersPage() {
     const columns = useMemo(() => [
         { field: 'id', headerName: 'ID', width: 90 },
         { field: 'name', headerName: 'Name', width: 200 },
+        { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
         { field: 'phone', headerName: 'Phone', width: 150 },
         { field: 'address', headerName: 'Address', width: 200 },
         {
@@ -292,6 +294,13 @@ export default function CustomersPage() {
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
                 />
+                <TextField
+                    label="S/o, D/o, W/o"
+                    fullWidth
+                    margin="normal"
+                    value={form.relationInfo}
+                    onChange={e => setForm({ ...form, relationInfo: e.target.value })}
+                />
 
                 <TextField
                     label="Phone"
@@ -342,6 +351,7 @@ export default function CustomersPage() {
         <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm"> {/* Added fullWidth and maxWidth */}
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogContent>
+                <TextField label="S/o, D/o, W/o" fullWidth margin="normal" value={editForm.relationInfo} onChange={e => setEditForm({ ...editForm, relationInfo: e.target.value })} />
                 <TextField label="Name" fullWidth margin="normal" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
                 <TextField
                     label="Phone"

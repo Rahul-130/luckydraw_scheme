@@ -47,7 +47,7 @@ router.get('/', requireAuth, async (req, res) => {
     for (const book of eligibleBooks) {
       //Get non-frozen customers for this book
       const custR = await conn.execute(
-        `SELECT id, name, phone, address FROM customers WHERE book_id=:bid AND is_frozen=0`,
+        `SELECT id, name, relation_info, phone, address FROM customers WHERE book_id=:bid AND is_frozen=0`,
         { bid: Number(book.ID) }
       );
 
@@ -71,6 +71,7 @@ router.get('/', requireAuth, async (req, res) => {
             id: `${book.ID}-${cust.ID}`, //Create a unique ID
             bookName: book.NAME,
             customerName: cust.NAME,
+            relationInfo: cust.RELATION_INFO,
             phone: cust.PHONE,
             address: cust.ADDRESS,
           });

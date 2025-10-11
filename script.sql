@@ -16,7 +16,10 @@ describe customers;
 describe payments;
 describe winner;
 
---
+-- altwe customer table add column relation_info VARCHAR2(255) after the name column
+ALTER TABLE customers ADD (relation_info VARCHAR2(255));
+
+
 
 -- alter user table add columns name phoneno email
 ALTER TABLE users ADD (name VARCHAR2(255), phone VARCHAR2(20));

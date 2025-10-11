@@ -115,7 +115,8 @@ export default function LuckyDrawPage() {
                 { field: 'bookId', headerName: 'Book ID', width: 100 },
                 { field: 'bookName', headerName: 'Book Name', width: 180 },
                 { field: 'customerId', headerName: 'Customer ID', width: 120 },
-                { field: 'customerName', headerName: 'Customer Name', width: 180 },
+                { field: 'customerName', headerName: 'Name', width: 180 },
+                { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
                 { field: 'address', headerName: 'Address', width: 200 },
                 { field: 'phone', headerName: 'Phone', width: 150 },
               ]}

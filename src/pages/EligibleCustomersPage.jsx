@@ -76,6 +76,7 @@ export default function EligibleCustomersPage() {
 
         { field: 'bookName', headerName: 'Book Name', width: 100 },
         { field: 'customerName', headerName: 'Customer Name', width: 200 },
+        { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
         { field: 'phone', headerName: 'Phone', width: 150 },
         { field: 'address', headerName: 'Address', width: 300 },
         {

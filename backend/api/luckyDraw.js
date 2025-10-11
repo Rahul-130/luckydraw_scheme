@@ -54,7 +54,7 @@ router.post('/', requireAuth, async (req, res) => {
     for (const book of eligibleBooks) {
       // 2. Get non-frozen customers for this book
       const custR = await conn.execute(
-        `SELECT id, name, phone, address FROM customers WHERE book_id=:bid AND is_frozen=0`,
+        `SELECT id, name, relation_info, phone, address FROM customers WHERE book_id=:bid AND is_frozen=0`,
         { bid: Number(book.ID) }
       );
 
@@ -89,13 +89,14 @@ router.post('/', requireAuth, async (req, res) => {
 
         // 6. Insert into winner table
         await conn.execute(
-          `INSERT INTO winner (book_id, book_name, customer_id, customer_name, address, phone)
-           VALUES (:bid, :bname, :cid, :cname, :addr, :phone)`,
+          `INSERT INTO winner (book_id, book_name, customer_id, customer_name, relation_info, address, phone)
+           VALUES (:bid, :bname, :cid, :cname, :relationInfo, :addr, :phone)`,
           { 
             bid: Number(book.ID), 
             bname: book.NAME, 
             cid: Number(winnerId), 
             cname: winner.NAME, 
+            relationInfo: winner.RELATION_INFO,
             addr: winner.ADDRESS, 
             phone: winner.PHONE 
           }
@@ -106,6 +107,7 @@ router.post('/', requireAuth, async (req, res) => {
             bookName: book.NAME,
             customerId: String(winnerId),
             customerName: winner.NAME,
+            relationInfo: winner.RELATION_INFO,
             address: winner.ADDRESS,
             phone: winner.PHONE,
             drawDate: new Date().toISOString().split('T')[0] // Add drawDate
