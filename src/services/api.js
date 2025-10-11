@@ -84,8 +84,8 @@ export const deletePayment = (bookId, customerId, paymentId, token) =>
         headers: { Authorization: `Bearer ${token}` } 
     });
 
-export const runLuckyDraw = (token, password) => 
-    axios.post(`${API_URL}/lucky-draw`, {password}, { 
+export const runLuckyDraw = (token, password, otp) => 
+    axios.post(`${API_URL}/lucky-draw`, {password, otp}, { 
         headers: { Authorization: `Bearer ${token}` } 
     });
 

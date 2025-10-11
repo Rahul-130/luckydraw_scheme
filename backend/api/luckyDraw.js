@@ -1,21 +1,41 @@
 const express = require('express');
 const { getConnection, oracledb } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+const bcrypt = require('bcryptjs');
+const speakeasy = require('speakeasy');
 const router = express.Router();
 
-// Hardcoded password for lucky draw. TODO: Move to environment variable.
-const LUCKY_DRAW_PASSWORD = "password";
-
 router.post('/', requireAuth, async (req, res) => {
-  const { password } = req.body;
-
-  if (password !== LUCKY_DRAW_PASSWORD) {
-    console.log(password, LUCKY_DRAW_PASSWORD);
-    return res.status(401).json({ error: 'Invalid password' });
-  }
-
   const conn = await getConnection();
   try {
+    const { password, otp } = req.body;
+    if (!password || !otp) {
+      return res.status(400).json({ error: 'Password and OTP are required.' });
+    }
+
+    // 1. Verify user's credentials
+    const userResult = await conn.execute(
+      `SELECT password_hash, is_2fa_enabled, two_fa_secret FROM users WHERE id = :id`,
+      { id: req.user.id }
+    );
+
+    if (!userResult.rows.length) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const user = userResult.rows[0];
+
+    const isPasswordValid = await bcrypt.compare(String(password), user.PASSWORD_HASH);
+    const isOtpValid = speakeasy.totp.verify({
+      secret: user.TWO_FA_SECRET,
+      encoding: 'base32',
+      token: otp,
+    });
+
+    if (!isPasswordValid || !isOtpValid || user.IS_2FA_ENABLED !== 1) {
+      return res.status(401).json({ error: 'Invalid password or OTP.' });
+    }
+
     // 1. Get active books that are at least 1 month old
     const booksR = await conn.execute(
       `SELECT id, name, start_month_iso FROM books WHERE owner_id=:oid AND is_active=1`,
