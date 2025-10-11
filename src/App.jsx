@@ -1,7 +1,7 @@
 import './App.css';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { SnackbarProvider } from './context/SnackbarContext';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -14,6 +14,7 @@ import EligibleCustomersPage from './pages/EligibleCustomersPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Setup2FAPage from './pages/Setup2FAPage';
+import SecurityPage from './pages/SecurityPage';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/eligible-customers" element={<EligibleCustomersPage />} />
               <Route path="/lucky-draw" element={<LuckyDrawPage />} />
               <Route path="/change-password" element={<ChangePasswordPage />} />
+              <Route path="/security" element={<SecurityPage />} />
             </Route>
   
             <Route path="*" element={<Navigate to="/books" />} />

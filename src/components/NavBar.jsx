@@ -80,6 +80,9 @@ export default function NavBar() {
               {token && (
                 <MenuItem onClick={() => handleNavigate("/change-password")}>
                   Change Password
+                </MenuItem>,
+                <MenuItem onClick={() => handleNavigate("/security")}>
+                  Security
                 </MenuItem>
               )}
               <MenuItem onClick={token ? handleLogout : () => handleNavigate("/login")}>
@@ -95,6 +98,7 @@ export default function NavBar() {
               </Button>
             ))}
             {token && <Button color="inherit" component={Link} to="/change-password">Change Password</Button>}
+            {token && <Button color="inherit" component={Link} to="/security">Security</Button>}
             <Button color="inherit" onClick={token ? handleLogout : () => navigate("/login")}>
               {token ? "Logout" : "Login"}
             </Button>

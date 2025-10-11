@@ -18,6 +18,7 @@ export default function Setup2FAPage() {
   const navigate = useNavigate();
   const [qrCode, setQrCode] = useState('');
   const [otp, setOtp] = useState('');
+  const [recoveryCodes, setRecoveryCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -48,8 +49,9 @@ export default function Setup2FAPage() {
     try {
       const response = await enable2FA(token, otp);
       // Update user context to reflect that 2FA is now enabled
-      updateUser(response.data.user, token);
-      navigate('/books');
+      setRecoveryCodes(response.data.recoveryCodes);
+      // Don't navigate away automatically, show recovery codes first.
+      updateUser(response.data.user, token); 
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
     }
@@ -67,7 +69,23 @@ export default function Setup2FAPage() {
         <Box sx={{ mt: 3, textAlign: 'center' }}>
           {loading && <CircularProgress />}
           {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
-          {qrCode && (
+
+          {recoveryCodes.length > 0 ? (
+            <>
+              <Typography variant="h6" color="primary">2FA Enabled Successfully!</Typography>
+              <Alert severity="warning" sx={{ my: 2, textAlign: 'left' }}>
+                <strong>Save these recovery codes!</strong> If you lose access to your authenticator app, you will need these codes to log in. Store them somewhere safe.
+              </Alert>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, my: 2, p: 2, border: '1px solid #ccc', borderRadius: 1, background: '#f9f9f9' }}>
+                {recoveryCodes.map(code => <Typography key={code} fontFamily="monospace">{code}</Typography>)}
+              </Box>
+              <Button fullWidth variant="contained" onClick={() => navigate('/books')}>
+                I have saved my codes. Continue.
+              </Button>
+            </>
+          ) : null}
+
+          {qrCode && recoveryCodes.length === 0 && (
             <>
               <Typography variant="body1" gutterBottom>
                 1. Scan this QR code with your authenticator app (e.g., Google Authenticator).

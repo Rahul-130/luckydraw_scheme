@@ -1,28 +1,58 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { me } from '../services/api';
 
+const AuthContext = createContext(null);
 
-const AuthContext = createContext();
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
 
-export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(sessionStorage.getItem('token') || null);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true); // Initial loading state
 
-    const login = (userData, jwtToken) => {
-        setUser(userData);
-        setToken(jwtToken);
-        sessionStorage.setItem('token', jwtToken);
+  useEffect(() => {
+    const verifyUser = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        setToken(storedToken);
+        try {
+          const response = await me(storedToken);
+          setUser(response.data.user);
+        } catch (error) {
+          console.error('Session validation failed', error);
+          // Token is invalid, clear it
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+        }
+      }
+      setLoading(false);
     };
 
-    const logout = () => {
-        setUser(null);
-        setToken(null);
-        sessionStorage.removeItem('token');
-    };
+    verifyUser();
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
+  const login = (userData, userToken) => {
+    localStorage.setItem('token', userToken);
+    setToken(userToken);
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+  };
+
+  const value = {
+    user,
+    token,
+    loading,
+    login,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

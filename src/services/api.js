@@ -8,6 +8,11 @@ export const signup = (data) =>
 export const login = (data) => 
     axios.post(`${API_URL}/auth/login`, data);
 
+export const me = (token) =>
+    axios.get(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
 export const getBooksPaginated = (token, { page, pageSize, search }) => 
     axios.get(`${API_URL}/books`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -123,6 +128,17 @@ export const enable2FA = (token, otp) =>
     axios.post(`${API_URL}/auth/2fa/enable`, { otp }, {
         headers: { Authorization: `Bearer ${token}` }
     });
+
+export const disable2FA = (token, password) =>
+    axios.post(`${API_URL}/auth/2fa/disable`, { password }, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+export const regenerate2FACodes = (token) =>
+    axios.post(`${API_URL}/auth/2fa/regenerate-codes`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
 
 export const loginWithOTP = (username, otp) =>
     axios.post(`${API_URL}/auth/login-otp`, { username, otp });

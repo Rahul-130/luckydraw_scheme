@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { getConnection, oracledb } = require('../db');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
@@ -53,6 +54,19 @@ router.post('/login', async (req, res) => {
     console.error('Login error:', e);
     res.status(500).json({ error: 'internal error', details: e.message });
   } finally { await conn.close(); }
+});
+
+// Get current user from token
+router.get('/me', requireAuth, async (req, res) => {
+  const conn = await getConnection();
+  try {
+    const r = await conn.execute(`SELECT id, name, phone, email, is_2fa_enabled FROM users WHERE id=:id`, { id: Number(req.user.id) });
+    if (!r.rows.length) return res.status(404).json({ message: 'User not found' });
+    const row = r.rows[0];
+    const user = { id: String(row.ID), name: row.NAME, phone: row.PHONE, email: row.EMAIL, is2FAEnabled: row.IS_2FA_ENABLED === 1 };
+    res.json({ user });
+  } catch (e) { console.error('Get me error:', e); res.status(500).json({ error: 'internal error' }); }
+  finally { await conn.close(); }
 });
 
 // Password change - if same password, return error
@@ -113,6 +127,17 @@ router.post('/2fa/generate', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * Generates a set of single-use recovery codes.
+ * @returns {{plain: string[], hashed: Promise<string[]>}}
+ */
+function generateRecoveryCodes() {
+  const plain = Array.from({ length: 10 }, () => crypto.randomBytes(4).toString('hex').toUpperCase());
+  const hashed = Promise.all(plain.map(code => bcrypt.hash(code, 10)));
+  return { plain, hashed };
+}
+
+
 router.post('/2fa/enable', requireAuth, async (req, res) => {
   const { otp } = req.body;
   if (!otp) return res.status(400).json({ message: 'OTP is required' });
@@ -135,17 +160,69 @@ router.post('/2fa/enable', requireAuth, async (req, res) => {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    await conn.execute(`UPDATE users SET is_2fa_enabled = 1 WHERE id = :id`, { id: req.user.id });
+    const { plain: plainCodes, hashed: hashedCodes } = generateRecoveryCodes();
+    const hashedCodesJson = JSON.stringify(await hashedCodes);
+
+    await conn.execute(
+      `UPDATE users SET is_2fa_enabled = 1, two_fa_recovery_codes = :codes WHERE id = :id`, 
+      { codes: hashedCodesJson, id: req.user.id }
+    );
     await conn.commit();
 
     const user = { id: String(userRow.ID), name: userRow.NAME, phone: userRow.PHONE, email: userRow.EMAIL, is2FAEnabled: true };
-    res.json({ message: '2FA enabled successfully', user });
+    res.json({ message: '2FA enabled successfully', user, recoveryCodes: plainCodes });
   } catch (e) {
     console.error('2FA enable error:', e);
     res.status(500).json({ message: 'Internal server error' });
   } finally {
     await conn.close();
   }
+});
+
+router.post('/2fa/disable', requireAuth, async (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ message: 'Password is required to disable 2FA.' });
+
+  const conn = await getConnection();
+  try {
+    const result = await conn.execute(`SELECT * FROM users WHERE id = :id`, { id: req.user.id });
+    const userRow = result.rows[0];
+
+    const isPasswordValid = await bcrypt.compare(String(password), userRow.PASSWORD_HASH);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password.' });
+    }
+
+    await conn.execute(
+      `UPDATE users SET is_2fa_enabled = 0, two_fa_secret = NULL, two_fa_recovery_codes = NULL WHERE id = :id`,
+      { id: req.user.id }
+    );
+    await conn.commit();
+
+    const user = { id: String(userRow.ID), name: userRow.NAME, phone: userRow.PHONE, email: userRow.EMAIL, is2FAEnabled: false };
+    res.json({ message: '2FA disabled successfully.', user });
+  } catch (e) {
+    console.error('2FA disable error:', e);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    await conn.close();
+  }
+});
+
+router.post('/2fa/regenerate-codes', requireAuth, async (req, res) => {
+  const conn = await getConnection();
+  try {
+    const { plain: plainCodes, hashed: hashedCodes } = generateRecoveryCodes();
+    const hashedCodesJson = JSON.stringify(await hashedCodes);
+
+    await conn.execute(`UPDATE users SET two_fa_recovery_codes = :codes WHERE id = :id`, { codes: hashedCodesJson, id: req.user.id });
+    await conn.commit();
+
+    res.json({ message: 'New recovery codes generated.', recoveryCodes: plainCodes });
+  } catch (e) {
+    console.error('2FA regenerate codes error:', e);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally { await conn.close(); }
 });
 
 /**
@@ -165,17 +242,32 @@ async function verifyUserOtp(username, otp) {
       return { error: 'Invalid credentials', status: 401 };
     }
     const userRow = result.rows[0];
-    if (userRow.IS_2FA_ENABLED !== 1 || !userRow.TWO_FA_SECRET) {
+    if (userRow.IS_2FA_ENABLED !== 1) {
       return { error: '2FA is not enabled for this account', status: 400 };
     }
-    const verified = speakeasy.totp.verify({
-      secret: userRow.TWO_FA_SECRET,
-      encoding: 'base32',
-      token: otp,
-    });
-    if (!verified) {
-      return { error: 'Invalid OTP', status: 401 };
+
+    // Try OTP first
+    if (userRow.TWO_FA_SECRET) {
+      const verified = speakeasy.totp.verify({ secret: userRow.TWO_FA_SECRET, encoding: 'base32', token: otp });
+      if (verified) return { userRow };
     }
+
+    // If OTP fails, try recovery codes
+    const storedCodes = JSON.parse(userRow.TWO_FA_RECOVERY_CODES || '[]');
+    let validCodeFound = false;
+    const updatedCodes = [];
+
+    for (const hashedCode of storedCodes) {
+      const match = await bcrypt.compare(otp, hashedCode);
+      if (match && !validCodeFound) {
+        validCodeFound = true; // Mark as used, but don't add back to the list
+      } else {
+        updatedCodes.push(hashedCode);
+      }
+    }
+
+    if (!validCodeFound) return { error: 'Invalid OTP or Recovery Code', status: 401 };
+    await conn.execute(`UPDATE users SET two_fa_recovery_codes = :codes WHERE id = :id`, { codes: JSON.stringify(updatedCodes), id: userRow.ID });
     return { userRow };
   } finally {
     await conn.close();
