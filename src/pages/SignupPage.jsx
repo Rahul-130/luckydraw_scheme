@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { PersonAdd, Visibility, VisibilityOff } from "@mui/icons-material";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
+import { validatePassword, PASSWORD_REQUIREMENTS } from "../utils/validation";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -44,12 +45,13 @@ export default function SignupPage() {
     setError("");
     setSuccess("");
 
-    if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match.");
+    const passwordError = validatePassword(form.password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
-    if (form.password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -97,7 +99,7 @@ export default function SignupPage() {
               <TextField name="name" label="Full Name" fullWidth margin="normal" value={form.name} onChange={handleChange} required autoFocus />
               <TextField name="phone" label="Phone Number" fullWidth margin="normal" value={form.phone} onChange={handleChange} required inputProps={{ maxLength: 10 }} error={form.phone.length > 0 && form.phone.length !== 10} helperText={form.phone.length > 0 && form.phone.length !== 10 ? "Phone number must be 10 digits" : ""} />
               <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required />
-              <TextField name="password" label="Password" type={showPassword ? 'text' : 'password'} fullWidth margin="normal" value={form.password} onChange={handleChange} required error={form.password.length > 0 && form.password.length < 8} helperText={form.password.length > 0 && form.password.length < 8 ? "Password must be at least 8 characters" : ""} InputProps={{
+              <TextField name="password" label="Password" type={showPassword ? 'text' : 'password'} fullWidth margin="normal" value={form.password} onChange={handleChange} required error={!!(form.password && validatePassword(form.password))} helperText={PASSWORD_REQUIREMENTS} InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">

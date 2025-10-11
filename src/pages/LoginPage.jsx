@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { Login as LoginIcon, VpnKey, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
+import { validatePassword, PASSWORD_REQUIREMENTS } from '../utils/validation';
 
 export default function LoginPage() {
     const { login: loginUser } = useAuth();
@@ -74,6 +75,12 @@ export default function LoginPage() {
     const handleResetComplete = async () => {
         setResetError('');
         setResetSuccess('');
+
+        const passwordError = validatePassword(newPassword);
+        if (passwordError) {
+            setResetError(passwordError);
+            return;
+        }
         try {
             await completePasswordReset(resetEmail, resetOtp, newPassword);
             setResetSuccess('Password has been reset successfully! You can now close this and log in.');
@@ -208,7 +215,7 @@ export default function LoginPage() {
                         </InputAdornment>
                       ),
                     }}/>
-                    <TextField margin="dense" label="New Password" type={showNewPassword ? 'text' : 'password'} fullWidth variant="standard" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""} InputProps={{
+                    <TextField margin="dense" label="New Password" type={showNewPassword ? 'text' : 'password'} fullWidth variant="standard" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={!!(newPassword && validatePassword(newPassword))} helperText={PASSWORD_REQUIREMENTS} InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
