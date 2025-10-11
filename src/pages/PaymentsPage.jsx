@@ -124,6 +124,12 @@ export default function PaymentsPage() {
         setOpen(true);
     };
 
+    const paymentSummary = useMemo(() => {
+        const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const paymentCount = payments.length;
+        return { totalAmount, paymentCount };
+    }, [payments]);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box
@@ -169,6 +175,21 @@ export default function PaymentsPage() {
               Add Payment
             </Button>
           </Stack>
+
+          <Paper elevation={3} sx={{ p: 1, mb: 1, borderRadius: 2, backgroundColor: 'primary.lightest' }}>
+            <Stack direction="row" spacing={4} justifyContent="center">
+              <Box textAlign="center">
+                <Typography variant="h6" color="text.secondary">Total Payments</Typography>
+                <Typography variant="h5" fontWeight="bold" color="primary.main">{paymentSummary.paymentCount}</Typography>
+              </Box>
+              <Box textAlign="center">
+                <Typography variant="h6" color="text.secondary">Total Amount Paid</Typography>
+                <Typography variant="h5" fontWeight="bold" color="primary.main">
+                  ₹ {paymentSummary.totalAmount.toLocaleString('en-IN')}
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
 
           <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
             <Box sx={{ height: 500, width: "100%" }}>
