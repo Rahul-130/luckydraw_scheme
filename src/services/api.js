@@ -166,3 +166,9 @@ export const downloadBackup = (token) =>
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob', // Important for file downloads
     });
+
+export const getDashboardStats = (token, startDate, endDate) =>
+    axios.get(`${API_URL}/dashboard/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { startDate, endDate },
+    });

@@ -44,6 +44,7 @@ export default function NavBar() {
   };
 
   const navItems = [
+    { label: "Dashboard", path: "/dashboard" },
     { label: "Books", path: "/books" },
     { label: "Eligible Customers", path: "/eligible-customers" },
     { label: "Winners", path: "/winners" },

@@ -15,6 +15,7 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Setup2FAPage from './pages/Setup2FAPage';
 import SecurityPage from './pages/SecurityPage';
+import DashboardPage from './pages/DashboardPage';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
   
             {/* Private routes using the MainLayout */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/setup-2fa" element={<Setup2FAPage />} />
               <Route path="/books" element={<BooksPage />} />
               <Route path="/books/:bookId/customers" element={<CustomersPage />} />

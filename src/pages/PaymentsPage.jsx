@@ -145,15 +145,29 @@ export default function PaymentsPage() {
             <IconButton onClick={() => navigate(`/books/${bookId}/customers`)}>
               <ArrowBack />
             </IconButton>
-            <Typography variant="h5" component="h1" className='text-gray-800 font-bold justify-center flex flex-wrap items-center gap-1 w-full text-center'>
-              <Box component="span" className='text-black font-semibold'>
+            <Typography
+              variant="h5"
+              component="h1"
+              sx={{
+                color: 'text.primary',
+                fontWeight: 'bold',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.5,
+                width: '100%',
+                textAlign: 'center',
+              }}
+            >
+              <Box component="span" sx={{ fontWeight: 'semibold' }}>
                 Payments
               </Box>
-              <Box component="span" className='text-gray-500'>for customer</Box>
-              <Box component="span" className='text-gray-700 font-semibold'>
+              <Box component="span" sx={{ color: 'text.secondary' }}>for customer</Box>
+              <Box component="span" sx={{ color: 'text.primary', fontWeight: 'semibold' }}>
                 {customer?.name}
               </Box>
-              <Typography variant="subtitle1" component="span" className='text-gray-500 pt-1'>
+              <Typography variant="subtitle1" component="span" sx={{ color: 'text.secondary', pt: 0.5 }}>
                 (Book: {book?.name})
               </Typography>
             </Typography>
@@ -284,7 +298,7 @@ export default function PaymentsPage() {
                   setForm({ ...form, monthIso: '' });
                 }
               }}
-              renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+              slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
             />
           </DialogContent>
           <DialogActions>
@@ -318,7 +332,7 @@ export default function PaymentsPage() {
                     setEditForm({ ...editForm, monthIso: '' });
                   }
                 }}
-                renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
               />
           </DialogContent>
           <DialogActions>

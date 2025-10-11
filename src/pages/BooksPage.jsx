@@ -406,7 +406,7 @@ export default function BooksPage() {
                       setForm({ ...form, startMonthIso: `${year}-${month}` });
                     } else setForm({ ...form, startMonthIso: "" });
                   }}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  slots={{ textField: (params) => <TextField {...params} fullWidth /> }}
                 />
               </Stack>
             </DialogContent>
@@ -460,7 +460,7 @@ export default function BooksPage() {
                       });
                     } else setEditForm({ ...editForm, startMonthIso: "" });
                   }}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  slots={{ textField: (params) => <TextField {...params} fullWidth /> }}
                 />
               </Stack>
             </DialogContent>
