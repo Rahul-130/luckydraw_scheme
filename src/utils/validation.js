@@ -23,3 +23,12 @@ export const validatePassword = (password) => {
 };
 
 export const PASSWORD_REQUIREMENTS = "Requires 8+ characters, uppercase, lowercase, number, and special character.";
+
+export const validateEmail = (email) => {
+    // A simple regex for email validation. For production, consider a more robust library if needed.
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return "Please enter a valid email address.";
+    }
+    return null;
+};

@@ -13,7 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { PersonAdd, Visibility, VisibilityOff } from "@mui/icons-material";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
-import { validatePassword, PASSWORD_REQUIREMENTS } from "../utils/validation";
+import { validatePassword, PASSWORD_REQUIREMENTS, validateEmail } from "../utils/validation";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -44,6 +44,12 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    const emailError = validateEmail(form.email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
 
     const passwordError = validatePassword(form.password);
     if (passwordError) {
@@ -98,7 +104,7 @@ export default function SignupPage() {
             <div className="space-y-4">
               <TextField name="name" label="Full Name" fullWidth margin="normal" value={form.name} onChange={handleChange} required autoFocus />
               <TextField name="phone" label="Phone Number" fullWidth margin="normal" value={form.phone} onChange={handleChange} required inputProps={{ maxLength: 10 }} error={form.phone.length > 0 && form.phone.length !== 10} helperText={form.phone.length > 0 && form.phone.length !== 10 ? "Phone number must be 10 digits" : ""} />
-              <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required />
+              <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required error={!!(form.email && validateEmail(form.email))} helperText={form.email ? validateEmail(form.email) : ""} />
               <TextField name="password" label="Password" type={showPassword ? 'text' : 'password'} fullWidth margin="normal" value={form.password} onChange={handleChange} required error={!!(form.password && validatePassword(form.password))} helperText={PASSWORD_REQUIREMENTS} InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
