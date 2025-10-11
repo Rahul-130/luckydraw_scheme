@@ -12,10 +12,12 @@ import {
   CircularProgress,
   Paper,
 } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { useSnackbar } from '../context/SnackbarContext';
 
 export default function Setup2FAPage() {
   const { token, user, login: updateUser } = useAuth();
-  const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
   const [qrCode, setQrCode] = useState('');
   const [otp, setOtp] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState([]);
@@ -58,6 +60,17 @@ export default function Setup2FAPage() {
     }
   };
 
+  const handleCopyCodes = async () => {
+    const codesText = recoveryCodes.join('\n');
+    try {
+      await navigator.clipboard.writeText(codesText);
+      showSnackbar('Recovery codes copied to clipboard!', 'success');
+    } catch (err) {
+      showSnackbar('Failed to copy codes.', 'error');
+      console.error('Failed to copy codes: ', err);
+    }
+  };
+
   return (
     <Container component="main" maxWidth="xs">
       <Paper elevation={3} sx={{ mt: 8, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -77,6 +90,14 @@ export default function Setup2FAPage() {
               <Alert severity="warning" sx={{ my: 2, textAlign: 'left' }}>
                 <strong>Save these recovery codes!</strong> If you lose access to your authenticator app, you will need these codes to log in. Store them somewhere safe.
               </Alert>
+              <Button
+                variant="outlined"
+                startIcon={<ContentCopyIcon />}
+                onClick={handleCopyCodes}
+                sx={{ mb: 2 }}
+              >
+                Copy Codes
+              </Button>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, my: 2, p: 2, border: '1px solid #ccc', borderRadius: 1, background: '#f9f9f9' }}>
                 {recoveryCodes.map(code => <Typography key={code} fontFamily="monospace">{code}</Typography>)}
               </Box>

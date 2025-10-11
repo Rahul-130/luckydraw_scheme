@@ -16,10 +16,13 @@ import {
   TextField,
   CircularProgress,
 } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useNavigate } from 'react-router-dom';
+import { useSnackbar } from '../context/SnackbarContext';
 
 export default function SecurityPage() {
   const { user, token, login: updateUser } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -69,6 +72,17 @@ export default function SecurityPage() {
       setError(err.response?.data?.message || 'Failed to regenerate codes.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyCodes = async () => {
+    const codesText = newCodes.join('\n');
+    try {
+      await navigator.clipboard.writeText(codesText);
+      showSnackbar('Recovery codes copied to clipboard!', 'success');
+    } catch (err) {
+      showSnackbar('Failed to copy codes.', 'error');
+      console.error('Failed to copy codes: ', err);
     }
   };
 
@@ -134,6 +148,14 @@ export default function SecurityPage() {
               <Alert severity="warning" sx={{ my: 2, textAlign: 'left' }}>
                 <strong>Save these new codes!</strong> Your old codes are now invalid.
               </Alert>
+              <Button
+                variant="outlined"
+                startIcon={<ContentCopyIcon />}
+                onClick={handleCopyCodes}
+                sx={{ mb: 2 }}
+              >
+                Copy Codes
+              </Button>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, my: 2, p: 2, border: '1px solid #ccc', borderRadius: 1, background: '#f9f9f9' }}>
                 {newCodes.map(code => <Typography key={code} fontFamily="monospace">{code}</Typography>)}
               </Box>
