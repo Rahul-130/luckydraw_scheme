@@ -233,6 +233,17 @@ export default function BooksPage() {
     [navigate]
   );
 
+  const bookSummary = useMemo(() => {
+    const active = books.filter(b => b.isActive).length;
+    const inactive = books.filter(b => !b.isActive).length;
+
+    return {
+        total: rowCount, // Use rowCount from the hook for the true total
+        active,
+        inactive
+    };
+  }, [books, rowCount]);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box
@@ -260,44 +271,54 @@ export default function BooksPage() {
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
-            justifyContent="space-between"
+            alignItems={{ sm: 'center' }}
             sx={{ mb: 2 }}
           >
-            <Stack direction="row" spacing={1}>
-              <TextField
-                label="Search Books"
-                variant="outlined"
-                size="small"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+            {/* Left side: Search and Action Buttons */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
+                <TextField
+                  label="Search Books"
+                  variant="outlined"
+                  size="small"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  sx={{
+                    flexGrow: 1,
+                    "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                  }}
+                  InputProps={{
+                    startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
+                  }}
+                />
+                <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
+                  Add Book
+                </Button>
+            </Box>
+
+            {/* Right side: Summary Box */}
+            <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
+              <Box
                 sx={{
-                  width: { xs: "100%", sm: "400px", md: "600px" },
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 2,
+                  textAlign: 'center',
                 }}
-                InputProps={{
-                  startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
-                }}
-              />
-            
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                color="primary"
-                onClick={() => setOpen(true)}
               >
-                Add Book
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Backup />}
-                color="secondary"
-                onClick={handleBackup}
-              >
-                Backup
-              </Button>
-            </Stack>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Total</Typography>
+                  <Typography variant="body1" fontWeight="bold">{bookSummary.total}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="success.main">Active</Typography>
+                  <Typography variant="body1" fontWeight="bold" color="success.main">{bookSummary.active}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="error">Inactive</Typography>
+                  <Typography variant="body1" fontWeight="bold" color="error">{bookSummary.inactive}</Typography>
+                </Box>
+              </Box>
+            </Paper>
           </Stack>
 
           <Paper

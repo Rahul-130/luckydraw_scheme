@@ -22,7 +22,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { Add, Edit, Delete, Payment, Search } from "@mui/icons-material";
+import { Add, Edit, Delete, Payment, Search, ArrowBack } from "@mui/icons-material";
 
 // Utility: debounce function to delay API calls
 function debounce(fn, delay) {
@@ -207,41 +207,36 @@ export default function CustomersPage() {
         {!bookId && <Navigate to="/books" replace />}
         {bookId && !book && <Alert severity="error">Book not found or you do not have access to it.</Alert>}
 
-        <Box
-  sx={{
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 1.5, // spacing between text
-    mb: 2,
-  }}
->
-  <Typography
-    variant="h4"
-    sx={{ fontWeight: "bold", color: "#222" }}
-  >
-    Customers
-  </Typography>
-
-  <Typography
-    variant="h5"
-    sx={{ color: "text.secondary" }}
-  >
-    for Book: {book?.name}
-  </Typography>
-</Box>
-
-        
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+            <IconButton onClick={() => navigate('/books')}>
+              <ArrowBack />
+            </IconButton>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 1.5,
+                flexGrow: 1,
+              }}
+            >
+              <Typography variant="h4" sx={{ fontWeight: "bold", color: "#222" }}>
+                Customers
+              </Typography>
+              <Typography variant="h5" sx={{ color: "text.secondary" }}>
+                for Book: {book?.name}
+              </Typography>
+            </Box>
+        </Stack>
 
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={2}
-          justifyContent="space-between"
           alignItems={{ sm: 'center' }}
           sx={{ mb: 2 }}
         >
           {/* Left side: Search and Add Button */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
               <TextField
                 label="Search Customers"
                 variant="outlined"
@@ -249,7 +244,7 @@ export default function CustomersPage() {
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 sx={{
-                  width: { xs: "100%", sm: "300px", md: "400px" },
+                  flexGrow: 1,
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 1.5,
                   },
@@ -269,7 +264,7 @@ export default function CustomersPage() {
           </Box>
 
           {/* Right side: Summary Box */}
-          <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2 }}>
+          <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
             <Box
               sx={{
                 display: 'grid',
