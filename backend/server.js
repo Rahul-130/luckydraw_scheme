@@ -11,6 +11,7 @@ const paymentsRoutes = require('./api/payments');
 const luckyDrawRoutes = require('./api/luckyDraw');
 const winnersRoutes = require('./api/winners');
 const eligibleCustomersRoutes = require('./api/eligibleCustomers');
+const backupRoutes = require('./api/backup');
 
 const app = express();
 app.use(cors());
@@ -41,8 +42,8 @@ app.use('/api/customers', customersRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/lucky-draw', luckyDrawRoutes);
 app.use('/api/winners', winnersRoutes);
-
 app.use('/api/eligible-customers', eligibleCustomersRoutes);
+app.use('/api/backup', backupRoutes);
 
 
 const PORT = Number(process.env.PORT || 4000);

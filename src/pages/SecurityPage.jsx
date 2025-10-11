@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { disable2FA, regenerate2FACodes, verifyPassword } from '../services/api';
+import { disable2FA, regenerate2FACodes, verifyPassword, downloadBackup } from '../services/api';
 import {
   Container,
   Typography,
@@ -19,7 +19,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { ContentCopy as ContentCopyIcon, Visibility, VisibilityOff } from '@mui/icons-material';
+import { ContentCopy as ContentCopyIcon, Visibility, VisibilityOff, CloudDownload } from '@mui/icons-material';
 import { useSnackbar } from '../context/SnackbarContext';
 
 export default function SecurityPage() {
@@ -90,6 +90,33 @@ export default function SecurityPage() {
     }
   };
 
+  const handleDownloadBackup = async () => {
+    setLoading(true);
+    setError('');
+    showSnackbar('Backup process started... this may take a moment.', 'info');
+    try {
+      const response = await downloadBackup(token);
+      // Create a link to download the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'backup.zip';
+      if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch.length === 2) filename = filenameMatch[1];
+      }
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to download backup.');
+      showSnackbar('Failed to download backup.', 'error');
+    } finally { setLoading(false); }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 64px)' }}> {/* Assuming NavBar is 64px tall */}
       <Container component="main" maxWidth="sm" sx={{ flexGrow: 1 }}>
@@ -121,6 +148,15 @@ export default function SecurityPage() {
             </Button>
           </Box>
         )}
+
+        <Typography variant="h6" sx={{ mt: 4, borderTop: '1px solid #eee', pt: 3 }}>Application Backup</Typography>
+        <Box sx={{ mt: 2 }}>
+            <Alert severity="info">Download a zip file containing all application data as CSV files.</Alert>
+            <Button variant="contained" startIcon={<CloudDownload />} sx={{ mt: 2 }} onClick={handleDownloadBackup} disabled={loading}>
+              {loading ? 'Generating...' : 'Download Backup'}
+            </Button>
+        </Box>
+
       </Paper>
 
       {/* Disable 2FA Modal */}

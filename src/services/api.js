@@ -160,3 +160,9 @@ export const completePasswordReset = (username, otp, newPassword) =>
         otp,
         newPassword
     });
+
+export const downloadBackup = (token) =>
+    axios.post(`${API_URL}/backup/download`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob', // Important for file downloads
+    });
