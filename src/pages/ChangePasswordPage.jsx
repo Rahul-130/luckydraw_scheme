@@ -10,15 +10,20 @@ import {
   Box,
   Paper,
   Alert,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import { changePassword } from "../services/api";
-import { LockReset } from "@mui/icons-material";
+import { LockReset, Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function ChangePasswordPage() {
   const { token, logout } = useAuth();
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [error, setError] = useState("");
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -83,9 +88,47 @@ export default function ChangePasswordPage() {
             Change Password
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: "100%" }}>
-            <TextField label="Old Password" type="password" fullWidth margin="normal" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
-            <TextField label="New Password" type="password" fullWidth margin="normal" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""} />
-            <TextField label="Confirm New Password" type="password" fullWidth margin="normal" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} error={confirmNewPassword.length > 0 && newPassword !== confirmNewPassword} helperText={confirmNewPassword.length > 0 && newPassword !== confirmNewPassword ? "Passwords do not match" : ""} />
+            <TextField label="Old Password" type={showOldPassword ? 'text' : 'password'} fullWidth margin="normal" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowOldPassword(!showOldPassword)} edge="end">
+                    {showOldPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }} />
+            <TextField label="New Password" type={showNewPassword ? 'text' : 'password'} fullWidth margin="normal" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""} InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
+                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }} />
+            <TextField
+              label="Confirm New Password"
+              type={showConfirmNewPassword ? 'text' : 'password'}
+              fullWidth
+              margin="normal"
+              value={confirmNewPassword}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
+              error={confirmNewPassword.length > 0 && newPassword !== confirmNewPassword}
+              helperText={
+                confirmNewPassword.length > 0 && newPassword !== confirmNewPassword
+                  ? "Passwords do not match"
+                  : ""
+              }
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)} edge="end">
+                      {showConfirmNewPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
             {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
             <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3, mb: 2, py: 1.5, transition: 'all 0.2s', '&:hover': { transform: 'scale(1.02)' } }} disabled={isButtonDisabled}>
               Change Password

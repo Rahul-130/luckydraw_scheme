@@ -7,9 +7,11 @@ import {
   Typography,
   Box,
   Alert,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { PersonAdd } from "@mui/icons-material";
+import { PersonAdd, Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -21,6 +23,8 @@ export default function SignupPage() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -92,8 +96,27 @@ export default function SignupPage() {
               <TextField name="name" label="Full Name" fullWidth margin="normal" value={form.name} onChange={handleChange} required autoFocus />
               <TextField name="phone" label="Phone Number" fullWidth margin="normal" value={form.phone} onChange={handleChange} required inputProps={{ maxLength: 10 }} error={form.phone.length > 0 && form.phone.length !== 10} helperText={form.phone.length > 0 && form.phone.length !== 10 ? "Phone number must be 10 digits" : ""} />
               <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required />
-              <TextField name="password" label="Password" type="password" fullWidth margin="normal" value={form.password} onChange={handleChange} required error={form.password.length > 0 && form.password.length < 8} helperText={form.password.length > 0 && form.password.length < 8 ? "Password must be at least 8 characters" : ""} />
-              <TextField name="confirmPassword" label="Confirm Password" type="password" fullWidth margin="normal" value={form.confirmPassword} onChange={handleChange} required error={form.confirmPassword.length > 0 && form.password !== form.confirmPassword} helperText={form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? "Passwords do not match" : ""} />
+              <TextField name="password" label="Password" type={showPassword ? 'text' : 'password'} fullWidth margin="normal" value={form.password} onChange={handleChange} required error={form.password.length > 0 && form.password.length < 8} helperText={form.password.length > 0 && form.password.length < 8 ? "Password must be at least 8 characters" : ""} InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }} />
+              <TextField name="confirmPassword" label="Confirm Password" type={showConfirmPassword ? 'text' : 'password'} fullWidth margin="normal" value={form.confirmPassword} onChange={handleChange} required error={form.confirmPassword.length > 0 && form.password !== form.confirmPassword} helperText={form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? "Passwords do not match" : ""} InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }} />
             </div>
             {error && <Alert severity="error" className="!mt-4 w-full">{error}</Alert>}
             {success && <Alert severity="success" className="!mt-4 w-full">{success}</Alert>}

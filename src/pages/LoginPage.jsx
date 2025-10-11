@@ -14,8 +14,10 @@ import {
   DialogContent,
   DialogActions,
   Link,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
-import { Login as LoginIcon, VpnKey, Lock } from "@mui/icons-material";
+import { Login as LoginIcon, VpnKey, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function LoginPage() {
     const { login: loginUser } = useAuth();
@@ -24,6 +26,11 @@ export default function LoginPage() {
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
     const [loginMethod, setLoginMethod] = useState('password');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showOtp, setShowOtp] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+
+
     const navigate = useNavigate();
 
     // State for Password Reset Modal
@@ -131,9 +138,34 @@ export default function LoginPage() {
               {error && <Alert severity="error" className="w-full">{error}</Alert>}
               <TextField required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
               {loginMethod === 'password' ? (
-                <TextField required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+                <TextField
+                  required
+                  fullWidth
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
               ) : (
-                <TextField required fullWidth label="Authenticator OTP" type="text" value={otp} onChange={(e) => setOtp(e.target.value)} />
+                <TextField required fullWidth label="Authenticator OTP" type={showOtp ? 'text' : 'password'} value={otp} onChange={(e) => setOtp(e.target.value)} InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
+                        {showOtp ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }} />
               )}
             </div>
             <Button type="submit" fullWidth variant="contained" className="!mt-6 !py-3">
@@ -166,8 +198,24 @@ export default function LoginPage() {
             ) : (
                 <>
                     <Typography variant="body2" className="!mb-4">Enter the OTP from your authenticator app and your new password.</Typography>
-                    <TextField margin="dense" label="Authenticator OTP" type="text" fullWidth variant="standard" value={resetOtp} onChange={(e) => setResetOtp(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""}/>
-                    <TextField margin="dense" label="New Password" type="password" fullWidth variant="standard" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                    <TextField margin="dense" label="Authenticator OTP" type={showOtp ? 'text' : 'password'} fullWidth variant="standard" value={resetOtp} onChange={(e) => setResetOtp(e.target.value)} InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
+                            {showOtp ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}/>
+                    <TextField margin="dense" label="New Password" type={showNewPassword ? 'text' : 'password'} fullWidth variant="standard" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""} InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
+                            {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}/>
                     
                 </>
             )}

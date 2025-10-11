@@ -15,9 +15,11 @@ import {
   DialogTitle,
   TextField,
   CircularProgress,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useNavigate } from 'react-router-dom';
+import { ContentCopy as ContentCopyIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useSnackbar } from '../context/SnackbarContext';
 
 export default function SecurityPage() {
@@ -34,6 +36,8 @@ export default function SecurityPage() {
   const [newCodes, setNewCodes] = useState([]);
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
 
   const handleDisable2FA = async () => {
     setLoading(true);
@@ -120,15 +124,31 @@ export default function SecurityPage() {
       </Paper>
 
       {/* Disable 2FA Modal */}
-      <Dialog open={disableModalOpen} onClose={() => { setDisableModalOpen(false); setError(''); setPassword(''); setOtp(''); }}>
+      <Dialog open={disableModalOpen} onClose={() => { setDisableModalOpen(false); setError(''); setPassword(''); setOtp(''); setShowPassword(false); setShowOtp(false); }}>
         <DialogTitle>Disable Two-Factor Authentication</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <DialogContentText>
             For your security, please enter your current password OR an OTP/Recovery code to disable 2FA.
           </DialogContentText>
-          <TextField autoFocus margin="dense" label="Password (optional)" type="password" fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <TextField margin="dense" label="OTP or Recovery Code (optional)" type="text" fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} />
+          <TextField autoFocus margin="dense" label="Password (optional)" type={showPassword ? 'text' : 'password'} fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }} />
+          <TextField margin="dense" label="OTP or Recovery Code (optional)" type={showOtp ? 'text' : 'password'} fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
+                  {showOtp ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDisableModalOpen(false)}>Cancel</Button>
@@ -139,7 +159,7 @@ export default function SecurityPage() {
       </Dialog>
 
       {/* Regenerate Codes Modal */}
-      <Dialog open={regenerateModalOpen} onClose={() => { setRegenerateModalOpen(false); setNewCodes([]); setError(''); setPassword(''); setOtp(''); }} maxWidth="xs" fullWidth>
+      <Dialog open={regenerateModalOpen} onClose={() => { setRegenerateModalOpen(false); setNewCodes([]); setError(''); setPassword(''); setOtp(''); setShowPassword(false); setShowOtp(false); }} maxWidth="xs" fullWidth>
         <DialogTitle>Regenerate Recovery Codes</DialogTitle>
         <DialogContent>
           {error && !newCodes.length && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -165,8 +185,24 @@ export default function SecurityPage() {
               <DialogContentText>
                 For your security, please enter your current password OR an OTP/Recovery code to generate new recovery codes. This will invalidate all of your old ones.
               </DialogContentText>
-              <TextField autoFocus margin="dense" label="Password (optional)" type="password" fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} />
-              <TextField margin="dense" label="OTP or Recovery Code (optional)" type="text" fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} />
+              <TextField autoFocus margin="dense" label="Password (optional)" type={showPassword ? 'text' : 'password'} fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }} />
+              <TextField margin="dense" label="OTP or Recovery Code (optional)" type={showOtp ? 'text' : 'password'} fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
+                      {showOtp ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }} />
             </>
           )}
         </DialogContent>

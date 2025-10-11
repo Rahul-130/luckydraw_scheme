@@ -11,15 +11,19 @@ import {
   Alert,
   CircularProgress,
   Paper,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { ContentCopy as ContentCopyIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useSnackbar } from '../context/SnackbarContext';
 
 export default function Setup2FAPage() {
   const { token, user, login: updateUser } = useAuth();
   const { showSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   const [qrCode, setQrCode] = useState('');
   const [otp, setOtp] = useState('');
+  const [showOtp, setShowOtp] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -117,7 +121,16 @@ export default function Setup2FAPage() {
                 2. Enter the 6-digit code from your app below.
               </Typography>
               <form onSubmit={handleSubmit}>
-                <TextField margin="normal" required fullWidth label="6-Digit OTP Code" value={otp} onChange={(e) => setOtp(e.target.value)} autoFocus />
+                <TextField margin="normal" required fullWidth label="6-Digit OTP Code" value={otp} onChange={(e) => setOtp(e.target.value)} autoFocus type={showOtp ? 'text' : 'password'} InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
+                        {showOtp ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                />
                 <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
                   Verify & Enable
                 </Button>
