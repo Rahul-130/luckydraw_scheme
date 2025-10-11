@@ -157,7 +157,7 @@ export default function LoginPage() {
                   }}
                 />
               ) : (
-                <TextField required fullWidth label="Authenticator OTP" type={showOtp ? 'text' : 'password'} value={otp} onChange={(e) => setOtp(e.target.value)} InputProps={{
+                <TextField required fullWidth label="Authenticator OTP or Recovery Code" type={showOtp ? 'text' : 'password'} value={otp} onChange={(e) => setOtp(e.target.value)} InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
@@ -197,8 +197,8 @@ export default function LoginPage() {
                 </>
             ) : (
                 <>
-                    <Typography variant="body2" className="!mb-4">Enter the OTP from your authenticator app and your new password.</Typography>
-                    <TextField margin="dense" label="Authenticator OTP" type={showOtp ? 'text' : 'password'} fullWidth variant="standard" value={resetOtp} onChange={(e) => setResetOtp(e.target.value)} InputProps={{
+                    <Typography variant="body2" className="!mb-4">Enter an OTP from your authenticator app or a recovery code, along with your new password.</Typography>
+                    <TextField margin="dense" label="Authenticator OTP or Recovery Code" type={showOtp ? 'text' : 'password'} fullWidth variant="standard" value={resetOtp} onChange={(e) => setResetOtp(e.target.value)} InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
