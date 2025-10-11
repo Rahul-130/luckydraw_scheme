@@ -25,10 +25,10 @@ export default function App() {
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/setup-2fa" element={<Setup2FAPage />} />
   
             {/* Private routes using the MainLayout */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/setup-2fa" element={<Setup2FAPage />} />
               <Route path="/books" element={<BooksPage />} />
               <Route path="/books/:bookId/customers" element={<CustomersPage />} />
               <Route path="/books/:bookId/customers/:customerId/payments" element={<PaymentsPage />} />
