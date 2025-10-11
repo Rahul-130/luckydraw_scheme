@@ -97,6 +97,17 @@ export default function WinnersListPage() {
 
     const { showSnackbar } = useSnackbar();
 
+    const winnerSummary = useMemo(() => {
+        const total = winners.length;
+        const activeBookWinners = winners.filter(w => w.isBookActive).length;
+        const inactiveBookWinners = total - activeBookWinners;
+        return {
+            total,
+            activeBookWinners,
+            inactiveBookWinners
+        };
+    }, [winners]);
+
     return (
         <Box
         sx={{
@@ -114,27 +125,42 @@ export default function WinnersListPage() {
             <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={2}
-                justifyContent="space-between"
+                alignItems={{ sm: 'center' }}
                 sx={{ mb: 2 }}
             >
-                <Stack direction="row" spacing={1}>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
                     <TextField
                         label="Search Winners"
                         variant="outlined"
                         size="small"
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        sx={{
-                            width: { xs: "100%", sm: "400px", md: "600px" },
-                            "& .MuiOutlinedInput-root": {
-                                borderRadius: 1.5,
-                            },
-                        }}
+                        sx={{ flexGrow: 1, "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
                         InputProps={{
                             startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
                         }}
                     />
-                </Stack>
+                </Box>
+                <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, textAlign: 'center' }}>
+                        <Box>
+                            <Typography variant="caption" color="text.secondary">Total</Typography>
+                            <Typography variant="body1" fontWeight="bold">{winnerSummary.total}</Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="caption" color="success.main">Active Book</Typography>
+                            <Typography variant="body1" fontWeight="bold" color="success.main">
+                                {winnerSummary.activeBookWinners}
+                            </Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="caption" color="error">Inactive Book</Typography>
+                            <Typography variant="body1" fontWeight="bold" color="error">
+                                {winnerSummary.inactiveBookWinners}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Paper>
             </Stack>
 
             <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
@@ -144,12 +170,19 @@ export default function WinnersListPage() {
                     columns={columns}
                     loading={loading}
                     pageSizeOptions={[5, 10, 20]}
+                    getRowClassName={(params) =>
+                        !params.row.isBookActive && "super-app-theme--inactive"
+                    }
                     sx={{
                         "& .MuiDataGrid-row:hover": { backgroundColor: "rgba(0, 123, 255, 0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
                         "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
                         "& .MuiDataGrid-columnHeaders": { backgroundColor: "#fff", color: "#000", fontWeight: "bold" },
                         borderRadius: 2,
                         "& .MuiDataGrid-cell": { py: 1.2 },
+                        "& .super-app-theme--inactive": {
+                            backgroundColor: "rgba(211, 47, 47, 0.1)",
+                            "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.2)" },
+                        },
                     }}
                 />
             </Box>

@@ -334,6 +334,11 @@ export default function BooksPage() {
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
                 paginationMode="server"
+                getRowClassName={(params) =>
+                  params.row.isActive
+                    ? "super-app-theme--active"
+                    : "super-app-theme--inactive"
+                }
                 pageSizeOptions={[5, 10, 20]}
                 sx={{
                   "& .MuiDataGrid-row:hover": {
@@ -348,6 +353,13 @@ export default function BooksPage() {
                   },
                   borderRadius: 2,
                   "& .MuiDataGrid-cell": { py: 1.2 },
+                  "& .super-app-theme--active": {
+                    "&:hover": { backgroundColor: "rgba(46, 125, 50, 0.2)" },
+                  },
+                  "& .super-app-theme--inactive": {
+                    backgroundColor: "rgba(211, 47, 47, 0.1)",
+                    "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.2)" },
+                  },
                 }}
               />
             </Box>

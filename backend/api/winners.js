@@ -18,7 +18,7 @@ router.get('/', requireAuth, async (req, res) => {
     // This query reads directly from the denormalized winner table,
     // filtered by books owned by the user.
     const result = await conn.execute(
-      `SELECT w.ID, w.BOOK_ID, w.CUSTOMER_ID, w.CUSTOMER_NAME, w.BOOK_NAME, w.ADDRESS, w.PHONE, w.WIN_DATE
+      `SELECT w.ID, w.BOOK_ID, w.CUSTOMER_ID, w.CUSTOMER_NAME, w.BOOK_NAME, w.ADDRESS, w.PHONE, w.WIN_DATE, b.IS_ACTIVE
        FROM winner w
        JOIN books b ON w.BOOK_ID = b.ID
        WHERE b.OWNER_ID = :owner_id ${search ? searchClause : ''}
@@ -36,7 +36,8 @@ router.get('/', requireAuth, async (req, res) => {
       bookName: row.BOOK_NAME,
       address: row.ADDRESS,
       phone: row.PHONE,
-      drawDate: row.WIN_DATE.toISOString().split('T')[0] // Format date to YYYY-MM-DD
+      drawDate: row.WIN_DATE.toISOString().split('T')[0], // Format date to YYYY-MM-DD
+      isBookActive: row.IS_ACTIVE === 1
     }));
 
     res.json(winners);
