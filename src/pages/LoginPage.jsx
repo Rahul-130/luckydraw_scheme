@@ -18,6 +18,7 @@ import {
   IconButton,
 } from "@mui/material";
 import { Login as LoginIcon, VpnKey, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
+import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 
 export default function LoginPage() {
     const { login: loginUser } = useAuth();
@@ -215,7 +216,8 @@ export default function LoginPage() {
                           </IconButton>
                         </InputAdornment>
                       ),
-                    }}/>
+                    }} />
+                    {newPassword && <PasswordStrengthMeter password={newPassword} />}
                     
                 </>
             )}

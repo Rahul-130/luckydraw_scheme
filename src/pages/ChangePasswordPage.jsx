@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { changePassword } from "../services/api";
 import { LockReset, Visibility, VisibilityOff } from "@mui/icons-material";
+import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 
 export default function ChangePasswordPage() {
   const { token, logout } = useAuth();
@@ -97,7 +98,7 @@ export default function ChangePasswordPage() {
                 </InputAdornment>
               ),
             }} />
-            <TextField label="New Password" type={showNewPassword ? 'text' : 'password'} fullWidth margin="normal" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""} InputProps={{
+            <TextField label="New Password" name="newPassword" type={showNewPassword ? 'text' : 'password'} fullWidth margin="normal" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={newPassword.length > 0 && newPassword.length < 8} helperText={newPassword.length > 0 && newPassword.length < 8 ? "Password must be at least 8 characters" : ""} InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
@@ -106,6 +107,7 @@ export default function ChangePasswordPage() {
                 </InputAdornment>
               ),
             }} />
+            {newPassword && <PasswordStrengthMeter password={newPassword} />}
             <TextField
               label="Confirm New Password"
               type={showConfirmNewPassword ? 'text' : 'password'}

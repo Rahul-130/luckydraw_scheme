@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { PersonAdd, Visibility, VisibilityOff } from "@mui/icons-material";
+import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -105,6 +106,7 @@ export default function SignupPage() {
                   </InputAdornment>
                 ),
               }} />
+              {form.password && <PasswordStrengthMeter password={form.password} />}
               <TextField name="confirmPassword" label="Confirm Password" type={showConfirmPassword ? 'text' : 'password'} fullWidth margin="normal" value={form.confirmPassword} onChange={handleChange} required error={form.confirmPassword.length > 0 && form.password !== form.confirmPassword} helperText={form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? "Passwords do not match" : ""} InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
