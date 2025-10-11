@@ -103,6 +103,20 @@ export default function CustomersPage() {
         refetchCustomers();
     };
 
+    const customerSummary = useMemo(() => {
+        const total = customers.length;
+        const winners = customers.filter(c => c.isFrozen).length;
+        const eligible = customers.filter(c => !c.isFrozen && c.missedPayments <= 1).length;
+        const notEligible = customers.filter(c => !c.isFrozen && c.missedPayments > 1).length;
+
+        return {
+            total,
+            winners,
+            eligible,
+            notEligible
+        };
+    }, [customers]);
+
     const columns = useMemo(() => [
         { field: 'id', headerName: 'ID', width: 90 },
         { field: 'name', headerName: 'Name', width: 200 },
@@ -223,34 +237,65 @@ export default function CustomersPage() {
           direction={{ xs: "column", sm: "row" }}
           spacing={2}
           justifyContent="space-between"
+          alignItems={{ sm: 'center' }}
           sx={{ mb: 2 }}
         >
-          <Stack direction="row" spacing={1}>
-            <TextField
-              label="Search Customers"
-              variant="outlined"
-              size="small"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+          {/* Left side: Search and Add Button */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <TextField
+                label="Search Customers"
+                variant="outlined"
+                size="small"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                sx={{
+                  width: { xs: "100%", sm: "300px", md: "400px" },
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 1.5,
+                  },
+                }}
+                InputProps={{
+                  startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
+                }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                color="primary"
+                onClick={() => setOpen(true)}
+              >
+                Add Customer
+              </Button>
+          </Box>
+
+          {/* Right side: Summary Box */}
+          <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2 }}>
+            <Box
               sx={{
-                width: { xs: "100%", sm: "400px", md: "600px" },
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 1.5,
-                },
+                display: 'grid',
+                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, // 2x2 on small screens, 4x1 on larger
+                gap: 2,
+                textAlign: 'center',
               }}
-              InputProps={{
-                startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
-              }}
-            />
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              color="primary"
-              onClick={() => setOpen(true)}
             >
-              Add Customer
-            </Button>
-          </Stack>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Total</Typography>
+                <Typography variant="body1" fontWeight="bold">{customerSummary.total}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="success.main">Winners</Typography>
+                <Typography variant="body1" fontWeight="bold" color="success.main">{customerSummary.winners}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="primary">Eligible</Typography>
+                <Typography variant="body1" fontWeight="bold" color="primary">{customerSummary.eligible}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="error">Not Eligible</Typography>
+                <Typography variant="body1" fontWeight="bold" color="error">{customerSummary.notEligible}</Typography>
+              </Box>
+            </Box>
+          </Paper>
         </Stack>
 
         <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
