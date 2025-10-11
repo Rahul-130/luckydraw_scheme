@@ -58,6 +58,25 @@ export default function PaymentsPage() {
         });
     }, [bookId, customerId, token, is_frozen]);
 
+    const getNextPaymentDetails = () => {
+        if (!book || payments.length === 0) {
+            // If no payments, default to book start month and no amount
+            return { month: book?.startMonthIso || '', amount: '' };
+        }
+
+        // Find the most recent payment
+        const sortedPayments = [...payments].sort((a, b) => b.monthIso.localeCompare(a.monthIso));
+        const lastPayment = sortedPayments[0];
+
+        // Calculate next month
+        const [year, month] = lastPayment.monthIso.split('-').map(Number);
+        const nextMonthDate = new Date(year, month, 1); // month is 0-indexed for Date object
+        const nextYear = nextMonthDate.getFullYear();
+        const nextMonth = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
+
+        return { month: `${nextYear}-${nextMonth}`, amount: lastPayment.amount };
+    };
+
     const handleCreate = async () => {
       try {
         
@@ -93,6 +112,16 @@ export default function PaymentsPage() {
         setPaymentToDelete(null);
         setConfirmOpen(false);
         getPayments(bookId, customerId, token).then(res => setPayments(res.data));
+    };
+
+    const handleOpenAddDialog = () => {
+        const { month, amount } = getNextPaymentDetails();
+        setForm({
+            amount: amount,
+            monthIso: month,
+            receiptNo: ''
+        });
+        setOpen(true);
     };
 
   return (
@@ -134,7 +163,8 @@ export default function PaymentsPage() {
               variant="contained"
               startIcon={<Add />}
               color="primary"
-              onClick={() => setOpen(true)}
+              onClick={handleOpenAddDialog}
+              disabled={is_frozen}
             >
               Add Payment
             </Button>
