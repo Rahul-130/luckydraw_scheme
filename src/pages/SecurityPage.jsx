@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { disable2FA, regenerate2FACodes } from '../services/api';
+import { disable2FA, regenerate2FACodes, verifyPassword } from '../services/api';
 import {
   Container,
   Typography,
@@ -35,12 +35,14 @@ export default function SecurityPage() {
   const handleDisable2FA = async () => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
       const response = await disable2FA(token, password, otp);
       updateUser(response.data.user, token);
       setSuccess('2FA has been disabled successfully.');
       setDisableModalOpen(false);
       setPassword('');
+      setOtp('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to disable 2FA.');
     } finally {
@@ -51,10 +53,18 @@ export default function SecurityPage() {
   const handleRegenerateCodes = async () => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
+      // First, verify the user's credentials
+      await verifyPassword(token, password, otp);
+
+      // If verification is successful, regenerate the codes
       const response = await regenerate2FACodes(token);
       setNewCodes(response.data.recoveryCodes);
       setSuccess('New recovery codes have been generated. Please save them.');
+      // Clear password and OTP fields after successful regeneration
+      setPassword('');
+      setOtp('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to regenerate codes.');
     } finally {
@@ -63,7 +73,8 @@ export default function SecurityPage() {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 64px)' }}> {/* Assuming NavBar is 64px tall */}
+      <Container component="main" maxWidth="sm" sx={{ flexGrow: 1 }}>
       <Paper elevation={3} sx={{ mt: 8, p: 4 }}>
         <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
           Security Settings
@@ -95,9 +106,10 @@ export default function SecurityPage() {
       </Paper>
 
       {/* Disable 2FA Modal */}
-      <Dialog open={disableModalOpen} onClose={() => setDisableModalOpen(false)}>
+      <Dialog open={disableModalOpen} onClose={() => { setDisableModalOpen(false); setError(''); setPassword(''); setOtp(''); }}>
         <DialogTitle>Disable Two-Factor Authentication</DialogTitle>
         <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <DialogContentText>
             For your security, please enter your current password OR an OTP/Recovery code to disable 2FA.
           </DialogContentText>
@@ -113,9 +125,10 @@ export default function SecurityPage() {
       </Dialog>
 
       {/* Regenerate Codes Modal */}
-      <Dialog open={regenerateModalOpen} onClose={() => setRegenerateModalOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={regenerateModalOpen} onClose={() => { setRegenerateModalOpen(false); setNewCodes([]); setError(''); setPassword(''); setOtp(''); }} maxWidth="xs" fullWidth>
         <DialogTitle>Regenerate Recovery Codes</DialogTitle>
         <DialogContent>
+          {error && !newCodes.length && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {newCodes.length > 0 ? (
              <>
               <Alert severity="warning" sx={{ my: 2, textAlign: 'left' }}>
@@ -126,14 +139,18 @@ export default function SecurityPage() {
               </Box>
             </>
           ) : (
-            <DialogContentText>
-              Are you sure you want to generate new recovery codes? This will invalidate all of your old ones.
-            </DialogContentText>
+            <>
+              <DialogContentText>
+                For your security, please enter your current password OR an OTP/Recovery code to generate new recovery codes. This will invalidate all of your old ones.
+              </DialogContentText>
+              <TextField autoFocus margin="dense" label="Password (optional)" type="password" fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <TextField margin="dense" label="OTP or Recovery Code (optional)" type="text" fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} />
+            </>
           )}
         </DialogContent>
         <DialogActions>
           {newCodes.length > 0 ? (
-            <Button onClick={() => { setRegenerateModalOpen(false); setNewCodes([]); }} variant="contained">Done</Button>
+            <Button onClick={() => { setRegenerateModalOpen(false); setNewCodes([]); setSuccess(''); }} variant="contained">Done</Button>
           ) : (
             <>
               <Button onClick={() => setRegenerateModalOpen(false)}>Cancel</Button>
@@ -142,6 +159,7 @@ export default function SecurityPage() {
           )}
         </DialogActions>
       </Dialog>
-    </Container>
+      </Container>
+    </Box>
   );
 }

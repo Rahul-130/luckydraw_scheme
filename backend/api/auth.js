@@ -69,6 +69,29 @@ router.get('/me', requireAuth, async (req, res) => {
   finally { await conn.close(); }
 });
 
+router.post('/verify-password', requireAuth, async (req, res) => {
+  const { password, otp } = req.body;
+  if (!password && !otp) return res.status(400).json({ message: 'Password or OTP/Recovery Code is required for verification.' });
+
+  const conn = await getConnection();
+  try {
+    const result = await conn.execute(`SELECT * FROM users WHERE id = :id`, { id: req.user.id });
+    const userRow = result.rows[0];
+
+    let isAuthorized = false;
+    if (password) {
+      isAuthorized = await bcrypt.compare(String(password), userRow.PASSWORD_HASH);
+    } else if (otp) {
+      const { userRow: verifiedUser } = await verifyUserOtp(conn, userRow.EMAIL, otp);
+      if (verifiedUser) isAuthorized = true;
+    }
+
+    if (!isAuthorized) return res.status(401).json({ message: 'Invalid credentials provided.' });
+    res.json({ message: 'Verification successful.' });
+  } catch (e) { console.error('Verification error:', e); res.status(500).json({ message: 'Internal server error' }); }
+  finally { await conn.close(); }
+});
+
 // Password change - if same password, return error
 router.post('/change-password', requireAuth, async (req, res) => {
   const { oldPassword, newPassword } = req.body || {};
