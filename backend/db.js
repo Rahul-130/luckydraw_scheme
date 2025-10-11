@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
+oracledb.fetchAsString = [oracledb.CLOB]; // Automatically fetch CLOBs as strings
 
 let pool;
 async function getPool() {
@@ -29,7 +30,7 @@ async function initSchema() {
       email VARCHAR2(255) UNIQUE NOT NULL,
       password_hash VARCHAR2(255) NOT NULL,
       is_2fa_enabled NUMBER(1) DEFAULT 0 NOT NULL,
-      two_fa_secret VARCHAR2(255)
+      two_fa_secret VARCHAR2(255),
       two_fa_recovery_codes CLOB
     )'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;`);
 

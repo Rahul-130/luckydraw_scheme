@@ -180,23 +180,24 @@ router.post('/2fa/enable', requireAuth, async (req, res) => {
 });
 
 router.post('/2fa/disable', requireAuth, async (req, res) => {
-  const { password } = req.body;
-  if (!password) return res.status(400).json({ message: 'Password is required to disable 2FA.' });
+  const { password, otp } = req.body;
+  if (!password && !otp) return res.status(400).json({ message: 'Password or OTP/Recovery Code is required to disable 2FA.' });
 
   const conn = await getConnection();
   try {
     const result = await conn.execute(`SELECT * FROM users WHERE id = :id`, { id: req.user.id });
     const userRow = result.rows[0];
 
-    const isPasswordValid = await bcrypt.compare(String(password), userRow.PASSWORD_HASH);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid password.' });
+    let isAuthorized = false;
+    if (password) {
+      isAuthorized = await bcrypt.compare(String(password), userRow.PASSWORD_HASH);
+    } else if (otp) {
+      // Pass the existing connection to verifyUserOtp
+      const { userRow: verifiedUser } = await verifyUserOtp(conn, userRow.EMAIL, otp);
+      if (verifiedUser) isAuthorized = true;
     }
-
-    await conn.execute(
-      `UPDATE users SET is_2fa_enabled = 0, two_fa_secret = NULL, two_fa_recovery_codes = NULL WHERE id = :id`,
-      { id: req.user.id }
-    );
+    if (!isAuthorized) return res.status(401).json({ message: 'Invalid credentials provided.' });
+    await conn.execute(`UPDATE users SET is_2fa_enabled = 0, two_fa_secret = NULL, two_fa_recovery_codes = NULL WHERE id = :id`, { id: req.user.id });
     await conn.commit();
 
     const user = { id: String(userRow.ID), name: userRow.NAME, phone: userRow.PHONE, email: userRow.EMAIL, is2FAEnabled: false };
@@ -231,54 +232,63 @@ router.post('/2fa/regenerate-codes', requireAuth, async (req, res) => {
  * @param {string} otp The one-time password.
  * @returns {Promise<{userRow: object}|{error: string, status: number}>}
  */
-async function verifyUserOtp(username, otp) {
-  if (!username || !otp) {
-    return { error: 'Username and OTP are required', status: 400 };
-  }
-  const conn = await getConnection();
-  try {
-    const result = await conn.execute(`SELECT * FROM users WHERE LOWER(email) = :email`, { email: String(username).toLowerCase() });
-    if (!result.rows.length) {
-      return { error: 'Invalid credentials', status: 401 };
-    }
-    const userRow = result.rows[0];
-    if (userRow.IS_2FA_ENABLED !== 1) {
-      return { error: '2FA is not enabled for this account', status: 400 };
-    }
-
-    // Try OTP first
-    if (userRow.TWO_FA_SECRET) {
-      const verified = speakeasy.totp.verify({ secret: userRow.TWO_FA_SECRET, encoding: 'base32', token: otp });
-      if (verified) return { userRow };
-    }
-
-    // If OTP fails, try recovery codes
-    const storedCodes = JSON.parse(userRow.TWO_FA_RECOVERY_CODES || '[]');
-    let validCodeFound = false;
-    const updatedCodes = [];
-
-    for (const hashedCode of storedCodes) {
-      const match = await bcrypt.compare(otp, hashedCode);
-      if (match && !validCodeFound) {
-        validCodeFound = true; // Mark as used, but don't add back to the list
-      } else {
-        updatedCodes.push(hashedCode);
-      }
-    }
-
-    if (!validCodeFound) return { error: 'Invalid OTP or Recovery Code', status: 401 };
-    await conn.execute(`UPDATE users SET two_fa_recovery_codes = :codes WHERE id = :id`, { codes: JSON.stringify(updatedCodes), id: userRow.ID });
-    return { userRow };
-  } finally {
-    await conn.close();
-  }
-}
+ async function verifyUserOtp(conn, username, otp) {
+   if (!username || !otp) {
+     return { error: 'Username and OTP are required', status: 400 };
+   }
+ 
+   try {
+     const result = await conn.execute(`SELECT * FROM users WHERE LOWER(email) = :email`, { email: String(username).toLowerCase() });
+     if (!result.rows.length) {
+       return { error: 'Invalid credentials', status: 401 };
+     }
+     const userRow = result.rows[0];
+     if (userRow.IS_2FA_ENABLED !== 1) {
+       return { error: '2FA is not enabled for this account', status: 400 };
+     }
+ 
+     // Try OTP first
+     if (userRow.TWO_FA_SECRET) {
+       const verified = speakeasy.totp.verify({ secret: userRow.TWO_FA_SECRET, encoding: 'base32', token: otp });
+       if (verified) return { userRow };
+     }
+ 
+     // If OTP fails, try recovery codes
+     const recoveryCodesRaw = userRow.TWO_FA_RECOVERY_CODES;
+     const storedCodes = typeof recoveryCodesRaw === 'string'
+        ? JSON.parse(recoveryCodesRaw || '[]')
+        : (recoveryCodesRaw || []);
+     let validCodeFound = false;
+     const updatedCodes = [];
+ 
+     for (const hashedCode of storedCodes) {
+       const match = await bcrypt.compare(otp, hashedCode);
+       if (match && !validCodeFound) {
+         validCodeFound = true; // Mark as used, but don't add back to the list
+       } else {
+         updatedCodes.push(hashedCode);
+       }
+     }
+ 
+     if (!validCodeFound) return { error: 'Invalid OTP or Recovery Code', status: 401 };
+ 
+     await conn.execute(`UPDATE users SET two_fa_recovery_codes = :codes WHERE id = :id`, { codes: JSON.stringify(updatedCodes), id: userRow.ID });
+     // The calling function will commit, but for standalone calls like login, we need to commit here.
+     await conn.commit();
+     return { userRow };
+   } catch (e) {
+     console.error("Error in verifyUserOtp:", e);
+     return { error: 'An internal error occurred during OTP verification.', status: 500 };
+   }
+ }
 
 router.post('/login-otp', async (req, res) => {
   const { username, otp } = req.body;
+  const conn = await getConnection();
   try {
-    const { userRow, error, status } = await verifyUserOtp(username, otp);
+    const { userRow, error, status } = await verifyUserOtp(conn, username, otp);
     if (error) {
+      await conn.close();
       return res.status(status).json({ message: error });
     }
     const token = jwt.sign({ id: String(userRow.ID), email: userRow.EMAIL }, JWT_SECRET, { expiresIn: '1d' });
@@ -287,6 +297,8 @@ router.post('/login-otp', async (req, res) => {
   } catch (e) {
     console.error('Login with OTP error:', e);
     res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    if (conn) await conn.close();
   }
 });
 
@@ -312,13 +324,13 @@ router.post('/reset-password/complete', async (req, res) => {
     return res.status(400).json({ message: 'New password is required.' });
   }
 
-  const { error, status } = await verifyUserOtp(username, otp);
-  if (error) {
-    return res.status(status).json({ message: error });
-  }
-
   const conn = await getConnection();
   try {
+    const { userRow, error, status } = await verifyUserOtp(conn, username, otp);
+    if (error) {
+      await conn.close();
+      return res.status(status).json({ message: error });
+    }
     const hash = await bcrypt.hash(String(newPassword), 10);
     await conn.execute(`UPDATE users SET password_hash = :hash WHERE LOWER(email) = :email`, { hash, email: String(username).toLowerCase() });
     await conn.commit();

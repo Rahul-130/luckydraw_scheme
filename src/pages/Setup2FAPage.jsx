@@ -24,7 +24,8 @@ export default function Setup2FAPage() {
 
   useEffect(() => {
     // Redirect if user already has 2FA enabled or is not logged in
-    if (!token || user?.is2FAEnabled) {
+    // Do not redirect if we are showing recovery codes
+    if ((!token || user?.is2FAEnabled) && recoveryCodes.length === 0) {
       navigate('/books');
       return;
     }
@@ -41,7 +42,7 @@ export default function Setup2FAPage() {
     };
 
     fetchQRCode();
-  }, [token, user, navigate]);
+  }, [token, user, navigate, recoveryCodes.length]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

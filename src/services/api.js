@@ -129,8 +129,8 @@ export const enable2FA = (token, otp) =>
         headers: { Authorization: `Bearer ${token}` }
     });
 
-export const disable2FA = (token, password) =>
-    axios.post(`${API_URL}/auth/2fa/disable`, { password }, {
+export const disable2FA = (token, password, otp) =>
+    axios.post(`${API_URL}/auth/2fa/disable`, { password, otp }, {
         headers: { Authorization: `Bearer ${token}` }
     });
 

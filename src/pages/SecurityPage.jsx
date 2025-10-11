@@ -30,12 +30,13 @@ export default function SecurityPage() {
   const [regenerateModalOpen, setRegenerateModalOpen] = useState(false);
   const [newCodes, setNewCodes] = useState([]);
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
 
   const handleDisable2FA = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await disable2FA(token, password);
+      const response = await disable2FA(token, password, otp);
       updateUser(response.data.user, token);
       setSuccess('2FA has been disabled successfully.');
       setDisableModalOpen(false);
@@ -98,13 +99,14 @@ export default function SecurityPage() {
         <DialogTitle>Disable Two-Factor Authentication</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            For your security, please enter your current password to disable 2FA.
+            For your security, please enter your current password OR an OTP/Recovery code to disable 2FA.
           </DialogContentText>
-          <TextField autoFocus margin="dense" label="Password" type="password" fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <TextField autoFocus margin="dense" label="Password (optional)" type="password" fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <TextField margin="dense" label="OTP or Recovery Code (optional)" type="text" fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDisableModalOpen(false)}>Cancel</Button>
-          <Button onClick={handleDisable2FA} color="error" disabled={loading}>
+          <Button onClick={handleDisable2FA} color="error" disabled={loading || (!password && !otp)}>
             {loading ? <CircularProgress size={24} /> : 'Disable'}
           </Button>
         </DialogActions>
