@@ -10,16 +10,19 @@ import {
   Typography,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { alpha } from '@mui/material/styles';
 import MenuIcon from "@mui/icons-material/Menu";
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useThemeContext } from "../context/ThemeContext";
 
 export default function NavBar() {
   const { token, logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { pathname } = useLocation();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const menuOpen = Boolean(anchorEl);
@@ -44,11 +47,12 @@ export default function NavBar() {
   };
 
   const navItems = [
-    { label: "Dashboard", path: "/dashboard" },
-    { label: "Books", path: "/books" },
-    { label: "Eligible Customers", path: "/eligible-customers" },
-    { label: "Winners", path: "/winners" },
-    { label: "Lucky Draw", path: "/lucky-draw" },
+    { label: "Dashboard", path: "/dashboard", auth: true },
+    { label: "Books", path: "/books", auth: true },
+    { label: "Eligible Customers", path: "/eligible-customers", auth: true },
+    { label: "Winners", path: "/winners", auth: true },
+    { label: "Lucky Draw", path: "/lucky-draw", auth: true },
+    { label: "Settings", path: "/settings", auth: true },
   ];
 
   return (
@@ -73,19 +77,17 @@ export default function NavBar() {
               open={menuOpen}
               onClose={handleMenuClose}
             >
-              {navItems.map((item) => (
-                <MenuItem key={item.label} onClick={() => handleNavigate(item.path)}>
-                  {item.label}
-                </MenuItem>
-              ))}
-              {token && (
-                <MenuItem onClick={() => handleNavigate("/change-password")}>
-                  Change Password
-                </MenuItem>,
-                <MenuItem onClick={() => handleNavigate("/security")}>
-                  Security
-                </MenuItem>
-              )}
+              {navItems
+                .filter((item) => (token ? item.auth : !item.auth))
+                .map((item) => (
+                  <MenuItem
+                    key={item.label}
+                    onClick={() => handleNavigate(item.path)}
+                    selected={pathname === item.path}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
               <MenuItem onClick={token ? handleLogout : () => handleNavigate("/login")}>
                 {token ? "Logout" : "Login"}
               </MenuItem>
@@ -93,13 +95,24 @@ export default function NavBar() {
           </>
         ) : (
           <Box>
-            {navItems.map((item) => (
-              <Button key={item.label} color="inherit" component={Link} to={item.path}>
-                {item.label}
-              </Button>
-            ))}
-            {token && <Button color="inherit" component={Link} to="/change-password">Change Password</Button>}
-            {token && <Button color="inherit" component={Link} to="/security">Security</Button>}
+            {navItems
+              .filter((item) => (token ? item.auth : !item.auth))
+              .map((item) => (
+                <Button
+                  key={item.label}
+                  color="inherit"
+                  component={Link}
+                  to={item.path}
+                  sx={{
+                    backgroundColor:
+                      pathname === item.path
+                        ? alpha(theme.palette.common.white, 0.15)
+                        : "transparent",
+                  }}
+                >
+                  {item.label}
+                </Button>
+              ))}
             <Button color="inherit" onClick={token ? handleLogout : () => navigate("/login")}>
               {token ? "Logout" : "Login"}
             </Button>

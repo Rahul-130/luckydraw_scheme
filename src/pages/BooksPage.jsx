@@ -256,9 +256,9 @@ export default function BooksPage() {
       >
         <Container maxWidth="lg">
           <Typography
-            variant="h3"
+            variant="h4"
             sx={{
-              mb: 4,
+              mb: 2,
               fontWeight: "bold",
               textAlign: "center",
               color: "#222",
