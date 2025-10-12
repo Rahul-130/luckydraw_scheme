@@ -42,8 +42,7 @@ export default function WinnersListPage() {
     const handleUnmarkAsWinner = async (customer) => {
         const bookId = customer.bookId;
         const customerId = customer.customerId;
-        console.log(customer);
-        console.log(bookId, customerId);
+        
     
         setConfirmDialog({
             open: true,
@@ -169,7 +168,7 @@ export default function WinnersListPage() {
                     rows={winners}
                     columns={columns}
                     loading={loading}
-                    pageSizeOptions={[5, 10, 20]}
+                    pageSizeOptions={[5, 10, 20, 100]}
                     getRowClassName={(params) =>
                         !params.row.isBookActive && "super-app-theme--inactive"
                     }

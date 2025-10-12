@@ -131,8 +131,6 @@ export default function CustomersPage() {
                 if (params.row.isFrozen) {
                     return <Typography color="success.main">Winner</Typography>;
                 } 
-                console.log("missedpayments", params.row.missedPayments)
-                console.log(params.row.totalMonths, params.row.paymentCount)
     
                 if (params.row.missedPayments > 1) {
                     return <Typography color="error">Not Eligible</Typography>;
@@ -299,7 +297,7 @@ export default function CustomersPage() {
                 rows={customers}
                 columns={columns}
                 loading={customersLoading}
-                pageSizeOptions={[5, 10, 20]}
+                pageSizeOptions={[5, 10, 20, 100]}
                 sx={{
                   "& .MuiDataGrid-row:hover": {
                     backgroundColor: "rgba(0, 123, 255, 0.08)",
@@ -391,7 +389,7 @@ export default function CustomersPage() {
         <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm"> {/* Added fullWidth and maxWidth */}
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogContent>
-                <TextField label="S/o, D/o, W/o" fullWidth margin="normal" value={editForm.relationInfo} onChange={e => setEditForm({ ...editForm, relationInfo: e.target.value })} />
+                <TextField autoFocus label="S/o, D/o, W/o" fullWidth margin="normal" value={editForm.relationInfo} onChange={e => setEditForm({ ...editForm, relationInfo: e.target.value })} />
                 <TextField label="Name" fullWidth margin="normal" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
                 <TextField
                     label="Phone"

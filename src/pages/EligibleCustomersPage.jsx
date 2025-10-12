@@ -159,7 +159,7 @@ export default function EligibleCustomersPage() {
                     rows={customers}
                     columns={columns}
                     loading={loading}
-                    pageSizeOptions={[5, 10, 20]}
+                    pageSizeOptions={[5, 10, 20, 100]}
                     sx={{
                         "& .MuiDataGrid-row:hover": { backgroundColor: "rgba(0, 123, 255, 0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
                         "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },

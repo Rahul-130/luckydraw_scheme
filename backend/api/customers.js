@@ -37,7 +37,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       ${search ? searchClause : ''}
       ORDER BY c.id`, { bid: Number(req.params.bookId), ...(search && { search: `%${search}%` }) });
 
-    console.log(r.rows);
+    // console.log(r.rows);
     
     const rows = r.rows.map(row => ({
       id: String(row.ID),

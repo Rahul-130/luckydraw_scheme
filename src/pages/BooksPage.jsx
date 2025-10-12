@@ -339,7 +339,7 @@ export default function BooksPage() {
                     ? "super-app-theme--active"
                     : "super-app-theme--inactive"
                 }
-                pageSizeOptions={[5, 10, 20]}
+                pageSizeOptions={[5, 10, 20, 100]}
                 sx={{
                   "& .MuiDataGrid-row:hover": {
                     backgroundColor: "rgba(0, 123, 255, 0.08)",
@@ -406,7 +406,7 @@ export default function BooksPage() {
                       setForm({ ...form, startMonthIso: `${year}-${month}` });
                     } else setForm({ ...form, startMonthIso: "" });
                   }}
-                  slots={{ textField: (params) => <TextField {...params} fullWidth /> }}
+                  slotProps={{ textField: { fullWidth: true } }}
                 />
               </Stack>
             </DialogContent>
@@ -460,7 +460,7 @@ export default function BooksPage() {
                       });
                     } else setEditForm({ ...editForm, startMonthIso: "" });
                   }}
-                  slots={{ textField: (params) => <TextField {...params} fullWidth /> }}
+                  slotProps={{ textField: { fullWidth: true } }}
                 />
               </Stack>
             </DialogContent>

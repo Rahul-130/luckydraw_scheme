@@ -252,7 +252,7 @@ export default function PaymentsPage() {
                       )
                   }
                 ]}
-                pageSizeOptions={[5, 10, 20]}
+                pageSizeOptions={[5, 10, 20, 100]}
                 sx={{
                   "& .MuiDataGrid-row:hover": {
                     backgroundColor: "rgba(0, 123, 255, 0.08)",

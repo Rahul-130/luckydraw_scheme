@@ -220,8 +220,8 @@ export default function DashboardPage() {
               </Paper>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="lg:col-span-1">
               <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Yearly Payment Totals (₹)</Typography>
                 <ResponsiveContainer>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               </Paper>
             </div>
-            <div>
+            <div className="lg:col-span-1">
               <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Last 7 Days Payments (₹)</Typography>
                 <ResponsiveContainer>
@@ -254,8 +254,8 @@ export default function DashboardPage() {
           <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#333' }}>
             Distribution Overview
           </Typography>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="sm:col-span-1">
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Book Status</Typography>
                 <ResponsiveContainer width="100%" height="100%">
@@ -270,7 +270,7 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               </Paper>
             </div>
-            <div>
+            <div className="sm:col-span-1">
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Winner Distribution</Typography>
                 <ResponsiveContainer width="100%" height="100%">
@@ -285,7 +285,7 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               </Paper>
             </div>
-            <div className="md:col-span-2 lg:col-span-1">
+            <div className="sm:col-span-2 lg:col-span-1">
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Eligibility (Active Books)</Typography>
                 <ResponsiveContainer width="100%" height="100%">

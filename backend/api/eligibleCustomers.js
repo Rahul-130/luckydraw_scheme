@@ -15,7 +15,7 @@ router.get('/', requireAuth, async (req, res) => {
   const conn = await getConnection();
   const { search = '' } = req.query;
   try {
-    console.log('Get eligible customers endpoint called');
+    // console.log('Get eligible customers endpoint called');
 
     //1. Get active books
     const booksR = await conn.execute(
