@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions } from '@mui/material';
-import { Box, Stack, Paper, IconButton } from "@mui/material";
+import { Box, Stack, Paper, IconButton, Button } from "@mui/material";
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
@@ -87,18 +87,17 @@ export default function EligibleCustomersPage() {
             renderCell: (params) => {
                 const customer = params.row;
                 return (
-                    <IconButton
+                    <Button
                         onClick={() => handleMarkAsWinner(customer)}
-                        className="
-                            flex items-center gap-1
-                            bg-green-50 text-green-700
-                            rounded-md px-3 pb-3
-                            transition-all duration-200
-                            hover:bg-green-100 hover:scale-105"
-                        >
-                        <EmojiEvents fontSize="small" className="bg-green-500 text-white rounded-full" />
-                        <span className="text-sm font-medium">Winner</span>
-                        </IconButton>
+                        startIcon={<EmojiEvents />}
+                        sx={{
+                            color: 'success.main',
+                            backgroundColor: (theme) => alpha(theme.palette.success.main, 0.1),
+                            '&:hover': { backgroundColor: (theme) => alpha(theme.palette.success.main, 0.2) }
+                        }}
+                    >
+                        Winner
+                    </Button>
 
                 );
             }
@@ -120,7 +119,7 @@ export default function EligibleCustomersPage() {
         }}
       >
         <Container maxWidth="lg">
-            <Typography variant="h4" className="text-center mb-2 font-bold text-2xl text-gray-900">
+            <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
                 Eligible for Lucky Draw
             </Typography>
 
@@ -137,9 +136,24 @@ export default function EligibleCustomersPage() {
                         size="small"
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        sx={{ flexGrow: 1, "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                        sx={{
+                            flexGrow: 1,
+                            "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                            "& .MuiInputBase-input": { color: '#000' },
+                            "& .MuiInputLabel-root": { color: '#000' },
+                            "& .MuiInputLabel-root.Mui-focused": { color: '#000' },
+                            "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
+                                borderColor: '#000',
+                            },
+                            "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
+                                borderColor: '#000',
+                            },
+                            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                borderColor: '#000',
+                            },
+                        }}
                         InputProps={{
-                            startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
+                            startAdornment: <Search fontSize="small" sx={{ mr: 0.5, color: '#000' }} />,
                         }}
                     />
                 </Box>
@@ -163,7 +177,10 @@ export default function EligibleCustomersPage() {
                     sx={{
                         "& .MuiDataGrid-row:hover": { backgroundColor: "rgba(0, 123, 255, 0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
                         "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
-                        "& .MuiDataGrid-columnHeaders": { backgroundColor: "#fff", color: "#000", fontWeight: "bold" },
+                        "& .MuiDataGrid-columnHeaders": {                             
+                            color: (theme) => theme.palette.text.primary, 
+                            fontWeight: "bold" 
+                        },
                         borderRadius: 2,
                         "& .MuiDataGrid-cell": { py: 1.2 },
                     }}

@@ -96,7 +96,7 @@ export default function SignupPage() {
         <div className="w-full max-w-md mx-auto">
           <div className="flex flex-col items-center">
             <PersonAdd color="primary" className="!text-4xl mb-2" />
-            <Typography component="h1" variant="h4" className="!mb-4 !font-bold text-center text-gray-800">
+            <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: '#000' }}>
               Create Your Account
             </Typography>
           </div>
@@ -133,7 +133,7 @@ export default function SignupPage() {
             <Button type="submit" fullWidth variant="contained" className="!mt-6 !py-3" disabled={isButtonDisabled}>
               Sign Up
             </Button>
-            <Typography variant="body2" className="!mt-4 text-center text-gray-500">
+            <Typography variant="body2" sx={{ mt: 2, textAlign: 'center' }} color="text.secondary">
               Already have an account?{" "}
               <Button onClick={() => navigate("/login")} size="small">Login</Button>
             </Typography>

@@ -241,7 +241,7 @@ export default function DashboardPage() {
           </div>
 
           {/* --- Daily Overview --- */}
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>Daily Overview</Typography>
+          <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Daily Overview</Typography>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <ComparisonStatCard title="Today's Amount" value={stats.dailyPaymentStats.today.amount} prevValue={stats.dailyPaymentStats.yesterday.amount} period="day" />
             <ComparisonStatCard title="Today's Payments" value={stats.dailyPaymentStats.today.count} prevValue={stats.dailyPaymentStats.yesterday.count} period="day" />
@@ -259,7 +259,7 @@ export default function DashboardPage() {
           </div>
 
           {/* --- Trend Charts --- */}
-          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#333' }}>
+          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
             Payment Trends
           </Typography>
           <div className="grid grid-cols-1 gap-6 mb-6">
@@ -309,7 +309,7 @@ export default function DashboardPage() {
           </div>
 
           {/* --- Distribution Charts --- */}
-          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#333' }}>
+          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
             Distribution Overview
           </Typography>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -361,7 +361,7 @@ export default function DashboardPage() {
           </div>
 
           {/* --- Recent Activity --- */}
-          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#333' }}>
+          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
             Recent Activity
           </Typography>
           <Paper elevation={3} sx={{ p: 2 }}>

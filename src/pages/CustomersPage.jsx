@@ -21,6 +21,7 @@ import {
   IconButton,
   Alert,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { Add, Edit, Delete, Payment, Search, ArrowBack } from "@mui/icons-material";
 
@@ -150,11 +151,11 @@ export default function CustomersPage() {
                         startIcon={<Payment fontSize="small" />}
                         onClick={() => navigate(`/books/${bookId}/customers/${params.row.id}/payments`)}
                         sx={{
-                            backgroundColor: "#e3f2fd",
-                            "&:hover": { backgroundColor: "#bbdefb", transform: "scale(1.05)" },
+                            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                            "&:hover": { backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2), transform: "scale(1.05)" },
                             borderRadius: 1.5,
                             padding: 0.7,
-                            color: "#1976d2",
+                            color: "primary.main",
                             transition: "all 0.2s",
                           }}
                     >
@@ -163,11 +164,11 @@ export default function CustomersPage() {
                     <IconButton
                         onClick={() => handleEdit(params.row)}
                         sx={{
-                            backgroundColor: "#e0f7fa",
-                            "&:hover": { backgroundColor: "#b2ebf2", transform: "scale(1.05)" },
+                            backgroundColor: (theme) => alpha(theme.palette.info.main, 0.1),
+                            "&:hover": { backgroundColor: (theme) => alpha(theme.palette.info.main, 0.2), transform: "scale(1.05)" },
                             borderRadius: 1.5,
                             padding: 0.7,
-                            color: "#0288d1",
+                            color: "info.main",
                             transition: "all 0.2s",
                           }}
                     >
@@ -176,11 +177,11 @@ export default function CustomersPage() {
                     <IconButton
                         onClick={() => handleDelete(params.row.id)}
                         sx={{
-                            backgroundColor: "#ffebee",
-                            "&:hover": { backgroundColor: "#ffcdd2", transform: "scale(1.05)" },
+                            backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
+                            "&:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2), transform: "scale(1.05)" },
                             borderRadius: 1.5,
                             padding: 0.7,
-                            color: "#d32f2f",
+                            color: "error.main",
                             transition: "all 0.2s",
                           }}
                     >
@@ -206,7 +207,7 @@ export default function CustomersPage() {
         {bookId && !book && <Alert severity="error">Book not found or you do not have access to it.</Alert>}
 
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-            <IconButton onClick={() => navigate('/books')}>
+            <IconButton onClick={() => navigate('/books')} sx={{ color: '#000' }}>
               <ArrowBack />
             </IconButton>
             <Box
@@ -218,10 +219,10 @@ export default function CustomersPage() {
                 flexGrow: 1,
               }}
             >
-              <Typography variant="h4" sx={{ fontWeight: "bold", color: "#222" }}>
+              <Typography variant="h4" sx={{ fontWeight: "bold", color: "#000" }}>
                 Customers
               </Typography>
-              <Typography variant="h5" sx={{ color: "text.secondary" }}>
+              <Typography variant="h5" sx={{ color: "#000" }} >
                 for Book: {book?.name}
               </Typography>
             </Box>
@@ -246,9 +247,27 @@ export default function CustomersPage() {
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 1.5,
                   },
+                  "& .MuiInputBase-input": {
+                    color: '#000', // Force black text color
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: '#000', // Force black label color
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: '#000', // Keep label black when focused
+                  },
+                  "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
+                    borderColor: '#000',
+                  },
+                  "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
+                    borderColor: '#000',
+                  },
+                  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: '#000',
+                  },
                 }}
                 InputProps={{
-                  startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
+                  startAdornment: <Search fontSize="small" sx={{ mr: 0.5, color: '#000' }} />,
                 }}
               />
               <Button
@@ -305,8 +324,7 @@ export default function CustomersPage() {
                   },
                   "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
                   "& .MuiDataGrid-columnHeaders": {
-                    backgroundColor: "#fff",
-                    color: "#000",
+                    color: (theme) => theme.palette.text.primary,
                     fontWeight: "bold",
                   },
                   borderRadius: 2,

@@ -121,7 +121,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md mx-auto">
           <div className="flex flex-col items-center">
             <LoginIcon color="primary" className="!text-4xl mb-2" />
-            <Typography component="h1" variant="h4" className="!mb-4 !font-bold text-center text-gray-800">
+            <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: '#000' }}>
               Welcome Back!
             </Typography>
           </div>
@@ -183,7 +183,7 @@ export default function LoginPage() {
                 <Link component="button" variant="body2" onClick={() => setResetModalOpen(true)}>
                     Forgot Password?
                 </Link>
-                <Typography variant="body2" className="text-gray-500">
+                <Typography variant="body2" color="text.secondary">
                     Don't have an account?{" "}
                     <Button onClick={() => navigate("/signup")} size="small">Sign Up</Button>
                 </Typography>

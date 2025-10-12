@@ -23,6 +23,7 @@ import {
   Paper,
   IconButton,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -161,11 +162,11 @@ export default function BooksPage() {
             <Button
               onClick={() => navigate(`/books/${params.row.id}/customers`)}
               sx={{
-                backgroundColor: "#e3f2fd",
-                "&:hover": { backgroundColor: "#bbdefb", transform: "scale(1.05)" },
+                backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2), transform: "scale(1.05)" },
                 borderRadius: 1.5,
                 padding: 0.7,
-                color: "#1976d2",
+                color: "primary.main",
                 transition: "all 0.2s",
               }}
             >
@@ -179,11 +180,11 @@ export default function BooksPage() {
                 setEditOpen(true);
               }}
               sx={{
-                backgroundColor: "#e0f7fa",
-                "&:hover": { backgroundColor: "#b2ebf2", transform: "scale(1.05)" },
+                backgroundColor: (theme) => alpha(theme.palette.info.main, 0.1),
+                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.info.main, 0.2), transform: "scale(1.05)" },
                 borderRadius: 1.5,
                 padding: 0.7,
-                color: "#0288d1",
+                color: "info.main",
                 transition: "all 0.2s",
               }}
             >
@@ -194,11 +195,11 @@ export default function BooksPage() {
             <IconButton
               onClick={() => handleDelete(params.row.id)}
               sx={{
-                backgroundColor: "#ffebee",
-                "&:hover": { backgroundColor: "#ffcdd2", transform: "scale(1.05)" },
+                backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
+                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2), transform: "scale(1.05)" },
                 borderRadius: 1.5,
                 padding: 0.7,
-                color: "#d32f2f",
+                color: "error.main",
                 transition: "all 0.2s",
               }}
             >
@@ -209,14 +210,14 @@ export default function BooksPage() {
             <IconButton
               onClick={() => handleToggle(params.row.id)}
               sx={{
-                backgroundColor: params.row.isActive ? "#fff3e0" : "#e8f5e9",
-                "&:hover": {
-                  backgroundColor: params.row.isActive ? "#ffe0b2" : "#c8e6c9",
+                backgroundColor: (theme) => params.row.isActive ? alpha(theme.palette.warning.main, 0.1) : alpha(theme.palette.success.main, 0.1),
+                "&:hover": { 
+                  backgroundColor: (theme) => params.row.isActive ? alpha(theme.palette.warning.main, 0.2) : alpha(theme.palette.success.main, 0.2),
                   transform: "scale(1.05)",
                 },
                 borderRadius: 1.5,
                 padding: 0.7,
-                color: params.row.isActive ? "#ed6c02" : "#2e7d32",
+                color: params.row.isActive ? "warning.main" : "success.main",
                 transition: "all 0.2s",
               }}
             >
@@ -261,7 +262,7 @@ export default function BooksPage() {
               mb: 2,
               fontWeight: "bold",
               textAlign: "center",
-              color: "#222",
+              color: "#000",
             }}
           >
             My Books
@@ -285,9 +286,27 @@ export default function BooksPage() {
                   sx={{
                     flexGrow: 1,
                     "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                    "& .MuiInputBase-input": {
+                      color: '#000', // Force black text color
+                    },
+                    "& .MuiInputLabel-root": {
+                      color: '#000', // Force black label color
+                    },
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: '#000', // Keep label black when focused
+                    },
+                    "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
+                      borderColor: '#000',
+                    },
+                    "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
+                      borderColor: '#000',
+                    },
+                    "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: '#000',
+                    }
                   }}
                   InputProps={{
-                    startAdornment: <Search fontSize="small" sx={{ mr: 0.5 }} />,
+                    startAdornment: <Search fontSize="small" sx={{ mr: 0.5, color: '#000' }} />,
                   }}
                 />
                 <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
@@ -347,8 +366,7 @@ export default function BooksPage() {
                   },
                   "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
                   "& .MuiDataGrid-columnHeaders": {
-                    backgroundColor: "#fff",
-                    color: "#000",
+                    color: (theme) => theme.palette.text.primary,
                     fontWeight: "bold",
                   },
                   borderRadius: 2,

@@ -80,7 +80,7 @@ export default function LuckyDrawPage() {
       }}
     >
       <Container maxWidth="lg">
-        <Typography variant="h4" className="text-center mb-2 font-bold text-2xl text-gray-900">
+        <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
           Lucky Draw
         </Typography>
 
@@ -129,8 +129,7 @@ export default function LuckyDrawPage() {
                 },
                 '& .MuiDataGrid-row.Mui-even': { backgroundColor: '#f9f9f9' },
                 '& .MuiDataGrid-columnHeaders': {
-                  backgroundColor: '#fff',
-                  color: '#000',
+                  color: (theme) => theme.palette.text.primary,
                   fontWeight: 'bold',
                 },
                 borderRadius: 2,

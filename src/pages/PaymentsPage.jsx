@@ -22,6 +22,7 @@ import {
   Stack,
   IconButton,
 } from '@mui/material';
+import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack } from "@mui/icons-material";
 
 
@@ -142,7 +143,7 @@ export default function PaymentsPage() {
       >
         <Container maxWidth="lg">
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-            <IconButton onClick={() => navigate(`/books/${bookId}/customers`)}>
+            <IconButton onClick={() => navigate(`/books/${bookId}/customers`)} sx={{ color: '#000' }}>
               <ArrowBack />
             </IconButton>
             <Typography
@@ -160,14 +161,14 @@ export default function PaymentsPage() {
                 textAlign: 'center',
               }}
             >
-              <Box component="span" sx={{ fontWeight: 'semibold' }}>
+              <Box component="span" sx={{ fontWeight: 'bold', color:"#000"}}>
                 Payments
               </Box>
-              <Box component="span" sx={{ color: 'text.secondary' }}>for customer</Box>
-              <Box component="span" sx={{ color: 'text.primary', fontWeight: 'semibold' }}>
+              <Box component="span" sx={{ color: '#000' }}>for customer</Box>
+              <Box component="span" sx={{ color: '#000', fontWeight: 'semibold' }}>
                 {customer?.name}
               </Box>
-              <Typography variant="subtitle1" component="span" sx={{ color: 'text.secondary', pt: 0.5 }}>
+              <Typography variant="subtitle1" component="span" sx={{ color: '#001', pt: 0.5 }}>
                 (Book: {book?.name})
               </Typography>
             </Typography>
@@ -225,11 +226,11 @@ export default function PaymentsPage() {
                           <IconButton
                             onClick={() => handleEdit(params.row)}
                             sx={{
-                                backgroundColor: "#e0f7fa",
-                                "&:hover": { backgroundColor: "#b2ebf2", transform: "scale(1.05)" },
+                                backgroundColor: (theme) => alpha(theme.palette.info.main, 0.1),
+                                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.info.main, 0.2), transform: "scale(1.05)" },
                                 borderRadius: 1.5,
                                 padding: 0.7,
-                                color: "#0288d1",
+                                color: "info.main",
                                 transition: "all 0.2s",
                               }}
                           >
@@ -238,11 +239,11 @@ export default function PaymentsPage() {
                           <IconButton
                             onClick={() => handleDelete(params.row.id)}
                             sx={{
-                                backgroundColor: "#ffebee",
-                                "&:hover": { backgroundColor: "#ffcdd2", transform: "scale(1.05)" },
+                                backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
+                                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2), transform: "scale(1.05)" },
                                 borderRadius: 1.5,
                                 padding: 0.7,
-                                color: "#d32f2f",
+                                color: "error.main",
                                 transition: "all 0.2s",
                               }}
                           >
