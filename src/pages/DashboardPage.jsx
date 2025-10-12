@@ -4,7 +4,6 @@ import { getDashboardStats } from '../services/api';
 import {
   Box,
   Container,
-  Grid,
   Paper,
   Typography,
   CircularProgress,
@@ -38,7 +37,7 @@ const StatCard = ({ title, value, color, comparison }) => (
   </Paper>
 );
 
-const ComparisonStatCard = ({ title, value, prevValue }) => {
+const ComparisonStatCard = ({ title, value, prevValue, period = 'month' }) => {
   const diff = value - prevValue;
   const percentageChange = prevValue === 0 ? (value > 0 ? 100 : 0) : (diff / prevValue) * 100;
   const isPositive = diff >= 0;
@@ -53,7 +52,7 @@ const ComparisonStatCard = ({ title, value, prevValue }) => {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
         {isPositive ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
         <Typography variant="body2" fontWeight="bold" sx={{ ml: 0.5 }}>
-          {percentageChange.toFixed(1)}% vs last month
+          {percentageChange.toFixed(1)}% vs last {period}
         </Typography>
       </Box>
     </Paper>
@@ -176,31 +175,38 @@ export default function DashboardPage() {
           </Box>
 
           {/* --- Top Level KPIs --- */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Total Books" value={stats.bookCounts.total} /></Grid>
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Total Customers" value={stats.customerCounts.total} /></Grid>
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Total Winners" value={stats.winnerCounts.total} /></Grid>
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Eligible Customers" value={stats.eligibilityCounts.eligible} color={COLORS.eligible} /></Grid>
-          </Grid>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <StatCard title="Total Books" value={`${stats.bookCounts.total} (${stats.bookCounts.active} Active)`} />
+            <StatCard title="Total Customers" value={`${stats.customerCounts.total} (${stats.customerCounts.fromActiveBooks} Active)`} />
+            <StatCard title="Total Winners" value={stats.winnerCounts.total} />
+            <StatCard title="Eligible Customers" value={stats.eligibilityCounts.eligible} color={COLORS.eligible} />
+          </div>
+
+          {/* --- Daily Overview --- */}
+          <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>Daily Overview</Typography>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <ComparisonStatCard title="Today's Amount" value={stats.dailyPaymentStats.today.amount} prevValue={stats.dailyPaymentStats.yesterday.amount} period="day" />
+            <ComparisonStatCard title="Today's Payments" value={stats.dailyPaymentStats.today.count} prevValue={stats.dailyPaymentStats.yesterday.count} period="day" />
+          </div>
 
           {/* --- Monthly Payment Comparisons --- */}
           <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>
             Monthly Overview
           </Typography>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}><ComparisonStatCard title="Total Amount" value={stats.paymentStats.all.currentMonth.amount} prevValue={stats.paymentStats.all.previousMonth.amount} /></Grid>
-            <Grid item xs={12} sm={6} md={3}><ComparisonStatCard title="Total Payments" value={stats.paymentStats.all.currentMonth.count} prevValue={stats.paymentStats.all.previousMonth.count} /></Grid>
-            <Grid item xs={12} sm={6} md={3}><ComparisonStatCard title="Active Books Amount" value={stats.paymentStats.active.currentMonth.amount} prevValue={stats.paymentStats.active.previousMonth.amount} /></Grid>
-            <Grid item xs={12} sm={6} md={3}><ComparisonStatCard title="Inactive Books Amount" value={stats.paymentStats.inactive.currentMonth.amount} prevValue={stats.paymentStats.inactive.previousMonth.amount} /></Grid>
-          </Grid>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <ComparisonStatCard title="Total Amount" value={stats.paymentStats.all.currentMonth.amount} prevValue={stats.paymentStats.all.previousMonth.amount} />
+            <ComparisonStatCard title="Total Payments" value={stats.paymentStats.all.currentMonth.count.toLocaleString('en-IN')} prevValue={stats.paymentStats.all.previousMonth.count} />
+            <ComparisonStatCard title="Active Books Amount" value={stats.paymentStats.active.currentMonth.amount} prevValue={stats.paymentStats.active.previousMonth.amount} />
+            <ComparisonStatCard title="Inactive Books Amount" value={stats.paymentStats.inactive.currentMonth.amount} prevValue={stats.paymentStats.inactive.previousMonth.amount} />
+          </div>
 
           {/* --- Trend Charts --- */}
           <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#333' }}>
             Payment Trends
           </Typography>
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12}>
-              <Paper elevation={3} sx={{ p: 2, height: 400 }}>
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            <div>
+              <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Last 12 Months Payment Trend (₹)</Typography>
                 <ResponsiveContainer>
                   <BarChart data={monthlyPaymentData}>
@@ -212,9 +218,11 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 2, height: 400 }}>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Yearly Payment Totals (₹)</Typography>
                 <ResponsiveContainer>
                   <BarChart data={yearlyPaymentData}>
@@ -226,9 +234,9 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 2, height: 400 }}>
+            </div>
+            <div>
+              <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Last 7 Days Payments (₹)</Typography>
                 <ResponsiveContainer>
                   <BarChart data={last7DaysData}>
@@ -239,15 +247,15 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
 
           {/* --- Distribution Charts --- */}
           <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#333' }}>
             Distribution Overview
           </Typography>
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={6}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Book Status</Typography>
                 <ResponsiveContainer width="100%" height="100%">
@@ -261,8 +269,8 @@ export default function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
+            </div>
+            <div>
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Winner Distribution</Typography>
                 <ResponsiveContainer width="100%" height="100%">
@@ -276,8 +284,8 @@ export default function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
+            </div>
+            <div className="md:col-span-2 lg:col-span-1">
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Eligibility (Active Books)</Typography>
                 <ResponsiveContainer width="100%" height="100%">
@@ -291,8 +299,8 @@ export default function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </Paper>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
 
         </Container>
       </Box>

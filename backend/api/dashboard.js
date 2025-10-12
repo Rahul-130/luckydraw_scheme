@@ -105,7 +105,34 @@ router.get('/stats', requireAuth, async (req, res) => {
         paymentStats.all.previousMonth.amount += row.PREVIOUS_MONTH_AMOUNT || 0;
     });
 
-    // 6. Monthly payment stats for the last 12 months
+    // 6. Daily Payment Stats (Today vs Yesterday)
+    const dailyPaymentStatsResult = await conn.execute(
+      `SELECT
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) THEN 1 ELSE 0 END) as today_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) THEN p.amount ELSE 0 END) as today_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) - 1 THEN 1 ELSE 0 END) as yesterday_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) - 1 THEN p.amount ELSE 0 END) as yesterday_amount
+       FROM payments p
+       JOIN books b ON p.book_id = b.id
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE) - 1`,
+      { ownerId }
+    );
+
+    const dailyPaymentStats = {
+      today: {
+        count: dailyPaymentStatsResult.rows[0]?.TODAY_COUNT || 0,
+        amount: dailyPaymentStatsResult.rows[0]?.TODAY_AMOUNT || 0,
+      },
+      yesterday: {
+        count: dailyPaymentStatsResult.rows[0]?.YESTERDAY_COUNT || 0,
+        amount: dailyPaymentStatsResult.rows[0]?.YESTERDAY_AMOUNT || 0,
+      },
+    };
+
+
+
+
+    // 7. Monthly payment stats for the last 12 months
     const monthlyPaymentsResult = await conn.execute(
       `SELECT 
          TO_CHAR(TRUNC(p.payment_date, 'MM'), 'YYYY-MM') as payment_month,
@@ -119,7 +146,7 @@ router.get('/stats', requireAuth, async (req, res) => {
     );
     const monthlyPayments = monthlyPaymentsResult.rows;
 
-    // 7. Yearly payment stats
+    // 8. Yearly payment stats
     const yearlyPaymentsResult = await conn.execute(
       `SELECT 
          TO_CHAR(TRUNC(p.payment_date, 'YYYY'), 'YYYY') as payment_year,
@@ -133,7 +160,7 @@ router.get('/stats', requireAuth, async (req, res) => {
     );
     const yearlyPayments = yearlyPaymentsResult.rows;
 
-    // 6. Daily payment stats for the last 7 days
+    // 9. Daily payment stats for the last 7 days
     const dailyPaymentsResult = await conn.execute(
       `SELECT
          TRUNC(p.payment_date) as payment_day,
@@ -169,6 +196,7 @@ router.get('/stats', requireAuth, async (req, res) => {
         fromInactiveBooks: winnerCounts.FROM_INACTIVE_BOOKS || 0,
       },
       paymentStats,
+      dailyPaymentStats,
       dailyPayments,
       monthlyPayments,
       yearlyPayments,
