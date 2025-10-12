@@ -175,6 +175,7 @@ router.get('/stats', requireAuth, async (req, res) => {
 
     const dailyPayments = dailyPaymentsResult.rows;
 
+
     res.json({
       bookCounts: {
         total: bookCounts.TOTAL || 0,
@@ -204,6 +205,61 @@ router.get('/stats', requireAuth, async (req, res) => {
 
   } catch (e) {
     console.error('Dashboard stats error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    if (conn) await conn.close();
+  }
+});
+
+router.get('/activity', requireAuth, async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const pageSize = parseInt(req.query.pageSize, 10) || 10;
+  const offset = (page - 1) * pageSize;
+  const ownerId = req.user.id;
+
+  const conn = await getConnection();
+  try {
+    const activityQuery = `
+      SELECT CUSTOMER_NAME, BOOK_NAME, activity_date, activity_type, amount FROM (
+        SELECT w.CUSTOMER_NAME, w.BOOK_NAME, w.WIN_DATE as activity_date, 'winner' as activity_type, NULL as amount
+        FROM winner w
+        JOIN books b ON w.BOOK_ID = b.ID
+        WHERE b.OWNER_ID = :ownerId
+        UNION ALL
+        SELECT c.NAME as customer_name, b.NAME as book_name, p.PAYMENT_DATE as activity_date, 'payment' as activity_type, p.AMOUNT as amount
+        FROM payments p
+        JOIN customers c ON p.customer_id = c.id
+        JOIN books b ON p.book_id = b.id
+        WHERE b.owner_id = :ownerId
+      )
+      ORDER BY activity_date DESC
+      OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY
+    `;
+
+    const totalQuery = `
+      SELECT COUNT(*) as TOTAL FROM (
+        SELECT 1 FROM winner w JOIN books b ON w.BOOK_ID = b.ID WHERE b.OWNER_ID = :ownerId
+        UNION ALL
+        SELECT 1 FROM payments p JOIN books b ON p.book_id = b.id WHERE b.owner_id = :ownerId
+      )
+    `;
+
+    const [activityResult, totalResult] = await Promise.all([
+      conn.execute(activityQuery, { ownerId, offset, pageSize }),
+      conn.execute(totalQuery, { ownerId })
+    ]);
+
+    const total = totalResult.rows[0].TOTAL;
+
+    res.json({
+      activities: activityResult.rows,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    });
+  } catch (e) {
+    console.error('Recent activity error:', e);
     res.status(500).json({ error: 'Internal server error' });
   } finally {
     if (conn) await conn.close();

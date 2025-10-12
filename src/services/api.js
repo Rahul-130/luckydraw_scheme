@@ -172,3 +172,9 @@ export const getDashboardStats = (token, startDate, endDate) =>
         headers: { Authorization: `Bearer ${token}` },
         params: { startDate, endDate },
     });
+
+export const getRecentActivity = (token, page, pageSize) =>
+    axios.get(`${API_URL}/dashboard/activity`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, pageSize },
+    });

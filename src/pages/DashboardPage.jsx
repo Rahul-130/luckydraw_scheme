@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getDashboardStats } from '../services/api';
+import { getDashboardStats, getRecentActivity } from '../services/api';
 import {
   Box,
   Container,
@@ -8,7 +8,12 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  TextField
+  TextField,
+  List,
+  ListItem,
+  ListItemText,
+  Avatar,
+  Pagination,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -27,6 +32,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { formatDistanceToNow } from 'date-fns';
+import { EmojiEvents, Receipt } from '@mui/icons-material';
 
 const StatCard = ({ title, value, color, comparison }) => (
   <Paper elevation={3} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
@@ -76,6 +83,12 @@ export default function DashboardPage() {
     start: null,
     end: null,
   });
+  // State for paginated activity
+  const [activity, setActivity] = useState({
+    items: [],
+    loading: true,
+    pagination: { page: 1, totalPages: 1 },
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -93,6 +106,25 @@ export default function DashboardPage() {
     };
     fetchStats();
   }, [token, dateRange]);
+
+  useEffect(() => {
+    const fetchActivity = async () => {
+      setActivity(prev => ({ ...prev, loading: true }));
+      try {
+        const response = await getRecentActivity(token, activity.pagination.page, 5); // Fetch 5 items per page
+        setActivity(prev => ({
+          ...prev,
+          items: response.data.activities,
+          pagination: { ...prev.pagination, totalPages: response.data.totalPages },
+        }));
+      } catch (err) {
+        setError('Failed to load recent activity.');
+      } finally {
+        setActivity(prev => ({ ...prev, loading: false }));
+      }
+    };
+    if (token) fetchActivity();
+  }, [token, activity.pagination.page]);
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
@@ -149,6 +181,32 @@ export default function DashboardPage() {
       amount: entry ? entry.TOTAL_AMOUNT : 0,
     };
   }).reverse();
+
+  const renderActivityItem = (item, index) => {
+    const isWinner = item.ACTIVITY_TYPE === 'winner';
+    const title = isWinner
+      ? `${item.CUSTOMER_NAME} won in ${item.BOOK_NAME}`
+      : `Payment of ₹${item.AMOUNT.toLocaleString('en-IN')} from ${item.CUSTOMER_NAME}`;
+    const subtitle = isWinner
+      ? 'Lucky Draw Winner'
+      : `Book: ${item.BOOK_NAME}`;
+
+    return (
+      <ListItem key={index} divider={index < activity.items.length - 1}>
+        <Avatar sx={{ bgcolor: isWinner ? 'success.main' : 'primary.main', mr: 2 }}>
+          {isWinner ? <EmojiEvents /> : <Receipt />}
+        </Avatar>
+        <ListItemText
+          primary={title}
+          secondary={subtitle}
+          primaryTypographyProps={{ fontWeight: 'medium' }}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ ml: 2, flexShrink: 0 }}>
+          {formatDistanceToNow(new Date(item.ACTIVITY_DATE), { addSuffix: true })}
+        </Typography>
+      </ListItem>
+    );
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -301,6 +359,31 @@ export default function DashboardPage() {
               </Paper>
             </div>
           </div>
+
+          {/* --- Recent Activity --- */}
+          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#333' }}>
+            Recent Activity
+          </Typography>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            {activity.loading ? <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress /></Box> :
+             activity.items.length > 0 ? (
+              <>
+                <List disablePadding>
+                  {activity.items.map(renderActivityItem)}
+                </List>
+                <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2 }}>
+                  <Pagination
+                    count={activity.pagination.totalPages}
+                    page={activity.pagination.page}
+                    onChange={(e, value) => setActivity(prev => ({ ...prev, pagination: { ...prev.pagination, page: value } }))}
+                  />
+                </Box>
+              </>
+            ) : (
+              <Typography color="text.secondary" textAlign="center">No recent activity.</Typography>
+            )}
+          </Paper>
+
 
         </Container>
       </Box>
