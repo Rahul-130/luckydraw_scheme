@@ -11,8 +11,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions } from '@mui/material';
-import { Box, Stack, Paper, IconButton, Button } from "@mui/material";
+  DialogActions, Box, Stack, Paper, IconButton, } from '@mui/material';
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
