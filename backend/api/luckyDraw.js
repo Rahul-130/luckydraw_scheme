@@ -89,8 +89,9 @@ router.post('/', requireAuth, async (req, res) => {
 
         // 6. Insert into winner table
         await conn.execute(
-          `INSERT INTO winner (book_id, book_name, customer_id, customer_name, relation_info, address, phone)
-           VALUES (:bid, :bname, :cid, :cname, :relationInfo, :addr, :phone)`,
+          `INSERT INTO winner (book_id, book_name, customer_id, customer_name, relation_info, address, phone, win_date)
+           VALUES (:bid, :bname, :cid, :cname, :relationInfo, :addr, :phone, CURRENT_TIMESTAMP)
+           RETURNING win_date INTO :win_date`,
           { 
             bid: Number(book.ID), 
             bname: book.NAME, 
@@ -98,7 +99,8 @@ router.post('/', requireAuth, async (req, res) => {
             cname: winner.NAME, 
             relationInfo: winner.RELATION_INFO,
             addr: winner.ADDRESS, 
-            phone: winner.PHONE 
+            phone: winner.PHONE,
+            win_date: { dir: oracledb.BIND_OUT, type: oracledb.DATE }
           }
         );
         
@@ -109,8 +111,7 @@ router.post('/', requireAuth, async (req, res) => {
             customerName: winner.NAME,
             relationInfo: winner.RELATION_INFO,
             address: winner.ADDRESS,
-            phone: winner.PHONE,
-            drawDate: new Date().toISOString().split('T')[0] // Add drawDate
+            phone: winner.PHONE
         });
       }
     }

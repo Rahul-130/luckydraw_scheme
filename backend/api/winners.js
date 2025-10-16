@@ -36,7 +36,7 @@ router.get('/', requireAuth, async (req, res) => {
       bookName: row.BOOK_NAME,
       address: row.ADDRESS,
       phone: row.PHONE,
-      drawDate: row.WIN_DATE.toISOString().split('T')[0], // Format date to YYYY-MM-DD
+      drawDate: row.WIN_DATE.toISOString(), // Return full ISO string
       isBookActive: row.IS_ACTIVE === 1
     }));
 
@@ -63,8 +63,8 @@ router.post('/mark', requireAuth, async (req, res) => {
     );
 
     await conn.execute(
-      `INSERT INTO winner (book_id, book_name, customer_id, customer_name, address, phone, win_date)
-       VALUES (:book_id, :book_name, :customer_id, :customer_name, :address, :phone, SYSDATE)`,
+      `INSERT INTO winner (book_id, book_name, customer_id, customer_name, address, phone, is_manual, win_date)
+       VALUES (:book_id, :book_name, :customer_id, :customer_name, :address, :phone, 1, CURRENT_TIMESTAMP)`,
       { book_id: bookId, book_name: bookName, customer_id: customerId, customer_name: customerName, address, phone }
     );
     await conn.commit();

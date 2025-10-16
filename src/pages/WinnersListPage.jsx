@@ -71,7 +71,12 @@ export default function WinnersListPage() {
         { field: 'bookName', headerName: 'Book', width: 150 },
         { field: 'address', headerName: 'Address', width: 200 },
         { field: 'phone', headerName: 'Phone', width: 150 },
-        { field: 'drawDate', headerName: 'Date Won', width: 150 },
+        { 
+            field: 'drawDate', 
+            headerName: 'Date Won', 
+            width: 200,
+            valueFormatter: (value) => value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''
+        },
         {
             field: 'actions',
             headerName: 'Actions',

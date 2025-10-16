@@ -54,11 +54,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
       }
     );
     await conn.commit();
-    // Format date as DD-MM-YYYY
     const paymentDate = result.outBinds.payment_date[0];
-    const formattedDate = paymentDate
-      ? `${paymentDate.getDate().toString().padStart(2, '0')}-${(paymentDate.getMonth()+1).toString().padStart(2, '0')}-${paymentDate.getFullYear()}`
-      : null;
     res.status(201).json({
       id: String(result.outBinds.id[0]),
       customerId: String(req.params.customerId),
@@ -67,7 +63,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
       amount: Number(amount),
       receiptNo,
       paymentType: paymentType || 'online',
-      paymentDate: formattedDate
+      paymentDate: paymentDate.toISOString() // Return full ISO string
     });
   } catch (e) {
     console.error('Create payment error:', e);
@@ -100,10 +96,6 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
       { cid: Number(req.params.customerId), bid: Number(req.params.bookId) }
     );
     const rows = payR.rows.map(row => {
-      const paymentDate = row.PAYMENT_DATE;
-      const formattedDate = paymentDate
-        ? `${paymentDate.getDate().toString().padStart(2, '0')}-${(paymentDate.getMonth()+1).toString().padStart(2, '0')}-${paymentDate.getFullYear()}`
-        : null;
       return {
         id: String(row.ID),
         customerId: String(req.params.customerId),
@@ -112,7 +104,7 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
         amount: Number(row.AMOUNT),
         receiptNo: row.RECEIPT_NO,
         paymentType: row.PAYMENT_TYPE,
-        paymentDate: formattedDate,
+        paymentDate: row.PAYMENT_DATE.toISOString(), // Return full ISO string
         isLuckyDrawWinner: row.IS_LUCKYDRAW_WINNER === 1
       };
     });

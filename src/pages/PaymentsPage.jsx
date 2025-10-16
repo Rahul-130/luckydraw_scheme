@@ -220,7 +220,12 @@ export default function PaymentsPage() {
                   { field: 'id', headerName: 'ID', width: 90 },
                   { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (params) => `₹ ${params}` },
                   { field: 'monthIso', headerName: 'Month', width: 150 },
-                  { field: 'paymentDate', headerName: 'Date', width: 150 },
+                  { 
+                    field: 'paymentDate', 
+                    headerName: 'Date', 
+                    width: 200, 
+                    valueFormatter: (value) => value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''
+                  },
                   { field: 'receiptNo', headerName: 'Receipt No.', width: 150 },
                   { field: 'paymentType', headerName: 'Type', width: 120 },
                   {

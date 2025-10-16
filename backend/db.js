@@ -53,7 +53,7 @@ async function initSchema() {
       phone varchar2(255) NOT NULL,
       address VARCHAR2(255) NOT NULL,
       is_frozen NUMBER(1) DEFAULT 0 NOT NULL,
-      created_at DATE DEFAULT SYSDATE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
       CONSTRAINT fk_customers_book FOREIGN KEY (book_id) REFERENCES books(id)
     )'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;`);
 
@@ -64,9 +64,9 @@ async function initSchema() {
       book_id NUMBER NOT NULL,
       month_iso VARCHAR2(7) NOT NULL,
       amount NUMBER NOT NULL,
-      payment_date DATE DEFAULT SYSDATE NOT NULL,
+      payment_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
       receipt_no VARCHAR2(255),
-      payment_type VARCHAR2(50) DEFAULT 'online' NOT NULL,
+      payment_type VARCHAR2(50) NOT NULL,
       is_luckydraw_winner NUMBER(1) DEFAULT 0 NOT NULL,
       CONSTRAINT fk_payments_book FOREIGN KEY (book_id) REFERENCES books(id),
       CONSTRAINT fk_payments_customer FOREIGN KEY (customer_id) REFERENCES customers(id),
@@ -84,7 +84,7 @@ async function initSchema() {
       address VARCHAR2(255),
       phone VARCHAR2(50),
       is_manual NUMBER(1) DEFAULT 0 NOT NULL,
-      win_date DATE DEFAULT SYSDATE NOT NULL,
+      win_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
       CONSTRAINT fk_winner_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
       CONSTRAINT fk_winner_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
     )'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;`);
