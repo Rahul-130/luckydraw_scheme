@@ -52,7 +52,7 @@ router.get('/stats', requireAuth, async (req, res) => {
     const eligibilityResult = await conn.execute(
       `SELECT
          c.id,
-         FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
+         FLOOR(MONTHS_BETWEEN(TRUNC(CURRENT_TIMESTAMP, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
          (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id) as payment_count
        FROM customers c
        JOIN books b ON c.book_id = b.id
@@ -74,31 +74,32 @@ router.get('/stats', requireAuth, async (req, res) => {
     // 5. Payment Stats
     const paymentStatsResult = await conn.execute(
       `SELECT
-         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'MM') ${dateFilterClause.replace(/p\./g, '')} THEN 1 ELSE 0 END) as current_month_count,
-         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'MM') ${dateFilterClause.replace(/p\./g, '')} THEN p.amount ELSE 0 END) as current_month_amount,
-         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -1) AND p.payment_date < TRUNC(SYSDATE, 'MM') ${dateFilterClause.replace(/p\./g, '')} THEN 1 ELSE 0 END) as previous_month_count,
-         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -1) AND p.payment_date < TRUNC(SYSDATE, 'MM') ${dateFilterClause.replace(/p\./g, '')} THEN p.amount ELSE 0 END) as previous_month_amount,
-         b.is_active
+         p.payment_type,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN 1 ELSE 0 END) as current_month_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount ELSE 0 END) as current_month_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN 1 ELSE 0 END) as previous_month_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount ELSE 0 END) as previous_month_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId
-       GROUP BY b.is_active`,
+       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1)
+       GROUP BY p.payment_type`,
       { ownerId, ...dateBinds }
     );
 
     const paymentStats = {
         all: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
-        active: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
-        inactive: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
+        online: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
+        cash: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
     };
 
     paymentStatsResult.rows.forEach(row => {
-        const type = row.IS_ACTIVE === 1 ? 'active' : 'inactive';
+        const type = row.PAYMENT_TYPE || 'online'; // Default to online if null
         paymentStats[type].currentMonth.count = row.CURRENT_MONTH_COUNT || 0;
         paymentStats[type].currentMonth.amount = row.CURRENT_MONTH_AMOUNT || 0;
         paymentStats[type].previousMonth.count = row.PREVIOUS_MONTH_COUNT || 0;
         paymentStats[type].previousMonth.amount = row.PREVIOUS_MONTH_AMOUNT || 0;
 
+        // Aggregate into 'all'
         paymentStats.all.currentMonth.count += row.CURRENT_MONTH_COUNT || 0;
         paymentStats.all.currentMonth.amount += row.CURRENT_MONTH_AMOUNT || 0;
         paymentStats.all.previousMonth.count += row.PREVIOUS_MONTH_COUNT || 0;
@@ -109,13 +110,13 @@ router.get('/stats', requireAuth, async (req, res) => {
     const dailyPaymentStatsResult = await conn.execute(
       `SELECT
          p.payment_type,
-         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) THEN 1 ELSE 0 END) as today_count,
-         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) THEN p.amount ELSE 0 END) as today_amount,
-         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) - 1 THEN 1 ELSE 0 END) as yesterday_count,
-         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) - 1 THEN p.amount ELSE 0 END) as yesterday_amount
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN 1 ELSE 0 END) as today_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN p.amount ELSE 0 END) as today_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN 1 ELSE 0 END) as yesterday_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN p.amount ELSE 0 END) as yesterday_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE) - 1
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 1
        GROUP BY p.payment_type`,
       { ownerId }
     );
@@ -143,13 +144,13 @@ router.get('/stats', requireAuth, async (req, res) => {
     const weeklyPaymentStatsResult = await conn.execute(
       `SELECT
          p.payment_type,
-         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') THEN 1 ELSE 0 END) as current_week_count,
-         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') THEN p.amount ELSE 0 END) as current_week_amount,
-         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') - 7 AND p.payment_date < TRUNC(SYSDATE, 'IW') THEN 1 ELSE 0 END) as previous_week_count,
-         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') - 7 AND p.payment_date < TRUNC(SYSDATE, 'IW') THEN p.amount ELSE 0 END) as previous_week_amount
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN 1 ELSE 0 END) as current_week_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount ELSE 0 END) as current_week_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN 1 ELSE 0 END) as previous_week_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount ELSE 0 END) as previous_week_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE, 'IW') - 7
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7
        GROUP BY p.payment_type`,
       { ownerId }
     );
@@ -180,7 +181,7 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(p.amount) as total_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -11)
+       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -11)
        GROUP BY TRUNC(p.payment_date, 'MM')
        ORDER BY payment_month ASC`,
       { ownerId }
@@ -208,7 +209,7 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(p.amount) as total_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE) - 6
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 6
        GROUP BY TRUNC(p.payment_date)
        ORDER BY payment_day ASC`,
       { ownerId }

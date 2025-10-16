@@ -50,12 +50,15 @@ const ComparisonStatCard = ({ title, value, prevValue, period = 'month' }) => {
   const isPositive = diff >= 0;
   const color = isPositive ? 'success.main' : 'error.main';
 
+  const formatValue = (val) => {
+    if (typeof val !== 'number') return val;
+    return title.toLowerCase().includes('amount') ? `₹${val.toLocaleString('en-IN')}` : val.toLocaleString('en-IN');
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
       <Typography variant="subtitle1" color="text.secondary">{title}</Typography>
-      <Typography variant="h4" fontWeight="bold">
-        {typeof value === 'number' ? `₹${value.toLocaleString('en-IN')}` : value}
-      </Typography>
+      <Typography variant="h4" fontWeight="bold">{formatValue(value)}</Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
         {isPositive ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
         <Typography variant="body2" fontWeight="bold" sx={{ ml: 0.5 }}>
@@ -246,10 +249,9 @@ export default function DashboardPage() {
             <ComparisonStatCard title="Total Amount" value={stats.dailyPaymentStats.all?.today?.amount || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.amount || 0} period="day" />
             <ComparisonStatCard title="Online Amount" value={stats.dailyPaymentStats.online?.today?.amount || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.amount || 0} period="day" />
             <ComparisonStatCard title="Cash Amount" value={stats.dailyPaymentStats.cash?.today?.amount || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.amount || 0} period="day" />
-            <ComparisonStatCard title="Total Payments count" value={stats.dailyPaymentStats.all?.today?.count.toLocaleString('en-IN') || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.count || 0} period="day" />
-            <ComparisonStatCard title="Total Online Payments count" value={stats.dailyPaymentStats.online?.today?.count.toLocaleString('en-IN') || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.count || 0} period="day" />
-            <ComparisonStatCard title="Total Cash Payments count" value={stats.dailyPaymentStats.cash?.today?.count.toLocaleString('en-IN') || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.count || 0} period="day" />
-
+            <ComparisonStatCard title="Total Payments count" value={stats.dailyPaymentStats.all?.today?.count || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.count || 0} period="day" />
+            <ComparisonStatCard title="Total Online Payments count" value={stats.dailyPaymentStats.online?.today?.count || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.count || 0} period="day" />
+            <ComparisonStatCard title="Total Cash Payments count" value={stats.dailyPaymentStats.cash?.today?.count || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.count || 0} period="day" />
           </div>
 
           {/* --- Weekly Summary --- */}
@@ -258,9 +260,9 @@ export default function DashboardPage() {
             <ComparisonStatCard title="Total Amount"  value={stats.weeklyPaymentStats.all?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.amount || 0} period="week" />
             <ComparisonStatCard title="Online Amount"  value={stats.weeklyPaymentStats.online?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.amount || 0} period="week" />
             <ComparisonStatCard title="Cash Amount"  value={stats.weeklyPaymentStats.cash?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.amount || 0} period="week" />
-            <ComparisonStatCard title="Total Payments count" value={stats.weeklyPaymentStats.all?.current?.count.toLocaleString('en-IN') || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.count || 0} period="week" />
-            <ComparisonStatCard title="Total Online Payments count" value={stats.weeklyPaymentStats.online?.current?.count.toLocaleString('en-IN') || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.count || 0} period="week" />
-            <ComparisonStatCard title="Total Cash Payments count" value={stats.weeklyPaymentStats.cash?.current?.count.toLocaleString('en-IN') || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.count || 0} period="week" />
+            <ComparisonStatCard title="Total Payments count" value={stats.weeklyPaymentStats.all?.current?.count || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.count || 0} period="week" />
+            <ComparisonStatCard title="Total Online Payments count" value={stats.weeklyPaymentStats.online?.current?.count || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.count || 0} period="week" />
+            <ComparisonStatCard title="Total Cash Payments count" value={stats.weeklyPaymentStats.cash?.current?.count || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.count || 0} period="week" />
           </div>
 
           {/* --- Monthly Payment Comparisons --- */}
@@ -271,9 +273,9 @@ export default function DashboardPage() {
             <ComparisonStatCard title="Total Amount"  value={stats.paymentStats.all?.currentMonth?.amount || 0} prevValue={stats.paymentStats.all?.previousMonth?.amount || 0} />
             <ComparisonStatCard title="Online Amount"  value={stats.paymentStats.online?.currentMonth?.amount || 0} prevValue={stats.paymentStats.online?.previousMonth?.amount || 0} />
             <ComparisonStatCard title="Cash Amount"  value={stats.paymentStats.cash?.currentMonth?.amount || 0} prevValue={stats.paymentStats.cash?.previousMonth?.amount || 0} />
-            <ComparisonStatCard title="Total Payments count" value={stats.paymentStats.all?.currentMonth?.count.toLocaleString('en-IN') || 0} prevValue={stats.paymentStats.all?.previousMonth?.count || 0} />
-            <ComparisonStatCard title="Total Online Payments count" value={stats.paymentStats.online?.currentMonth?.count.toLocaleString('en-IN') || 0} prevValue={stats.paymentStats.online?.previousMonth?.count || 0} />
-            <ComparisonStatCard title="Total Cash Payments count" value={stats.paymentStats.cash?.currentMonth?.count.toLocaleString('en-IN') || 0} prevValue={stats.paymentStats.cash?.previousMonth?.count || 0} />
+            <ComparisonStatCard title="Total Payments count" value={stats.paymentStats.all?.currentMonth?.count || 0} prevValue={stats.paymentStats.all?.previousMonth?.count || 0} />
+            <ComparisonStatCard title="Total Online Payments count" value={stats.paymentStats.online?.currentMonth?.count || 0} prevValue={stats.paymentStats.online?.previousMonth?.count || 0} />
+            <ComparisonStatCard title="Total Cash Payments count" value={stats.paymentStats.cash?.currentMonth?.count || 0} prevValue={stats.paymentStats.cash?.previousMonth?.count || 0} />
           </div>
 
           {/* --- Trend Charts --- */}
