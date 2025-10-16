@@ -108,51 +108,69 @@ router.get('/stats', requireAuth, async (req, res) => {
     // 6. Daily Payment Stats (Today vs Yesterday)
     const dailyPaymentStatsResult = await conn.execute(
       `SELECT
+         p.payment_type,
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) THEN 1 ELSE 0 END) as today_count,
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) THEN p.amount ELSE 0 END) as today_amount,
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) - 1 THEN 1 ELSE 0 END) as yesterday_count,
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(SYSDATE) - 1 THEN p.amount ELSE 0 END) as yesterday_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE) - 1`,
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE) - 1
+       GROUP BY p.payment_type`,
       { ownerId }
     );
 
     const dailyPaymentStats = {
-      today: {
-        count: dailyPaymentStatsResult.rows[0]?.TODAY_COUNT || 0,
-        amount: dailyPaymentStatsResult.rows[0]?.TODAY_AMOUNT || 0,
-      },
-      yesterday: {
-        count: dailyPaymentStatsResult.rows[0]?.YESTERDAY_COUNT || 0,
-        amount: dailyPaymentStatsResult.rows[0]?.YESTERDAY_AMOUNT || 0,
-      },
+      all: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
+      online: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
+      cash: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
     };
+    dailyPaymentStatsResult.rows.forEach(row => {
+      const type = row.PAYMENT_TYPE || 'online'; // Default to online if null
+      dailyPaymentStats[type].today.count = row.TODAY_COUNT || 0;
+      dailyPaymentStats[type].today.amount = row.TODAY_AMOUNT || 0;
+      dailyPaymentStats[type].yesterday.count = row.YESTERDAY_COUNT || 0;
+      dailyPaymentStats[type].yesterday.amount = row.YESTERDAY_AMOUNT || 0;
+
+      dailyPaymentStats.all.today.count += row.TODAY_COUNT || 0;
+      dailyPaymentStats.all.today.amount += row.TODAY_AMOUNT || 0;
+      dailyPaymentStats.all.yesterday.count += row.YESTERDAY_COUNT || 0;
+      dailyPaymentStats.all.yesterday.amount += row.YESTERDAY_AMOUNT || 0;
+    });
 
 
     // 7. Weekly Payment Stats (This week vs last week, starting Monday)
     const weeklyPaymentStatsResult = await conn.execute(
       `SELECT
+         p.payment_type,
          SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') THEN 1 ELSE 0 END) as current_week_count,
          SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') THEN p.amount ELSE 0 END) as current_week_amount,
          SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') - 7 AND p.payment_date < TRUNC(SYSDATE, 'IW') THEN 1 ELSE 0 END) as previous_week_count,
          SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') - 7 AND p.payment_date < TRUNC(SYSDATE, 'IW') THEN p.amount ELSE 0 END) as previous_week_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE, 'IW') - 7`,
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE, 'IW') - 7
+       GROUP BY p.payment_type`,
       { ownerId }
     );
 
     const weeklyPaymentStats = {
-      current: {
-        count: weeklyPaymentStatsResult.rows[0]?.CURRENT_WEEK_COUNT || 0,
-        amount: weeklyPaymentStatsResult.rows[0]?.CURRENT_WEEK_AMOUNT || 0,
-      },
-      previous: {
-        count: weeklyPaymentStatsResult.rows[0]?.PREVIOUS_WEEK_COUNT || 0,
-        amount: weeklyPaymentStatsResult.rows[0]?.PREVIOUS_WEEK_AMOUNT || 0,
-      },
+      all: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      online: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      cash: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
     };
+    weeklyPaymentStatsResult.rows.forEach(row => {
+      const type = row.PAYMENT_TYPE || 'online';
+      weeklyPaymentStats[type].current.count = row.CURRENT_WEEK_COUNT || 0;
+      weeklyPaymentStats[type].current.amount = row.CURRENT_WEEK_AMOUNT || 0;
+      weeklyPaymentStats[type].previous.count = row.PREVIOUS_WEEK_COUNT || 0;
+      weeklyPaymentStats[type].previous.amount = row.PREVIOUS_WEEK_AMOUNT || 0;
+
+      weeklyPaymentStats.all.current.count += row.CURRENT_WEEK_COUNT || 0;
+      weeklyPaymentStats.all.current.amount += row.CURRENT_WEEK_AMOUNT || 0;
+      weeklyPaymentStats.all.previous.count += row.PREVIOUS_WEEK_COUNT || 0;
+      weeklyPaymentStats.all.previous.amount += row.PREVIOUS_WEEK_AMOUNT || 0;
+    });
 
 
     // 7. Monthly payment stats for the last 12 months

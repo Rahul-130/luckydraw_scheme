@@ -242,27 +242,38 @@ export default function DashboardPage() {
 
           {/* --- Daily Overview --- */}
           <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Daily Overview</Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            <ComparisonStatCard title="Total Amount" value={stats.dailyPaymentStats.today.amount} prevValue={stats.dailyPaymentStats.yesterday.amount} period="day" />
-            <ComparisonStatCard title="Total Payments" value={stats.dailyPaymentStats.today.count.toLocaleString('en-IN')} prevValue={stats.dailyPaymentStats.yesterday.count} period="day" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <ComparisonStatCard title="Total Amount" value={stats.dailyPaymentStats.all?.today?.amount || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.amount || 0} period="day" />
+            <ComparisonStatCard title="Online Amount" value={stats.dailyPaymentStats.online?.today?.amount || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.amount || 0} period="day" />
+            <ComparisonStatCard title="Cash Amount" value={stats.dailyPaymentStats.cash?.today?.amount || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.amount || 0} period="day" />
+            <ComparisonStatCard title="Total Payments count" value={stats.dailyPaymentStats.all?.today?.count.toLocaleString('en-IN') || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.count || 0} period="day" />
+            <ComparisonStatCard title="Total Online Payments count" value={stats.dailyPaymentStats.online?.today?.count.toLocaleString('en-IN') || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.count || 0} period="day" />
+            <ComparisonStatCard title="Total Cash Payments count" value={stats.dailyPaymentStats.cash?.today?.count.toLocaleString('en-IN') || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.count || 0} period="day" />
+
           </div>
 
           {/* --- Weekly Summary --- */}
           <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Weekly Summary (Mon-Sun)</Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <ComparisonStatCard title="Total Week's Amount" value={stats.weeklyPaymentStats?.current?.amount} prevValue={stats.weeklyPaymentStats?.previous?.amount} period="week" />
-            <ComparisonStatCard title="Total Week's Payments" value={stats.weeklyPaymentStats?.current?.count.toLocaleString('en-IN')} prevValue={stats.weeklyPaymentStats?.previous?.count} period="week" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <ComparisonStatCard title="Total Amount"  value={stats.weeklyPaymentStats.all?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.amount || 0} period="week" />
+            <ComparisonStatCard title="Online Amount"  value={stats.weeklyPaymentStats.online?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.amount || 0} period="week" />
+            <ComparisonStatCard title="Cash Amount"  value={stats.weeklyPaymentStats.cash?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.amount || 0} period="week" />
+            <ComparisonStatCard title="Total Payments count" value={stats.weeklyPaymentStats.all?.current?.count.toLocaleString('en-IN') || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.count || 0} period="week" />
+            <ComparisonStatCard title="Total Online Payments count" value={stats.weeklyPaymentStats.online?.current?.count.toLocaleString('en-IN') || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.count || 0} period="week" />
+            <ComparisonStatCard title="Total Cash Payments count" value={stats.weeklyPaymentStats.cash?.current?.count.toLocaleString('en-IN') || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.count || 0} period="week" />
           </div>
 
           {/* --- Monthly Payment Comparisons --- */}
           <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>
             Monthly Overview
           </Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            <ComparisonStatCard title="Total Amount" value={stats.paymentStats.all.currentMonth.amount} prevValue={stats.paymentStats.all.previousMonth.amount} />
-            <ComparisonStatCard title="Total Payments" value={stats.paymentStats.all.currentMonth.count.toLocaleString('en-IN')} prevValue={stats.paymentStats.all.previousMonth.count} />
-            <ComparisonStatCard title="Active Books Amount" value={stats.paymentStats.active.currentMonth.amount} prevValue={stats.paymentStats.active.previousMonth.amount} />
-            <ComparisonStatCard title="Inactive Books Amount" value={stats.paymentStats.inactive.currentMonth.amount} prevValue={stats.paymentStats.inactive.previousMonth.amount} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <ComparisonStatCard title="Total Amount"  value={stats.paymentStats.all?.currentMonth?.amount || 0} prevValue={stats.paymentStats.all?.previousMonth?.amount || 0} />
+            <ComparisonStatCard title="Online Amount"  value={stats.paymentStats.online?.currentMonth?.amount || 0} prevValue={stats.paymentStats.online?.previousMonth?.amount || 0} />
+            <ComparisonStatCard title="Cash Amount"  value={stats.paymentStats.cash?.currentMonth?.amount || 0} prevValue={stats.paymentStats.cash?.previousMonth?.amount || 0} />
+            <ComparisonStatCard title="Total Payments count" value={stats.paymentStats.all?.currentMonth?.count.toLocaleString('en-IN') || 0} prevValue={stats.paymentStats.all?.previousMonth?.count || 0} />
+            <ComparisonStatCard title="Total Online Payments count" value={stats.paymentStats.online?.currentMonth?.count.toLocaleString('en-IN') || 0} prevValue={stats.paymentStats.online?.previousMonth?.count || 0} />
+            <ComparisonStatCard title="Total Cash Payments count" value={stats.paymentStats.cash?.currentMonth?.count.toLocaleString('en-IN') || 0} prevValue={stats.paymentStats.cash?.previousMonth?.count || 0} />
           </div>
 
           {/* --- Trend Charts --- */}
