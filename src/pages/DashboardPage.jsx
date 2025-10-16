@@ -74,6 +74,8 @@ const COLORS = {
   inactive: '#d32f2f',
   eligible: '#1976d2',
   notEligible: '#ed6c02',
+  online: '#ff9800', // Orange for Online
+  cash: '#4caf50',   // Green for Cash
   total: '#5f6368',
 };
 
@@ -158,32 +160,63 @@ export default function DashboardPage() {
     { name: 'From Inactive Books', value: stats.customerCounts.fromInactiveBooks },
   ];
 
-  const monthlyPaymentData = Array.from({ length: 12 }).map((_, i) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const entry = stats.monthlyPayments.find(p => p.PAYMENT_MONTH === monthStr);
-    return {
-      date: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-      amount: entry ? entry.TOTAL_AMOUNT : 0,
-    };
-  }).reverse();
+  // --- Process data for trend charts ---
+  const processTrendData = (rawData, dateKey, dateLabelFormat, length, dateIncrement) => {
+    const dataMap = new Map();
 
-  const yearlyPaymentData = stats.yearlyPayments.map(p => ({
-    year: p.PAYMENT_YEAR,
-    amount: p.TOTAL_AMOUNT,
-  }));
+    for (let i = 0; i < length; i++) {
+      const d = new Date();
+      dateIncrement(d, i);
+      const key = d.toISOString().split('T')[0].slice(0, dateKey === 'PAYMENT_YEAR' ? 4 : (dateKey === 'PAYMENT_MONTH' ? 7 : 10));
+      const label = d.toLocaleDateString('en-US', dateLabelFormat);
+      dataMap.set(key, { date: label, total: 0, online: 0, cash: 0 });
+    }
 
-  const last7DaysData = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dayStr = d.toISOString().split('T')[0];
-    const entry = stats.dailyPayments.find(p => p.PAYMENT_DAY.startsWith(dayStr));
-    return {
-      date: d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }),
-      amount: entry ? entry.TOTAL_AMOUNT : 0,
-    };
-  }).reverse();
+    rawData.forEach(p => {
+      const key = p[dateKey].slice(0, dateKey === 'PAYMENT_YEAR' ? 4 : (dateKey === 'PAYMENT_MONTH' ? 7 : 10));
+      if (dataMap.has(key)) {
+        const entry = dataMap.get(key);
+        const amount = p.TOTAL_AMOUNT || 0;
+        const type = p.PAYMENT_TYPE?.toLowerCase() || 'online';
+        entry[type] = amount;
+        entry.total += amount;
+      }
+    });
+
+    return Array.from(dataMap.values()).reverse();
+  };
+
+  const monthlyPaymentData = processTrendData(
+    stats.monthlyPayments,
+    'PAYMENT_MONTH',
+    { month: 'short', year: '2-digit' },
+    12,
+    (d, i) => d.setMonth(d.getMonth() - i)
+  );
+
+  const last7DaysData = processTrendData(
+    stats.dailyPayments,
+    'PAYMENT_DAY',
+    { weekday: 'short', day: 'numeric' },
+    7,
+    (d, i) => d.setDate(d.getDate() - i)
+  );
+
+  const yearlyPaymentData = (() => {
+    const dataMap = new Map();
+    stats.yearlyPayments.forEach(p => {
+      const year = p.PAYMENT_YEAR;
+      if (!dataMap.has(year)) {
+        dataMap.set(year, { year, total: 0, online: 0, cash: 0 });
+      }
+      const entry = dataMap.get(year);
+      const amount = p.TOTAL_AMOUNT || 0;
+      const type = p.PAYMENT_TYPE?.toLowerCase() || 'online';
+      entry[type] = amount;
+      entry.total += amount;
+    });
+    return Array.from(dataMap.values());
+  })();
 
   const renderActivityItem = (item, index) => {
     const isWinner = item.ACTIVITY_TYPE === 'winner';
@@ -292,7 +325,9 @@ export default function DashboardPage() {
                     <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
                     <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
                     <Legend />
-                    <Bar dataKey="amount" name="Amount Received" fill={COLORS.eligible} />
+                    <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
+                    <Bar dataKey="online" name="Online" fill={COLORS.online} />
+                    <Bar dataKey="cash" name="Cash" fill={COLORS.cash} />
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>
@@ -308,7 +343,9 @@ export default function DashboardPage() {
                     <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
                     <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
                     <Legend />
-                    <Bar dataKey="amount" name="Total Amount" fill={COLORS.active} />
+                    <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
+                    <Bar dataKey="online" name="Online" fill={COLORS.online} />
+                    <Bar dataKey="cash" name="Cash" fill={COLORS.cash} />
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>
@@ -321,7 +358,9 @@ export default function DashboardPage() {
                     <XAxis dataKey="date" />
                     <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
                     <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
-                    <Bar dataKey="amount" name="Amount" fill={COLORS.eligible} />
+                    <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
+                    <Bar dataKey="online" name="Online" fill={COLORS.online} />
+                    <Bar dataKey="cash" name="Cash" fill={COLORS.cash} />
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>
