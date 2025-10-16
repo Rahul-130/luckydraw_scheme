@@ -26,8 +26,8 @@ router.get('/stats', requireAuth, async (req, res) => {
     const customerCountsResult = await conn.execute(
       `SELECT
          COUNT(c.id) as total,
-         SUM(CASE WHEN b.is_active = 1 THEN 1 ELSE 0 END) as from_active_books,
-         SUM(CASE WHEN b.is_active = 0 THEN 1 ELSE 0 END) as from_inactive_books
+         SUM(CASE WHEN c.is_frozen = 0 AND b.is_active = 1 THEN 1 ELSE 0 END) as active_customers,
+         SUM(CASE WHEN c.is_frozen = 1 OR b.is_active = 0 THEN 1 ELSE 0 END) as inactive_customers
        FROM customers c
        JOIN books b ON c.book_id = b.id
        WHERE b.owner_id = :ownerId`,
@@ -225,8 +225,8 @@ router.get('/stats', requireAuth, async (req, res) => {
       },
       customerCounts: {
         total: customerCounts.TOTAL || 0,
-        fromActiveBooks: customerCounts.FROM_ACTIVE_BOOKS || 0,
-        fromInactiveBooks: customerCounts.FROM_INACTIVE_BOOKS || 0,
+        active: customerCounts.ACTIVE_CUSTOMERS || 0,
+        inactive: customerCounts.INACTIVE_CUSTOMERS || 0,
       },
       eligibilityCounts: {
         eligible: eligibleCount,

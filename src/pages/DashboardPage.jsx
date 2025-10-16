@@ -235,7 +235,7 @@ export default function DashboardPage() {
           {/* --- Top Level KPIs --- */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <StatCard title="Total Books" value={`${stats.bookCounts.total} (${stats.bookCounts.active} Active)`} />
-            <StatCard title="Total Customers" value={`${stats.customerCounts.total} (${stats.customerCounts.fromActiveBooks} Active)`} />
+            <StatCard title="Total Customers" value={`${stats.customerCounts.total} (${stats.customerCounts.active} Active)`} />
             <StatCard title="Total Winners" value={stats.winnerCounts.total} />
             <StatCard title="Eligible Customers" value={stats.eligibilityCounts.eligible} color={COLORS.eligible} />
           </div>
