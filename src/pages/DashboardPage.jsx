@@ -243,8 +243,15 @@ export default function DashboardPage() {
           {/* --- Daily Overview --- */}
           <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Daily Overview</Typography>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            <ComparisonStatCard title="Today's Amount" value={stats.dailyPaymentStats.today.amount} prevValue={stats.dailyPaymentStats.yesterday.amount} period="day" />
-            <ComparisonStatCard title="Today's Payments" value={stats.dailyPaymentStats.today.count} prevValue={stats.dailyPaymentStats.yesterday.count} period="day" />
+            <ComparisonStatCard title="Total Amount" value={stats.dailyPaymentStats.today.amount} prevValue={stats.dailyPaymentStats.yesterday.amount} period="day" />
+            <ComparisonStatCard title="Total Payments" value={stats.dailyPaymentStats.today.count.toLocaleString('en-IN')} prevValue={stats.dailyPaymentStats.yesterday.count} period="day" />
+          </div>
+
+          {/* --- Weekly Summary --- */}
+          <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Weekly Summary (Mon-Sun)</Typography>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <ComparisonStatCard title="Total Week's Amount" value={stats.weeklyPaymentStats?.current?.amount} prevValue={stats.weeklyPaymentStats?.previous?.amount} period="week" />
+            <ComparisonStatCard title="Total Week's Payments" value={stats.weeklyPaymentStats?.current?.count.toLocaleString('en-IN')} prevValue={stats.weeklyPaymentStats?.previous?.count} period="week" />
           </div>
 
           {/* --- Monthly Payment Comparisons --- */}

@@ -130,6 +130,29 @@ router.get('/stats', requireAuth, async (req, res) => {
     };
 
 
+    // 7. Weekly Payment Stats (This week vs last week, starting Monday)
+    const weeklyPaymentStatsResult = await conn.execute(
+      `SELECT
+         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') THEN 1 ELSE 0 END) as current_week_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') THEN p.amount ELSE 0 END) as current_week_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') - 7 AND p.payment_date < TRUNC(SYSDATE, 'IW') THEN 1 ELSE 0 END) as previous_week_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(SYSDATE, 'IW') - 7 AND p.payment_date < TRUNC(SYSDATE, 'IW') THEN p.amount ELSE 0 END) as previous_week_amount
+       FROM payments p
+       JOIN books b ON p.book_id = b.id
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(SYSDATE, 'IW') - 7`,
+      { ownerId }
+    );
+
+    const weeklyPaymentStats = {
+      current: {
+        count: weeklyPaymentStatsResult.rows[0]?.CURRENT_WEEK_COUNT || 0,
+        amount: weeklyPaymentStatsResult.rows[0]?.CURRENT_WEEK_AMOUNT || 0,
+      },
+      previous: {
+        count: weeklyPaymentStatsResult.rows[0]?.PREVIOUS_WEEK_COUNT || 0,
+        amount: weeklyPaymentStatsResult.rows[0]?.PREVIOUS_WEEK_AMOUNT || 0,
+      },
+    };
 
 
     // 7. Monthly payment stats for the last 12 months
@@ -198,6 +221,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       },
       paymentStats,
       dailyPaymentStats,
+      weeklyPaymentStats,
       dailyPayments,
       monthlyPayments,
       yearlyPayments,
