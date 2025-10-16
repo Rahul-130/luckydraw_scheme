@@ -5,7 +5,7 @@ const router = express.Router();
 
 // Payments - to create a payment for a customer in a book
 router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, res) => {
-  const { amount, monthIso, receiptNo } = req.body || {};
+  const { amount, monthIso, receiptNo, paymentType } = req.body || {};
   if (!amount || !monthIso) return res.status(400).json({ error: 'amount and monthIso are required' });
   const conn = await getConnection();
   try {
@@ -41,13 +41,14 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
 
     // Insert payment
     const result = await conn.execute(
-      `INSERT INTO payments (customer_id, book_id, month_iso, amount, receipt_no) VALUES (:cid, :bid, :monthIso, :amount, :receiptNo) RETURNING id, payment_date INTO :id, :payment_date`,
+      `INSERT INTO payments (customer_id, book_id, month_iso, amount, receipt_no, payment_type) VALUES (:cid, :bid, :monthIso, :amount, :receiptNo, :paymentType) RETURNING id, payment_date INTO :id, :payment_date`,
       {
         cid: Number(req.params.customerId),
         bid: Number(req.params.bookId),
         monthIso: String(monthIso),
         amount: Number(amount),
         receiptNo: receiptNo ? String(receiptNo) : null,
+        paymentType: paymentType || 'online',
         id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
         payment_date: { dir: oracledb.BIND_OUT, type: oracledb.DATE }
       }
@@ -65,6 +66,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
       monthIso,
       amount: Number(amount),
       receiptNo,
+      paymentType: paymentType || 'online',
       paymentDate: formattedDate
     });
   } catch (e) {
@@ -91,7 +93,7 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
     if (!custR.rows.length) return res.status(404).json({ error: 'customer not found' });
     // Get payments
     const payR = await conn.execute(
-      `SELECT id, month_iso, amount, payment_date, receipt_no, is_luckydraw_winner
+      `SELECT id, month_iso, amount, payment_date, receipt_no, payment_type, is_luckydraw_winner
         FROM payments
         WHERE customer_id=:cid AND book_id=:bid
         ORDER BY payment_date DESC`,
@@ -109,6 +111,7 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
         monthIso: row.MONTH_ISO,
         amount: Number(row.AMOUNT),
         receiptNo: row.RECEIPT_NO,
+        paymentType: row.PAYMENT_TYPE,
         paymentDate: formattedDate,
         isLuckyDrawWinner: row.IS_LUCKYDRAW_WINNER === 1
       };

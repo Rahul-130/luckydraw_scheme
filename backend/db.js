@@ -66,6 +66,7 @@ async function initSchema() {
       amount NUMBER NOT NULL,
       payment_date DATE DEFAULT SYSDATE NOT NULL,
       receipt_no VARCHAR2(255),
+      payment_type VARCHAR2(50) DEFAULT 'online' NOT NULL,
       is_luckydraw_winner NUMBER(1) DEFAULT 0 NOT NULL,
       CONSTRAINT fk_payments_book FOREIGN KEY (book_id) REFERENCES books(id),
       CONSTRAINT fk_payments_customer FOREIGN KEY (customer_id) REFERENCES customers(id),

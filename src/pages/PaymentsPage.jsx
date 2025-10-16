@@ -21,6 +21,11 @@ import {
   Paper,
   Stack,
   IconButton,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormControl,
+  FormLabel,
 } from '@mui/material';
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack } from "@mui/icons-material";
@@ -34,7 +39,7 @@ export default function PaymentsPage() {
     const [book, setBook] = useState(null);
     const [open, setOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
-    const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '' });
+    const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'online' });
     const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '' });
     const { showSnackbar } = useSnackbar();
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -120,7 +125,8 @@ export default function PaymentsPage() {
         setForm({
             amount: amount,
             monthIso: month,
-            receiptNo: ''
+            receiptNo: '',
+            paymentType: 'online' // Default to online
         });
         setOpen(true);
     };
@@ -216,6 +222,7 @@ export default function PaymentsPage() {
                   { field: 'monthIso', headerName: 'Month', width: 150 },
                   { field: 'paymentDate', headerName: 'Date', width: 150 },
                   { field: 'receiptNo', headerName: 'Receipt No.', width: 150 },
+                  { field: 'paymentType', headerName: 'Type', width: 120 },
                   {
                       field: 'actions',
                       headerName: 'Actions',
@@ -284,6 +291,17 @@ export default function PaymentsPage() {
                   </MenuItem>
                 ))}
             </TextField>
+              <FormControl component="fieldset" margin="normal">
+                <FormLabel component="legend">Payment Type</FormLabel>
+                <RadioGroup
+                  row
+                  value={form.paymentType}
+                  onChange={(e) => setForm({ ...form, paymentType: e.target.value })}
+                >
+                  <FormControlLabel value="online" control={<Radio />} label="Online" />
+                  <FormControlLabel value="cash" control={<Radio />} label="Cash" />
+                </RadioGroup>
+              </FormControl>
             <TextField label="Receipt No." fullWidth margin="normal" value={form.receiptNo} onChange={e => setForm({ ...form, receiptNo: e.target.value })} />
             <DatePicker // Label already good
               label="Month"
