@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 export const signup = (data) => 
     axios.post(`${API_URL}/auth/signup`, data);
@@ -177,4 +177,9 @@ export const getRecentActivity = (token, page, pageSize) =>
     axios.get(`${API_URL}/dashboard/activity`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { page, pageSize },
+    });
+
+export const backupToGoogleDrive = (token) =>
+    axios.post(`${API_URL}/backup/googledrive`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
     });

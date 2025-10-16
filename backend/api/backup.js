@@ -6,6 +6,7 @@ const fs = require('fs-extra');
 const archiver = require('archiver');
 const { format } = require('fast-csv');
 const { getConnection } = require('../db');
+const axios = require('axios');
 const requireAuth = require('../middleware/requireAuth');
 
 const TABLES_TO_BACKUP = ['users', 'books', 'customers', 'payments', 'winner'];
@@ -103,6 +104,52 @@ router.post('/download', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Failed to create backup:', error);
     res.status(500).json({ message: 'Failed to create backup.' });
+  }
+});
+
+router.post('/googledrive', requireAuth, async (req, res) => {
+  const webhookUrl = process.env.N8N_BACKUP_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.error('N8N_BACKUP_WEBHOOK_URL is not set in the environment variables.');
+    return res.status(500).json({ message: 'Cloud backup service is not configured.' });
+  }
+
+  try {
+    new URL(webhookUrl);
+  } catch (error) {
+    console.error('Invalid N8N_BACKUP_WEBHOOK_URL:', webhookUrl);
+    return res.status(500).json({ message: 'Cloud backup service URL is invalid.' });
+  }
+
+  let zipFilePath;
+  try {
+    zipFilePath = await createBackupArchive();
+    const fileStream = fs.createReadStream(zipFilePath);
+
+    // Send the file as a stream to the n8n webhook and wait for the response
+    const n8nResponse = await axios.post(webhookUrl, fileStream, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'File-Name': path.basename(zipFilePath),
+      },
+    });
+
+    // Check if n8n responded with a success status
+    if (n8nResponse.status >= 200 && n8nResponse.status < 300) {
+      console.log(`Successfully created and uploaded backup: ${path.basename(zipFilePath)}`);
+      res.status(200).json({ message: 'Backup successfully created and saved to Google Drive.' });
+    } else {
+      throw new Error(`n8n workflow responded with status ${n8nResponse.status}`);
+    }
+  } catch (error) {
+    console.error('Error during Google Drive backup process:', error.message);
+    res.status(500).json({ message: 'An error occurred during the backup process.' });
+  } finally {
+    // Always clean up the local zip file, regardless of success or failure
+    if (zipFilePath) {
+      await fs.remove(zipFilePath);
+    }
   }
 });
 

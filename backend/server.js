@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -17,6 +18,9 @@ const dashboardRoutes = require('./api/dashboard');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the React build directory
+app.use(express.static(path.join(__dirname, '..', 'dist')));
 
 initSchema().catch(err => console.error('Schema init failed', err));
 
@@ -46,6 +50,12 @@ app.use('/api/winners', winnersRoutes);
 app.use('/api/eligible-customers', eligibleCustomersRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+
+// The "catchall" handler: for any request that doesn't match one above,
+// send back the React app's index.html file.
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+});
 
 
 const PORT = Number(process.env.PORT || 4000);

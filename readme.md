@@ -98,3 +98,22 @@ Authentication is required for all main operations.
 - Database: Oracle
 
 ---
+
+
+
+### for n8n to run the backup to google drive
+docker run -it -d \
+  -p 5678:5678 \
+  -v ~/.n8n:/home/node/.n8n \
+  --name n8n \
+  n8nio/n8n
+
+docker run -it -d `
+  --name n8n `
+  -p 5678:5678 `
+  -v n8n_data:/home/node/.n8n `
+  -e N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true `
+  -e N8N_RUNNERS_ENABLED=true `
+  -e GENERIC_TIMEZONE="Asia/Kolkata" `
+  -e TZ="Asia/Kolkata" `
+  docker.n8n.io/n8nio/n8n
