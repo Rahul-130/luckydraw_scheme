@@ -223,6 +223,20 @@ router.get('/stats', requireAuth, async (req, res) => {
 
     const dailyPayments = dailyPaymentsResult.rows;
 
+    // 10. Customer growth trend
+    const customerGrowthResult = await conn.execute(
+      `SELECT
+         TO_CHAR(TRUNC(c.created_at, 'MM'), 'YYYY-MM') as creation_month,
+         COUNT(c.id) as new_customers
+       FROM customers c
+       JOIN books b ON c.book_id = b.id
+       WHERE b.owner_id = :ownerId AND c.created_at >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -11)
+       GROUP BY TRUNC(c.created_at, 'MM')
+       ORDER BY creation_month ASC`,
+      { ownerId }
+    );
+    const customerGrowth = customerGrowthResult.rows;
+
 
     res.json({
       bookCounts: {
@@ -250,6 +264,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       dailyPayments,
       monthlyPayments,
       yearlyPayments,
+      customerGrowth,
     });
 
   } catch (e) {

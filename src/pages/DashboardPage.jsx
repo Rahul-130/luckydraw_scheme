@@ -27,10 +27,13 @@ import {
   Cell,
   BarChart,
   Bar,
+  LineChart,
+  CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
   Legend,
+  Line,
   ResponsiveContainer,
 } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
@@ -231,6 +234,28 @@ export default function DashboardPage() {
     return Array.from(dataMap.values());
   })();
 
+  const paymentMethodMixData = stats ? [
+    { name: 'Online', value: stats.paymentStats.online?.currentMonth?.amount || 0 },
+    { name: 'Cash', value: stats.paymentStats.cash?.currentMonth?.amount || 0 },
+  ] : [];
+
+  const customerGrowthData = (() => {
+    if (!stats) return [];
+    const dataMap = new Map();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      dataMap.set(key, { date: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), count: 0 });
+    }
+    stats.customerGrowth.forEach(item => {
+      if (dataMap.has(item.CREATION_MONTH)) {
+        dataMap.get(item.CREATION_MONTH).count = item.NEW_CUSTOMERS;
+      }
+    });
+    return Array.from(dataMap.values());
+  })();
+
   const renderActivityItem = (item, index) => {
     const isWinner = item.ACTIVITY_TYPE === 'winner';
     const title = isWinner
@@ -309,6 +334,25 @@ export default function DashboardPage() {
                 <StatCard title="Total Customers" value={`${stats.customerCounts.total} (${stats.customerCounts.active} Active)`} />
                 <StatCard title="Total Winners" value={stats.winnerCounts.total} />
                 <StatCard title="Eligible Customers" value={stats.eligibilityCounts.eligible} color={COLORS.eligible} />
+              </>
+            )}
+          </div>
+
+          {/* --- Average Payment KPIs --- */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+            {loading ? (
+              [...Array(3)].map((_, i) => <SkeletonCard key={i} />)
+            ) : (
+              <>
+                <StatCard title="Avg. Payment (Today)" value={stats.dailyPaymentStats.all?.today?.count > 0
+                  ? `₹${(stats.dailyPaymentStats.all.today.amount / stats.dailyPaymentStats.all.today.count).toFixed(2)}`
+                  : '₹0'} />
+                <StatCard title="Avg. Payment (This Week)" value={stats.weeklyPaymentStats.all?.current?.count > 0
+                  ? `₹${(stats.weeklyPaymentStats.all.current.amount / stats.weeklyPaymentStats.all.current.count).toFixed(2)}`
+                  : '₹0'} />
+                <StatCard title="Avg. Payment (This Month)" value={stats.paymentStats.all?.currentMonth?.count > 0
+                  ? `₹${(stats.paymentStats.all.currentMonth.amount / stats.paymentStats.all.currentMonth.count).toFixed(2)}`
+                  : '₹0'} />
               </>
             )}
           </div>
@@ -435,7 +479,7 @@ export default function DashboardPage() {
           <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
             Distribution Overview
           </Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="sm:col-span-1">
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Book Status</Typography>
@@ -472,7 +516,7 @@ export default function DashboardPage() {
                 )}
               </Paper>
             </div>
-            <div className="sm:col-span-2 lg:col-span-1">
+            <div className="sm:col-span-1">
               <Paper elevation={3} sx={{ p: 2, height: 400 }}>
                 <Typography variant="h6" gutterBottom>Eligibility (Active Books)</Typography>
                 {loading ? (
@@ -490,6 +534,48 @@ export default function DashboardPage() {
                 )}
               </Paper>
             </div>
+            <div className="sm:col-span-1">
+              <Paper elevation={3} sx={{ p: 2, pb:6, height: 400 }}>
+                <Typography variant="h6" gutterBottom>Payment Method Mix (This Month)</Typography>
+                {loading ? (
+                  <Skeleton variant="circular" width={200} height={200} sx={{ mx: 'auto', mt: 4 }} />
+                ) : ( <ResponsiveContainer width="100%" height="100%">
+                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <Pie data={paymentMethodMixData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="80%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                        <Cell key="cell-0" fill={COLORS.online} />
+                        <Cell key="cell-1" fill={COLORS.cash} />
+                      </Pie>
+                      <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </Paper>
+            </div>
+          </div>
+
+          {/* --- Customer Growth Chart --- */}
+          <div className="grid grid-cols-1 gap-6 mb-6 mt-4">
+            <Paper elevation={3} sx={{ p: 2, pb:4, height: 400 }}>
+              <Typography variant="h6" gutterBottom>New Customer Growth (Last 12 Months)</Typography>
+              {loading ? (
+                <Skeleton variant="rectangular" width="100%" height={320} />
+              ) : (
+                <ResponsiveContainer>
+                  <LineChart data={customerGrowthData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip
+                      formatter={(value, name) => [value, 'New Customers']}
+                      labelStyle={{ fontWeight: 'bold' }}
+                    />
+                    <Legend verticalAlign="top" />
+                    <Line type="monotone" dataKey="count" name="New Customers" stroke={COLORS.eligible} strokeWidth={2} activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </Paper>
           </div>
 
           {/* --- Recent Activity --- */}
