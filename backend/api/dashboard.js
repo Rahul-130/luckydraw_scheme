@@ -207,13 +207,13 @@ router.get('/stats', requireAuth, async (req, res) => {
     // 9. Daily payment stats for the last 7 days
     const dailyPaymentsResult = await conn.execute(
       `SELECT
-         TRUNC(p.payment_date) as payment_day,
+         TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD') as payment_day,
          p.payment_type,
          SUM(p.amount) as total_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id
        WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 6
-       GROUP BY TRUNC(p.payment_date), p.payment_type
+       GROUP BY TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD'), p.payment_type
        ORDER BY payment_day ASC`,
       { ownerId }
     );
