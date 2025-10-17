@@ -168,8 +168,8 @@ export default function DashboardPage() {
       const d = new Date();
       dateIncrement(d, i);
       const key = d.toISOString().split('T')[0].slice(0, dateKey === 'PAYMENT_YEAR' ? 4 : (dateKey === 'PAYMENT_MONTH' ? 7 : 10));
-      const label = d.toLocaleDateString('en-US', dateLabelFormat);
-      dataMap.set(key, { date: label, total: 0, online: 0, cash: 0 });
+      const label = d.toLocaleDateString('en-US', dateLabelFormat); // prettier-ignore
+      dataMap.set(key, { date: label, total: 0, online: 0, cash: 0, total_count: 0, online_count: 0, cash_count: 0 });
     }
 
     rawData.forEach(p => {
@@ -177,9 +177,12 @@ export default function DashboardPage() {
       if (dataMap.has(key)) {
         const entry = dataMap.get(key);
         const amount = p.TOTAL_AMOUNT || 0;
+        const count = p.PAYMENT_COUNT || 0;
         const type = p.PAYMENT_TYPE?.toLowerCase() || 'online';
         entry[type] = amount;
+        entry[`${type}_count`] = count;
         entry.total += amount;
+        entry.total_count += count;
       }
     });
 
@@ -207,13 +210,16 @@ export default function DashboardPage() {
     stats.yearlyPayments.forEach(p => {
       const year = p.PAYMENT_YEAR;
       if (!dataMap.has(year)) {
-        dataMap.set(year, { year, total: 0, online: 0, cash: 0 });
+        dataMap.set(year, { year, total: 0, online: 0, cash: 0, total_count: 0, online_count: 0, cash_count: 0 });
       }
       const entry = dataMap.get(year);
       const amount = p.TOTAL_AMOUNT || 0;
+      const count = p.PAYMENT_COUNT || 0;
       const type = p.PAYMENT_TYPE?.toLowerCase() || 'online';
       entry[type] = amount;
+      entry[`${type}_count`] = count;
       entry.total += amount;
+      entry.total_count += count;
     });
     return Array.from(dataMap.values());
   })();
@@ -242,6 +248,24 @@ export default function DashboardPage() {
         </Typography>
       </ListItem>
     );
+  };
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <Paper elevation={3} sx={{ p: 2, backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+          <Typography variant="subtitle2" gutterBottom>{label}</Typography>
+          {payload.map((pld) => (
+            <Typography key={pld.dataKey} variant="body2" sx={{ color: pld.color }}>
+              {pld.name}: ₹{pld.value.toLocaleString('en-IN')}
+              {pld.payload[`${pld.dataKey}_count`] > 0 && ` (count: ${pld.payload[`${pld.dataKey}_count`]})`}
+            </Typography>
+          ))}
+        </Paper>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -323,7 +347,7 @@ export default function DashboardPage() {
                   <BarChart data={monthlyPaymentData}>
                     <XAxis dataKey="date" />
                     <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
-                    <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
+                    <Tooltip content={<CustomTooltip />} />
                     <Legend />
                     <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
                     <Bar dataKey="online" name="Online" fill={COLORS.online} />
@@ -341,7 +365,7 @@ export default function DashboardPage() {
                   <BarChart data={yearlyPaymentData}>
                     <XAxis dataKey="year" />
                     <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
-                    <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
+                    <Tooltip content={<CustomTooltip />} />
                     <Legend />
                     <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
                     <Bar dataKey="online" name="Online" fill={COLORS.online} />
@@ -357,7 +381,7 @@ export default function DashboardPage() {
                   <BarChart data={last7DaysData}>
                     <XAxis dataKey="date" />
                     <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
-                    <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
+                    <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
                     <Bar dataKey="online" name="Online" fill={COLORS.online} />
                     <Bar dataKey="cash" name="Cash" fill={COLORS.cash} />

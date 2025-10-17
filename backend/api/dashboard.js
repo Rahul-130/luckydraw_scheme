@@ -179,11 +179,12 @@ router.get('/stats', requireAuth, async (req, res) => {
       `SELECT 
          TO_CHAR(TRUNC(p.payment_date, 'MM'), 'YYYY-MM') as payment_month,
          p.payment_type,
-         SUM(p.amount) as total_amount
+         SUM(p.amount) as total_amount,
+         COUNT(*) as payment_count
        FROM payments p
        JOIN books b ON p.book_id = b.id
        WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -11)
-       GROUP BY TRUNC(p.payment_date, 'MM'), p.payment_type
+       GROUP BY TRUNC(p.payment_date, 'MM'), p.payment_type, b.owner_id
        ORDER BY payment_month ASC`,
       { ownerId }
     );
@@ -194,11 +195,12 @@ router.get('/stats', requireAuth, async (req, res) => {
       `SELECT 
          TO_CHAR(TRUNC(p.payment_date, 'YYYY'), 'YYYY') as payment_year,
          p.payment_type,
-         SUM(p.amount) as total_amount
+         SUM(p.amount) as total_amount,
+         COUNT(*) as payment_count
        FROM payments p
        JOIN books b ON p.book_id = b.id
        WHERE b.owner_id = :ownerId
-       GROUP BY TRUNC(p.payment_date, 'YYYY'), p.payment_type
+       GROUP BY TRUNC(p.payment_date, 'YYYY'), p.payment_type, b.owner_id
        ORDER BY payment_year ASC`,
       { ownerId }
     );
@@ -209,11 +211,12 @@ router.get('/stats', requireAuth, async (req, res) => {
       `SELECT
          TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD') as payment_day,
          p.payment_type,
-         SUM(p.amount) as total_amount
+         SUM(p.amount) as total_amount,
+         COUNT(*) as payment_count
        FROM payments p
        JOIN books b ON p.book_id = b.id
        WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 6
-       GROUP BY TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD'), p.payment_type
+       GROUP BY TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD'), p.payment_type, b.owner_id
        ORDER BY payment_day ASC`,
       { ownerId }
     );
