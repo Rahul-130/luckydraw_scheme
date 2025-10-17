@@ -117,8 +117,8 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
 
 // Edit payment - amount and receipt number can be updated
 router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, async (req, res) => {
-  const { amount, receiptNo } = req.body || {};
-  if (!amount && receiptNo === undefined) return res.status(400).json({ error: 'amount or receiptNo is required' });
+  const { amount, paymentType, receiptNo } = req.body || {};
+  if (!amount && paymentType === undefined && receiptNo === undefined) return res.status(400).json({ error: 'amount or receiptNo or paymentType is required' });
   const conn = await getConnection();
   try {
     // Check book ownership
@@ -143,7 +143,9 @@ router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, 
     const fields = [];
     const binds = { pid: Number(req.params.paymentId) };
     if (amount) { fields.push('amount=:amount'); binds.amount = Number(amount); }
+    if (paymentType) { fields.push('payment_type=:paymentType'); binds.paymentType = String(paymentType); }
     if (receiptNo !== undefined) { fields.push('receipt_no=:receiptNo'); binds.receiptNo = receiptNo ? String(receiptNo) : null; }
+
 
     const sql = `UPDATE payments SET ${fields.join(', ')} WHERE id=:pid`;
     await conn.execute(sql, binds);

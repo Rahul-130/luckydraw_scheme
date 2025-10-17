@@ -40,7 +40,7 @@ export default function PaymentsPage() {
     const [open, setOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'online' });
-    const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '' });
+    const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '', paymentType: 'online'});
     const { showSnackbar } = useSnackbar();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [paymentToDelete, setPaymentToDelete] = useState(null);
@@ -122,10 +122,12 @@ export default function PaymentsPage() {
 
     const handleOpenAddDialog = () => {
         const { month, amount } = getNextPaymentDetails();
+        // Auto-generate a unique receipt number
+        const uniqueReceiptNo = `R-${customerId}-${Date.now()}`;
         setForm({
             amount: amount,
             monthIso: month,
-            receiptNo: '',
+            receiptNo: uniqueReceiptNo,
             paymentType: 'online' // Default to online
         });
         setOpen(true);
@@ -307,7 +309,7 @@ export default function PaymentsPage() {
                   <FormControlLabel value="cash" control={<Radio />} label="Cash" />
                 </RadioGroup>
               </FormControl>
-            <TextField label="Receipt No." fullWidth margin="normal" value={form.receiptNo} onChange={e => setForm({ ...form, receiptNo: e.target.value })} />
+            <TextField label="Receipt No." fullWidth margin="normal" value={form.receiptNo} onChange={e => setForm({ ...form, receiptNo: e.target.value })} onFocus={event => event.target.select()} />
             <DatePicker // Label already good
               label="Month"
               views={['year', 'month']}
@@ -340,7 +342,18 @@ export default function PaymentsPage() {
                     </MenuItem>
                   ))}
               </TextField>
-              <TextField label="Receipt No." fullWidth margin="normal" value={editForm.receiptNo} onChange={e => setEditForm({ ...editForm, receiptNo: e.target.value })} />
+              <FormControl component="fieldset" margin="normal">
+                <FormLabel component="legend">Payment Type</FormLabel>
+                <RadioGroup
+                  row
+                  value={editForm.paymentType || 'online'}
+                  onChange={(e) => setEditForm({ ...editForm, paymentType: e.target.value })}
+                >
+                  <FormControlLabel value="online" control={<Radio />} label="Online" />
+                  <FormControlLabel value="cash" control={<Radio />} label="Cash" />
+                </RadioGroup>
+              </FormControl>
+              <TextField label="Receipt No." fullWidth margin="normal" value={editForm.receiptNo} onChange={e => setEditForm({ ...editForm, receiptNo: e.target.value })} onFocus={event => event.target.select()} />
               <DatePicker // Label already good
                 label="Month"
                 views={['year', 'month']}
