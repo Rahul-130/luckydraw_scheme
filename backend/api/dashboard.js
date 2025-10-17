@@ -173,6 +173,39 @@ router.get('/stats', requireAuth, async (req, res) => {
       weeklyPaymentStats.all.previous.amount += row.PREVIOUS_WEEK_AMOUNT || 0;
     });
 
+    // 8. Yearly Overview Stats (This year vs last year)
+    const yearlyOverviewStatsResult = await conn.execute(
+      `SELECT
+         p.payment_type,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN 1 ELSE 0 END) as current_year_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount ELSE 0 END) as current_year_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN 1 ELSE 0 END) as previous_year_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount ELSE 0 END) as previous_year_amount
+       FROM payments p 
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) ${dateFilterClause}
+       GROUP BY p.payment_type`,
+      { ownerId, ...dateBinds }
+    );
+
+    const yearlyOverviewStats = {
+      all: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      online: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      cash: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+    };
+    yearlyOverviewStatsResult.rows.forEach(row => {
+      const type = row.PAYMENT_TYPE || 'online';
+      yearlyOverviewStats[type].current.count = row.CURRENT_YEAR_COUNT || 0;
+      yearlyOverviewStats[type].current.amount = row.CURRENT_YEAR_AMOUNT || 0;
+      yearlyOverviewStats[type].previous.count = row.PREVIOUS_YEAR_COUNT || 0;
+      yearlyOverviewStats[type].previous.amount = row.PREVIOUS_YEAR_AMOUNT || 0;
+
+      yearlyOverviewStats.all.current.count += row.CURRENT_YEAR_COUNT || 0;
+      yearlyOverviewStats.all.current.amount += row.CURRENT_YEAR_AMOUNT || 0;
+      yearlyOverviewStats.all.previous.count += row.PREVIOUS_YEAR_COUNT || 0;
+      yearlyOverviewStats.all.previous.amount += row.PREVIOUS_YEAR_AMOUNT || 0;
+    });
+
 
     // 7. Monthly payment stats for the last 12 months
     const monthlyPaymentsResult = await conn.execute(
@@ -261,6 +294,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       paymentStats,
       dailyPaymentStats,
       weeklyPaymentStats,
+      yearlyOverviewStats,
       dailyPayments,
       monthlyPayments,
       yearlyPayments,

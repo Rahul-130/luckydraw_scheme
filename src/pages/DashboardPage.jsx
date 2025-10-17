@@ -14,6 +14,8 @@ import {
   ListItemText,
   Avatar,
   Skeleton,
+  ToggleButton,
+  ToggleButtonGroup,
   Pagination,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -98,6 +100,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true); // Keep loading true initially
   const [error, setError] = useState('');
+  const [overview, setOverview] = useState('daily');
   const [dateRange, setDateRange] = useState({
     start: null,
     end: null,
@@ -357,58 +360,98 @@ export default function DashboardPage() {
             )}
           </div>
 
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+            <ToggleButtonGroup value={overview} exclusive onChange={(e, newOverview) => newOverview && setOverview(newOverview)} aria-label="Overview Period">
+              <ToggleButton value="daily" aria-label="daily overview">Daily</ToggleButton>
+              <ToggleButton value="weekly" aria-label="weekly overview">Weekly</ToggleButton>
+              <ToggleButton value="monthly" aria-label="monthly overview">Monthly</ToggleButton>
+              <ToggleButton value="yearly" aria-label="yearly overview">Yearly</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
           {/* --- Daily Overview --- */}
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Daily Overview</Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {loading ? (
-              [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
-            ) : (
-              <>
-                <ComparisonStatCard title="Total Amount" value={stats.dailyPaymentStats.all?.today?.amount || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.amount || 0} period="day" />
-                <ComparisonStatCard title="Online Amount" value={stats.dailyPaymentStats.online?.today?.amount || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.amount || 0} period="day" />
-                <ComparisonStatCard title="Cash Amount" value={stats.dailyPaymentStats.cash?.today?.amount || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.amount || 0} period="day" />
-                <ComparisonStatCard title="Total Payments count" value={stats.dailyPaymentStats.all?.today?.count || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.count || 0} period="day" />
-                <ComparisonStatCard title="Total Online Payments count" value={stats.dailyPaymentStats.online?.today?.count || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.count || 0} period="day" />
-                <ComparisonStatCard title="Total Cash Payments count" value={stats.dailyPaymentStats.cash?.today?.count || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.count || 0} period="day" />
-              </>
-            )}
-          </div>
+          {overview === 'daily' && (
+            <>
+              <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Daily Overview</Typography>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {loading ? (
+                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                ) : (
+                  <>
+                    <ComparisonStatCard title="Total Amount" value={stats.dailyPaymentStats.all?.today?.amount || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.amount || 0} period="day" />
+                    <ComparisonStatCard title="Online Amount" value={stats.dailyPaymentStats.online?.today?.amount || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.amount || 0} period="day" />
+                    <ComparisonStatCard title="Cash Amount" value={stats.dailyPaymentStats.cash?.today?.amount || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.amount || 0} period="day" />
+                    <ComparisonStatCard title="Total Payments count" value={stats.dailyPaymentStats.all?.today?.count || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.count || 0} period="day" />
+                    <ComparisonStatCard title="Total Online Payments count" value={stats.dailyPaymentStats.online?.today?.count || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.count || 0} period="day" />
+                    <ComparisonStatCard title="Total Cash Payments count" value={stats.dailyPaymentStats.cash?.today?.count || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.count || 0} period="day" />
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           {/* --- Weekly Summary --- */}
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Weekly Summary (Mon-Sun)</Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {loading ? (
-              [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
-            ) : (
-              <>
-                <ComparisonStatCard title="Total Amount"  value={stats.weeklyPaymentStats.all?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.amount || 0} period="week" />
-                <ComparisonStatCard title="Online Amount"  value={stats.weeklyPaymentStats.online?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.amount || 0} period="week" />
-                <ComparisonStatCard title="Cash Amount"  value={stats.weeklyPaymentStats.cash?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.amount || 0} period="week" />
-                <ComparisonStatCard title="Total Payments count" value={stats.weeklyPaymentStats.all?.current?.count || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.count || 0} period="week" />
-                <ComparisonStatCard title="Total Online Payments count" value={stats.weeklyPaymentStats.online?.current?.count || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.count || 0} period="week" />
-                <ComparisonStatCard title="Total Cash Payments count" value={stats.weeklyPaymentStats.cash?.current?.count || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.count || 0} period="week" />
-              </>
-            )}
-          </div>
+          {overview === 'weekly' && (
+            <>
+              <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Weekly Summary (Mon-Sun)</Typography>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {loading ? (
+                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                ) : (
+                  <>
+                    <ComparisonStatCard title="Total Amount"  value={stats.weeklyPaymentStats.all?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.amount || 0} period="week" />
+                    <ComparisonStatCard title="Online Amount"  value={stats.weeklyPaymentStats.online?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.amount || 0} period="week" />
+                    <ComparisonStatCard title="Cash Amount"  value={stats.weeklyPaymentStats.cash?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.amount || 0} period="week" />
+                    <ComparisonStatCard title="Total Payments count" value={stats.weeklyPaymentStats.all?.current?.count || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.count || 0} period="week" />
+                    <ComparisonStatCard title="Total Online Payments count" value={stats.weeklyPaymentStats.online?.current?.count || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.count || 0} period="week" />
+                    <ComparisonStatCard title="Total Cash Payments count" value={stats.weeklyPaymentStats.cash?.current?.count || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.count || 0} period="week" />
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           {/* --- Monthly Payment Comparisons --- */}
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>
-            Monthly Overview
-          </Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {loading ? (
-              [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
-            ) : (
-              <>
-                <ComparisonStatCard title="Total Amount"  value={stats.paymentStats.all?.currentMonth?.amount || 0} prevValue={stats.paymentStats.all?.previousMonth?.amount || 0} />
-                <ComparisonStatCard title="Online Amount"  value={stats.paymentStats.online?.currentMonth?.amount || 0} prevValue={stats.paymentStats.online?.previousMonth?.amount || 0} />
-                <ComparisonStatCard title="Cash Amount"  value={stats.paymentStats.cash?.currentMonth?.amount || 0} prevValue={stats.paymentStats.cash?.previousMonth?.amount || 0} />
-                <ComparisonStatCard title="Total Payments count" value={stats.paymentStats.all?.currentMonth?.count || 0} prevValue={stats.paymentStats.all?.previousMonth?.count || 0} />
-                <ComparisonStatCard title="Total Online Payments count" value={stats.paymentStats.online?.currentMonth?.count || 0} prevValue={stats.paymentStats.online?.previousMonth?.count || 0} />
-                <ComparisonStatCard title="Total Cash Payments count" value={stats.paymentStats.cash?.currentMonth?.count || 0} prevValue={stats.paymentStats.cash?.previousMonth?.count || 0} />
-              </>
-            )}
-          </div>
+          {overview === 'monthly' && (
+            <>
+              <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>Monthly Overview</Typography>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {loading ? (
+                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                ) : (
+                  <>
+                    <ComparisonStatCard title="Total Amount"  value={stats.paymentStats.all?.currentMonth?.amount || 0} prevValue={stats.paymentStats.all?.previousMonth?.amount || 0} />
+                    <ComparisonStatCard title="Online Amount"  value={stats.paymentStats.online?.currentMonth?.amount || 0} prevValue={stats.paymentStats.online?.previousMonth?.amount || 0} />
+                    <ComparisonStatCard title="Cash Amount"  value={stats.paymentStats.cash?.currentMonth?.amount || 0} prevValue={stats.paymentStats.cash?.previousMonth?.amount || 0} />
+                    <ComparisonStatCard title="Total Payments count" value={stats.paymentStats.all?.currentMonth?.count || 0} prevValue={stats.paymentStats.all?.previousMonth?.count || 0} />
+                    <ComparisonStatCard title="Total Online Payments count" value={stats.paymentStats.online?.currentMonth?.count || 0} prevValue={stats.paymentStats.online?.previousMonth?.count || 0} />
+                    <ComparisonStatCard title="Total Cash Payments count" value={stats.paymentStats.cash?.currentMonth?.count || 0} prevValue={stats.paymentStats.cash?.previousMonth?.count || 0} />
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* --- Yearly Overview --- */}
+          {overview === 'yearly' && (
+            <>
+              <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>Yearly Overview</Typography>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {loading ? (
+                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                ) : (
+                  <>
+                    <ComparisonStatCard title="Total Amount"  value={stats.yearlyOverviewStats.all?.current?.amount || 0} prevValue={stats.yearlyOverviewStats.all?.previous?.amount || 0} period="year" />
+                    <ComparisonStatCard title="Online Amount"  value={stats.yearlyOverviewStats.online?.current?.amount || 0} prevValue={stats.yearlyOverviewStats.online?.previous?.amount || 0} period="year" />
+                    <ComparisonStatCard title="Cash Amount"  value={stats.yearlyOverviewStats.cash?.current?.amount || 0} prevValue={stats.yearlyOverviewStats.cash?.previous?.amount || 0} period="year" />
+                    <ComparisonStatCard title="Total Payments count" value={stats.yearlyOverviewStats.all?.current?.count || 0} prevValue={stats.yearlyOverviewStats.all?.previous?.count || 0} period="year" />
+                    <ComparisonStatCard title="Total Online Payments count" value={stats.yearlyOverviewStats.online?.current?.count || 0} prevValue={stats.yearlyOverviewStats.online?.previous?.count || 0} period="year" />
+                    <ComparisonStatCard title="Total Cash Payments count" value={stats.yearlyOverviewStats.cash?.current?.count || 0} prevValue={stats.yearlyOverviewStats.cash?.previous?.count || 0} period="year" />
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           {/* --- Trend Charts --- */}
           <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
