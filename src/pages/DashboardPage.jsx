@@ -99,8 +99,12 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       setLoading(true);
       try {
-        const startDate = dateRange.start ? dateRange.start.toISOString().split('T')[0] : null;
-        const endDate = dateRange.end ? dateRange.end.toISOString().split('T')[0] : null;
+        // Adjust for timezone offset to ensure correct date is sent to backend
+        const toYYYYMMDD = (date) => {
+          return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        };
+        const startDate = dateRange.start ? toYYYYMMDD(dateRange.start) : null;
+        const endDate = dateRange.end ? toYYYYMMDD(dateRange.end) : null;
         const response = await getDashboardStats(token, startDate, endDate);
         setStats(response.data);
       } catch (err) {

@@ -8,7 +8,7 @@ router.get('/stats', requireAuth, async (req, res) => {
   const conn = await getConnection();
   try {
     const ownerId = req.user.id;
-    const dateFilterClause = startDate && endDate ? 'AND p.payment_date BETWEEN TO_DATE(:startDate, \'YYYY-MM-DD\') AND TO_DATE(:endDate, \'YYYY-MM-DD\')' : '';
+    const dateFilterClause = startDate && endDate ? 'AND p.payment_date >= TO_DATE(:startDate, \'YYYY-MM-DD\') AND p.payment_date < TO_DATE(:endDate, \'YYYY-MM-DD\') + 1' : '';
     const dateBinds = startDate && endDate ? { startDate, endDate } : {};
 
     // 1. Book Counts
@@ -41,7 +41,7 @@ router.get('/stats', requireAuth, async (req, res) => {
          COUNT(w.id) as total,
          SUM(CASE WHEN b.is_active = 1 THEN 1 ELSE 0 END) as from_active_books,
          SUM(CASE WHEN b.is_active = 0 THEN 1 ELSE 0 END) as from_inactive_books
-       FROM winner w
+       FROM winner w -- This table does not have a date filter, so it's intentionally omitted.
        JOIN books b ON w.book_id = b.id
        WHERE b.owner_id = :ownerId`,
       { ownerId }
@@ -52,12 +52,12 @@ router.get('/stats', requireAuth, async (req, res) => {
     const eligibilityResult = await conn.execute(
       `SELECT
          c.id,
-         FLOOR(MONTHS_BETWEEN(TRUNC(CURRENT_TIMESTAMP, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
-         (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id) as payment_count
+         FLOOR(MONTHS_BETWEEN(TRUNC(CURRENT_TIMESTAMP, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months, -- This is a lifetime calculation
+         (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id ${dateFilterClause}) as payment_count
        FROM customers c
        JOIN books b ON c.book_id = b.id
-       WHERE b.owner_id = :ownerId AND b.is_active = 1 AND c.is_frozen = 0`,
-      { ownerId }
+       WHERE b.owner_id = :ownerId AND b.is_active = 1 AND c.is_frozen = 0 `,
+      { ownerId, ...dateBinds }
     );
 
     let eligibleCount = 0;
@@ -80,8 +80,8 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN 1 ELSE 0 END) as previous_month_count,
          SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount ELSE 0 END) as previous_month_amount
        FROM payments p
-       JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1)
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) ${dateFilterClause}
        GROUP BY p.payment_type`,
       { ownerId, ...dateBinds }
     );
@@ -114,11 +114,11 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN p.amount ELSE 0 END) as today_amount,
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN 1 ELSE 0 END) as yesterday_count,
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN p.amount ELSE 0 END) as yesterday_amount
-       FROM payments p
-       JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 1
+       FROM payments p 
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 1 ${dateFilterClause}
        GROUP BY p.payment_type`,
-      { ownerId }
+      { ownerId, ...dateBinds }
     );
 
     const dailyPaymentStats = {
@@ -148,11 +148,11 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount ELSE 0 END) as current_week_amount,
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN 1 ELSE 0 END) as previous_week_count,
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount ELSE 0 END) as previous_week_amount
-       FROM payments p
-       JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7
+       FROM payments p 
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 ${dateFilterClause}
        GROUP BY p.payment_type`,
-      { ownerId }
+      { ownerId, ...dateBinds }
     );
 
     const weeklyPaymentStats = {
@@ -182,11 +182,11 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(p.amount) as total_amount,
          COUNT(*) as payment_count
        FROM payments p
-       JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -11)
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -11) ${dateFilterClause}
        GROUP BY TRUNC(p.payment_date, 'MM'), p.payment_type, b.owner_id
        ORDER BY payment_month ASC`,
-      { ownerId }
+      { ownerId, ...dateBinds }
     );
     const monthlyPayments = monthlyPaymentsResult.rows;
 
@@ -198,11 +198,11 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(p.amount) as total_amount,
          COUNT(*) as payment_count
        FROM payments p
-       JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId ${dateFilterClause}
        GROUP BY TRUNC(p.payment_date, 'YYYY'), p.payment_type, b.owner_id
        ORDER BY payment_year ASC`,
-      { ownerId }
+      { ownerId, ...dateBinds }
     );
     const yearlyPayments = yearlyPaymentsResult.rows;
 
@@ -214,11 +214,11 @@ router.get('/stats', requireAuth, async (req, res) => {
          SUM(p.amount) as total_amount,
          COUNT(*) as payment_count
        FROM payments p
-       JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 6
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 6 ${dateFilterClause}
        GROUP BY TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD'), p.payment_type, b.owner_id
        ORDER BY payment_day ASC`,
-      { ownerId }
+      { ownerId, ...dateBinds }
     );
 
     const dailyPayments = dailyPaymentsResult.rows;
