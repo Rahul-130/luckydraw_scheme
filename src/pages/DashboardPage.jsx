@@ -14,12 +14,14 @@ import {
   ListItemText,
   Avatar,
   Skeleton,
+  Collapse,
   ToggleButton,
   ToggleButtonGroup,
   Pagination,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -111,6 +113,7 @@ export default function DashboardPage() {
     loading: true,
     pagination: { page: 1, totalPages: 1 },
   });
+  const [showAvgPaymentKPIs, setShowAvgPaymentKPIs] = useState(false);
   const [chartTypes, setChartTypes] = useState({
     monthly: 'bar',
     yearly: 'bar',
@@ -355,36 +358,50 @@ export default function DashboardPage() {
             </Paper>
           </Box>
 
+          {/* --- Collapsible Average Payment KPIs --- */}
+          <Box sx={{ mb: 2 }}>
+            <Box
+              onClick={() => setShowAvgPaymentKPIs(!showAvgPaymentKPIs)}
+              sx={{ 
+                p: 1.5, 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                borderBottom: 1,
+                borderColor: 'divider',
+                backgroundColor: 'transparent',
+              }}
+            >
+              <Typography variant="h6" fontWeight="500">Average Payment KPIs</Typography>
+              <ExpandMoreIcon sx={{ transform: showAvgPaymentKPIs ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }} />
+            </Box>
+            <Collapse in={showAvgPaymentKPIs}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-4">
+                {loading ? (
+                  [...Array(3)].map((_, i) => <SkeletonCard key={i} />)
+                ) : (
+                  <>
+                    <StatCard title="Avg. Payment (Today)" value={stats.dailyPaymentStats.all?.today?.count > 0 ? `₹${(stats.dailyPaymentStats.all.today.amount / stats.dailyPaymentStats.all.today.count).toFixed(2)}` : '₹0'} />
+                    <StatCard title="Avg. Payment (This Week)" value={stats.weeklyPaymentStats.all?.current?.count > 0 ? `₹${(stats.weeklyPaymentStats.all.current.amount / stats.weeklyPaymentStats.all.current.count).toFixed(2)}` : '₹0'} />
+                    <StatCard title="Avg. Payment (This Month)" value={stats.paymentStats.all?.currentMonth?.count > 0 ? `₹${(stats.paymentStats.all.currentMonth.amount / stats.paymentStats.all.currentMonth.count).toFixed(2)}` : '₹0'} />
+                  </>
+                )}
+              </div>
+            </Collapse>
+          </Box>
+
           {/* --- Top Level KPIs --- */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             {loading ? (
-              [...Array(4)].map((_, i) => <SkeletonCard key={i} />)
-            ) : (
-              <>
-                <StatCard title="Total Books" value={`${stats.bookCounts.total} (${stats.bookCounts.active} Active)`} />
-                <StatCard title="Total Customers" value={`${stats.customerCounts.total} (${stats.customerCounts.active} Active)`} />
-                <StatCard title="Total Winners" value={stats.winnerCounts.total} />
-                <StatCard title="Eligible Customers" value={stats.eligibilityCounts.eligible} color={COLORS.eligible} />
-              </>
-            )}
-          </div>
-
-          {/* --- Average Payment KPIs --- */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-            {loading ? (
               [...Array(3)].map((_, i) => <SkeletonCard key={i} />)
             ) : (
-              <>
-                <StatCard title="Avg. Payment (Today)" value={stats.dailyPaymentStats.all?.today?.count > 0
-                  ? `₹${(stats.dailyPaymentStats.all.today.amount / stats.dailyPaymentStats.all.today.count).toFixed(2)}`
-                  : '₹0'} />
-                <StatCard title="Avg. Payment (This Week)" value={stats.weeklyPaymentStats.all?.current?.count > 0
-                  ? `₹${(stats.weeklyPaymentStats.all.current.amount / stats.weeklyPaymentStats.all.current.count).toFixed(2)}`
-                  : '₹0'} />
-                <StatCard title="Avg. Payment (This Month)" value={stats.paymentStats.all?.currentMonth?.count > 0
-                  ? `₹${(stats.paymentStats.all.currentMonth.amount / stats.paymentStats.all.currentMonth.count).toFixed(2)}`
-                  : '₹0'} />
-              </>
+                <>
+                  <StatCard title="Total Books" value={`${stats.bookCounts.total} (${stats.bookCounts.active} Active)`} />
+                  <StatCard title="Total Customers" value={`${stats.customerCounts.total} (${stats.customerCounts.active} Active)`} />
+                  <StatCard title="Total Winners" value={stats.winnerCounts.total} />
+                  <StatCard title="Eligible Customers" value={stats.eligibilityCounts.eligible} color={COLORS.eligible} />
+                </>
             )}
           </div>
 
