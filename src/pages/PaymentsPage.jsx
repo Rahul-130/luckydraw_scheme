@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { addPayment, getPayments, getCustomers, editPayment, deletePayment, getBook } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { createRoot } from 'react-dom/client';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../context/SnackbarContext';
 import { DataGrid } from '@mui/x-data-grid';
@@ -28,7 +29,8 @@ import {
   FormLabel,
 } from '@mui/material';
 import { alpha } from "@mui/material/styles";
-import { Add, Edit, Delete, ArrowBack } from "@mui/icons-material";
+import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
+import PaymentReceipt from '../components/PaymentReceipt';
 
 
 export default function PaymentsPage() {
@@ -133,6 +135,32 @@ export default function PaymentsPage() {
         setOpen(true);
     };
 
+    const handlePrint = (payment) => {
+        const printWindow = window.open('', '_blank', 'height=600,width=800');
+
+        // Find all stylesheet links in the current document and copy them to the new window
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map(style => style.outerHTML)
+            .join('');
+
+        printWindow.document.write(`
+            <html>
+                <head><title>Payment Receipt</title>${styles}</head>
+                <body><div id="print-root"></div></body>
+            </html>`);
+        printWindow.document.close();
+        
+        const printRoot = printWindow.document.getElementById('print-root');
+        const root = createRoot(printRoot);
+        root.render(<PaymentReceipt payment={payment} customer={customer} book={book} />);
+        
+        // Wait for the component to render before printing
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500); // A short delay to ensure rendering is complete
+    };
+
     const paymentSummary = useMemo(() => {
         const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
         const paymentCount = payments.length;
@@ -233,7 +261,7 @@ export default function PaymentsPage() {
                   {
                       field: 'actions',
                       headerName: 'Actions',
-                      width: 150,
+                      width: 200,
                       sortable: false,
                       renderCell: (params) => (
                         <Stack direction="row" spacing={0.5}>
@@ -262,6 +290,19 @@ export default function PaymentsPage() {
                               }}
                           >
                             <Delete fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => handlePrint(params.row)}
+                            sx={{
+                                backgroundColor: (theme) => alpha(theme.palette.success.main, 0.1),
+                                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.success.main, 0.2), transform: "scale(1.05)" },
+                                borderRadius: 1.5,
+                                padding: 0.7,
+                                color: "success.main",
+                                transition: "all 0.2s",
+                              }}
+                          >
+                            <Print fontSize="small" />
                           </IconButton>
                         </Stack>
                       )

@@ -9,6 +9,7 @@ SELECT * FROM books;
 SELECT * FROM customers;
 SELECT * FROM payments;
 SELECT * FROM winner;
+SELECT * From AUDIT_LOGS;
 
 describe users;
 describe books;
@@ -16,49 +17,12 @@ describe customers;
 describe payments;
 describe winner;
 
--- altwe customer table add column relation_info VARCHAR2(255) after the name column
-ALTER TABLE customers ADD (relation_info VARCHAR2(255));
+SELECT dbtimezone, sessiontimezone FROM dual;
 
+-- edit the payment_date column to minus 1 month for testing purpose to get some data for yesterday for a better dashboard view where id  = 14 '2025-10-17T02:46:46.673603+05:30' - 1 day
+UPDATE payments SET payment_date = payment_date - INTERVAL '1' month where id = 20;
 
+UPDATE payments SET payment_date = payment_date - INTERVAL '32' DAY where id = 20;
 
--- alter user table add columns name phoneno email
-ALTER TABLE users ADD (name VARCHAR2(255), phone VARCHAR2(20));
--- is_2fa_enabled NUMBER(1) DEFAULT 0 NOT NULL and ALTER TABLE users ADD two_fa_secret VARCHAR2(255)
-ALTER TABLE users ADD (is_2fa_enabled NUMBER(1) DEFAULT 0 NOT NULL);
-ALTER TABLE users ADD (two_fa_recovery_codes CLOB);
-
-
-
---
-
--- delete records from customers where name is 'cust4'
-DELETE FROM customers WHERE name = 'cust4';
-
--- commit the transaction
+DELETE FROM payments WHERE id = 14;
 COMMIT;
-
-UPDATE customers set customers.IS_FROZEN = 0 where customers.IS_FROZEN = 1;
-
-SELECT s.sid, s.serial# FROM v$session s WHERE s.lockwait IS NOT NULL;
-
--- alter table payments add column receipt_no VARCHAR2(255);
-ALTER TABLE payments ADD (receipt_no VARCHAR2(255));
--- alter table payments delete column receipt_no VARCHAR2(255);
-ALTER TABLE customers DROP COLUMN IS_WINNER;
-
---Add the is_winner column
-ALTER TABLE customers ADD (is_winner NUMBER(1) DEFAULT 0 NOT NULL);
-
--- Add created_at column to customers table
-ALTER TABLE customers ADD (created_at DATE);
-
-
-SELECT 
-  ID, 
-  START_MONTH_ISO, 
-  TO_DATE(START_MONTH_ISO, 'YYYY-MM') AS START_DATE,
-  TRUNC(SYSDATE, 'MM') AS CURRENT_MONTH,
-  MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(START_MONTH_ISO, 'YYYY-MM')) AS MONTH_DIFF
-FROM books
-WHERE ID = 5;
-
