@@ -111,6 +111,11 @@ export default function DashboardPage() {
     loading: true,
     pagination: { page: 1, totalPages: 1 },
   });
+  const [chartTypes, setChartTypes] = useState({
+    monthly: 'bar',
+    yearly: 'bar',
+    daily: 'bar',
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -259,6 +264,13 @@ export default function DashboardPage() {
     return Array.from(dataMap.values());
   })();
 
+  const winsPerBookData = (stats?.winsPerBook || [])
+    .map(item => ({
+      name: item.BOOK_NAME,
+      value: item.WIN_COUNT,
+    }))
+    .slice(0, 10); // Show top 10 books by wins
+
   const renderActivityItem = (item, index) => {
     const isWinner = item.ACTIVITY_TYPE === 'winner';
     const title = isWinner
@@ -303,15 +315,31 @@ export default function DashboardPage() {
     return null;
   };
 
+  const handleChartTypeChange = (chartName, newType) => {
+    if (newType) {
+      setChartTypes(prev => ({ ...prev, [chartName]: newType }));
+    }
+  };
+
+  const renderChart = (chartType, data, colorMapping) => {
+    const bars = Object.keys(colorMapping).map(key => (
+      <Bar key={key} dataKey={key} name={key.charAt(0).toUpperCase() + key.slice(1)} fill={colorMapping[key]} />
+    ));
+    const lines = Object.keys(colorMapping).map(key => (
+      <Line key={key} type="monotone" dataKey={key} name={key.charAt(0).toUpperCase() + key.slice(1)} stroke={colorMapping[key]} strokeWidth={2} />
+    ));
+    return chartType === 'line' ? lines : bars;
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ py: 4, px: 2, background: "linear-gradient(to right, #f0f4f8, #d9e2ec)", minHeight: 'calc(100vh - 64px)' }}>
         <Container maxWidth="xl">
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-            <Typography variant="h3" sx={{ mb: { xs: 2, sm: 0 }, fontWeight: 'bold', color: '#222' }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
+            <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#222', width: '100%', textAlign: { xs: 'center', md: 'left' } }}>
               Dashboard
             </Typography>
-            <Paper sx={{ p: 1, display: 'flex', gap: 2, borderRadius: 2 }}>
+            <Paper sx={{ p: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, borderRadius: 2, alignItems: 'center' }}>
               <DatePicker
                 label="Start Date"
                 value={dateRange.start}
@@ -460,20 +488,26 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-6 mb-6">
             <div>
               <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
-                <Typography variant="h6" gutterBottom>Last 12 Months Payment Trend (₹)</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="h6" gutterBottom>Last 12 Months Payment Trend (₹)</Typography>
+                  <ToggleButtonGroup value={chartTypes.monthly} exclusive onChange={(e, v) => handleChartTypeChange('monthly', v)} size="small">
+                    <ToggleButton value="bar">Bar</ToggleButton>
+                    <ToggleButton value="line">Line</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
                 {loading ? (
                   <Skeleton variant="rectangular" width="100%" height={320} />
-                ) : ( <ResponsiveContainer>
-                  <BarChart data={monthlyPaymentData}>
-                    <XAxis dataKey="date" />
-                    <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
-                    <Bar dataKey="online" name="Online" fill={COLORS.online} />
-                    <Bar dataKey="cash" name="Cash" fill={COLORS.cash} />
-                  </BarChart>
-                </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer>
+                    <BarChart data={monthlyPaymentData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      {renderChart(chartTypes.monthly, monthlyPaymentData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash })}
+                    </BarChart>
+                  </ResponsiveContainer>
                 )}
               </Paper>
             </div>
@@ -481,38 +515,51 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div className="lg:col-span-1">
               <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
-                <Typography variant="h6" gutterBottom>Yearly Payment Totals (₹)</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="h6" gutterBottom>Yearly Payment Totals (₹)</Typography>
+                  <ToggleButtonGroup value={chartTypes.yearly} exclusive onChange={(e, v) => handleChartTypeChange('yearly', v)} size="small">
+                    <ToggleButton value="bar">Bar</ToggleButton>
+                    <ToggleButton value="line">Line</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
                 {loading ? (
                   <Skeleton variant="rectangular" width="100%" height={320} />
-                ) : ( <ResponsiveContainer>
-                  <BarChart data={yearlyPaymentData}>
-                    <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
-                    <Bar dataKey="online" name="Online" fill={COLORS.online} />
-                    <Bar dataKey="cash" name="Cash" fill={COLORS.cash} />
-                  </BarChart>
-                </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer>
+                    <BarChart data={yearlyPaymentData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" />
+                      <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      {renderChart(chartTypes.yearly, yearlyPaymentData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash })}
+                    </BarChart>
+                  </ResponsiveContainer>
                 )}
               </Paper>
             </div>
             <div className="lg:col-span-1">
               <Paper elevation={3} sx={{ p: 1, pb:4, height: 400 }}>
-                <Typography variant="h6" gutterBottom>Last 7 Days Payments (₹)</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="h6" gutterBottom>Last 7 Days Payments (₹)</Typography>
+                  <ToggleButtonGroup value={chartTypes.daily} exclusive onChange={(e, v) => handleChartTypeChange('daily', v)} size="small">
+                    <ToggleButton value="bar">Bar</ToggleButton>
+                    <ToggleButton value="line">Line</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
                 {loading ? (
                   <Skeleton variant="rectangular" width="100%" height={320} />
-                ) : ( <ResponsiveContainer>
-                  <BarChart data={last7DaysData}>
-                    <XAxis dataKey="date" />
-                    <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="total" name="Total Amount" fill={COLORS.total} />
-                    <Bar dataKey="online" name="Online" fill={COLORS.online} />
-                    <Bar dataKey="cash" name="Cash" fill={COLORS.cash} />
-                  </BarChart>
-                </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer>
+                    <BarChart data={last7DaysData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      {renderChart(chartTypes.daily, last7DaysData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash })}
+                    </BarChart>
+                  </ResponsiveContainer>
                 )}
               </Paper>
             </div>
@@ -528,7 +575,9 @@ export default function DashboardPage() {
                 <Typography variant="h6" gutterBottom>Book Status</Typography>
                 {loading ? (
                   <Skeleton variant="circular" width={200} height={200} sx={{ mx: 'auto', mt: 4 }} />
-                ) : ( <ResponsiveContainer width="100%" height="100%">
+                ) : (
+                  <Box sx={{ height: 'calc(100% - 30px)' }}> {/* Wrapper with calculated height */}
+                    <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <Pie data={bookChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="80%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
                         <Cell key="cell-0" fill={COLORS.active} />
@@ -538,6 +587,7 @@ export default function DashboardPage() {
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
+                  </Box>
                 )}
               </Paper>
             </div>
@@ -546,7 +596,9 @@ export default function DashboardPage() {
                 <Typography variant="h6" gutterBottom>Winner Distribution</Typography>
                 {loading ? (
                   <Skeleton variant="circular" width={200} height={200} sx={{ mx: 'auto', mt: 4 }} />
-                ) : ( <ResponsiveContainer width="100%" height="100%">
+                ) : (
+                  <Box sx={{ height: 'calc(100% - 30px)' }}>
+                    <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <Pie data={winnerChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="80%" labelLine={false} label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}>
                         <Cell key="cell-0" fill={COLORS.active} />
@@ -556,6 +608,7 @@ export default function DashboardPage() {
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
+                  </Box>
                 )}
               </Paper>
             </div>
@@ -564,7 +617,9 @@ export default function DashboardPage() {
                 <Typography variant="h6" gutterBottom>Eligibility (Active Books)</Typography>
                 {loading ? (
                   <Skeleton variant="circular" width={200} height={200} sx={{ mx: 'auto', mt: 4 }} />
-                ) : ( <ResponsiveContainer width="100%" height="100%">
+                ) : (
+                  <Box sx={{ height: 'calc(100% - 30px)' }}>
+                    <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <Pie data={eligibilityChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="80%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
                         <Cell key="cell-0" fill={COLORS.eligible} />
@@ -574,6 +629,7 @@ export default function DashboardPage() {
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
+                  </Box>
                 )}
               </Paper>
             </div>
@@ -582,7 +638,9 @@ export default function DashboardPage() {
                 <Typography variant="h6" gutterBottom>Payment Method Mix (This Month)</Typography>
                 {loading ? (
                   <Skeleton variant="circular" width={200} height={200} sx={{ mx: 'auto', mt: 4 }} />
-                ) : ( <ResponsiveContainer width="100%" height="100%">
+                ) : (
+                  <Box sx={{ height: 'calc(100% - 54px)' }}> {/* Adjusted for extra padding */}
+                    <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <Pie data={paymentMethodMixData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="80%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
                         <Cell key="cell-0" fill={COLORS.online} />
@@ -592,33 +650,47 @@ export default function DashboardPage() {
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
+                  </Box>
                 )}
               </Paper>
             </div>
           </div>
 
           {/* --- Customer Growth Chart --- */}
-          <div className="grid grid-cols-1 gap-6 mb-6 mt-4">
-            <Paper elevation={3} sx={{ p: 2, pb:4, height: 400 }}>
-              <Typography variant="h6" gutterBottom>New Customer Growth (Last 12 Months)</Typography>
-              {loading ? (
-                <Skeleton variant="rectangular" width="100%" height={320} />
-              ) : (
-                <ResponsiveContainer>
-                  <LineChart data={customerGrowthData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip
-                      formatter={(value, name) => [value, 'New Customers']}
-                      labelStyle={{ fontWeight: 'bold' }}
-                    />
-                    <Legend verticalAlign="top" />
-                    <Line type="monotone" dataKey="count" name="New Customers" stroke={COLORS.eligible} strokeWidth={2} activeDot={{ r: 8 }} />
-                  </LineChart>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-4">
+            <div>
+              <Paper elevation={3} sx={{ p: 2, pb:4, height: 400 }}>
+                <Typography variant="h6" gutterBottom>New Customer Growth (Last 12 Months)</Typography>
+                {loading ? (
+                  <Skeleton variant="rectangular" width="100%" height={320} />
+                ) : (
+                  <ResponsiveContainer>
+                    <LineChart data={customerGrowthData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip formatter={(value) => [value, 'New Customers']} labelStyle={{ fontWeight: 'bold' }} />
+                      <Legend verticalAlign="top" />
+                      <Line type="monotone" dataKey="count" name="New Customers" stroke={COLORS.eligible} strokeWidth={2} activeDot={{ r: 8 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </Paper>
+            </div>
+            <div>
+              <Paper elevation={3} sx={{ p: 2, pb:4, height: 400 }}>
+                <Typography variant="h6" gutterBottom>Wins in Active Books</Typography>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={winsPerBookData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="80%" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                      {winsPerBookData.map((entry, index) => (<Cell key={`cell-${index}`} fill={Object.values(COLORS)[index % Object.keys(COLORS).length]} />))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${value} wins`, 'Total Wins']} />
+                    <Legend />
+                  </PieChart>
                 </ResponsiveContainer>
-              )}
-            </Paper>
+              </Paper>
+            </div>
           </div>
 
           {/* --- Recent Activity --- */}

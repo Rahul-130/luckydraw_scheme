@@ -270,6 +270,14 @@ router.get('/stats', requireAuth, async (req, res) => {
     );
     const customerGrowth = customerGrowthResult.rows;
 
+    // 11. Wins per book (for active books)
+    const winsPerBookResult = await conn.execute(
+      `SELECT b.name as book_name, COUNT(w.id) as win_count 
+       FROM winner w 
+       JOIN books b ON w.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND b.is_active = 1
+       GROUP BY b.name ORDER BY win_count DESC`, { ownerId }
+    );
 
     res.json({
       bookCounts: {
@@ -299,6 +307,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       monthlyPayments,
       yearlyPayments,
       customerGrowth,
+      winsPerBook: winsPerBookResult.rows,
     });
 
   } catch (e) {
