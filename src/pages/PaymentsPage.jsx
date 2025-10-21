@@ -31,6 +31,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
 import PaymentReceipt from '../components/PaymentReceipt';
+import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
 
 
 export default function PaymentsPage() {
@@ -48,6 +49,7 @@ export default function PaymentsPage() {
     const [paymentToDelete, setPaymentToDelete] = useState(null);
     const navigate = useNavigate();
     const [is_frozen, setIsFrozen] = useState(false);
+    const [selectionModel, setSelectionModel] = useState([]);
 
     useEffect(() => {
         // Fetch payments
@@ -161,6 +163,31 @@ export default function PaymentsPage() {
         }, 500); // A short delay to ensure rendering is complete
     };
 
+    const handlePrintSelected = () => {
+        const selectedPayments = payments.filter(p => selectionModel.includes(p.id));
+        if (selectedPayments.length === 0) {
+            showSnackbar('No payments selected to print.', 'warning');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank', 'height=800,width=600');
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map(style => style.outerHTML)
+            .join('');
+
+        printWindow.document.write(`<html><head><title>Consolidated Receipt</title>${styles}</head><body><div id="print-root"></div></body></html>`);
+        printWindow.document.close();
+
+        const printRoot = printWindow.document.getElementById('print-root');
+        const root = createRoot(printRoot);
+        root.render(<BulkPaymentReceipt payments={selectedPayments} customer={customer} book={book} />);
+
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    };
+
     const paymentSummary = useMemo(() => {
         const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
         const paymentCount = payments.length;
@@ -225,6 +252,15 @@ export default function PaymentsPage() {
             >
               Add Payment
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Print />}
+              onClick={handlePrintSelected}
+              disabled={selectionModel.length === 0}
+              sx={{ ml: 2 }}
+            >
+              Print Selected ({selectionModel.length})
+            </Button>
           </Stack>
 
           <Paper elevation={3} sx={{ p: 1, mb: 1, borderRadius: 2, backgroundColor: 'primary.lightest' }}>
@@ -246,6 +282,10 @@ export default function PaymentsPage() {
             <Box sx={{ height: 500, width: "100%" }}>
               <DataGrid
                 rows={payments}
+                checkboxSelection
+                onRowSelectionModelChange={(newSelectionModel) => setSelectionModel(newSelectionModel)}
+                rowSelectionModel={selectionModel}
+                disableRowSelectionOnClick
                 columns={[
                   { field: 'id', headerName: 'ID', width: 90 },
                   { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (params) => `₹ ${params}` },

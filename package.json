@@ -5,7 +5,7 @@
   "main": "backend/server.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "nodemon backend/src/server.js",
+    "server": "nodemon backend/server.js",
     "client": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -18,7 +18,7 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
-    "@mui/x-data-grid": "^8.11.3",
+    "@mui/x-data-grid": "^7.11.0",
     "@mui/x-date-pickers": "^8.11.3",
     "archiver": "^7.0.1",
     "axios": "^1.12.2",
