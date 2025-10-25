@@ -16,6 +16,7 @@ import { useMemo } from 'react';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useWinners } from '../hooks/useWinners';
 import { Search, EmojiEvents } from "@mui/icons-material";
+import { sendWhatsAppMessage } from '../utils/whatsapp';
 
 function debounce(fn, delay) {
   let timer;
@@ -59,13 +60,7 @@ export default function WinnersListPage() {
     
                 // --- Send WhatsApp message based on selected method ---
                 const message = `Hello ${customer.customerName}, your winner status for the lucky draw has been revoked. Please contact us for more details.`;
-                let phone = customer.phone.replace(/\D/g, '');
-                if (phone.length === 10) {
-                    phone = `91${phone}`;
-                }
-                const encodedMessage = encodeURIComponent(message);
-                const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-                window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+                sendWhatsAppMessage(customer.phone, message);
     
                 refetchWinners();
             } catch (err) {

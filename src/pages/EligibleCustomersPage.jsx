@@ -16,6 +16,7 @@ import {
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
+import { sendWhatsAppMessage } from "../utils/whatsapp";
 
 function debounce(fn, delay) {
   let timer;
@@ -64,13 +65,7 @@ export default function EligibleCustomersPage() {
 
                 // --- Send WhatsApp message based on selected method ---
                 const message = `Congratulations ${customer.customerName}! You have been selected as a winner in the lucky draw for the book "${customer.bookName}". Your prize will be sent to your address: ${customer.address}.`;
-                let phone = customer.phone.replace(/\D/g, '');
-                if (phone.length === 10) {
-                    phone = `91${phone}`;
-                }
-                const encodedMessage = encodeURIComponent(message);
-                const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-                window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+                sendWhatsAppMessage(customer.phone, message);
 
                 refetchEligibleCustomers(); // Refetch to update the list
             } catch (err) {

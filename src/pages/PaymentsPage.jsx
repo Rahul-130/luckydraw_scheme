@@ -34,6 +34,7 @@ import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { sendWhatsAppMessage } from '../utils/whatsapp';
 
 
 export default function PaymentsPage() {
@@ -197,20 +198,13 @@ export default function PaymentsPage() {
             return;
         }
     
-        let phone = customer.phone.replace(/\D/g, '');
-        if (phone.length === 10) {
-            phone = `91${phone}`;
-        }
-    
         const totalAmount = selectedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
     
         const message = `Hello ${customer.name}, here is a summary of your recent payments for book "${book.name}":\n\n` +
             selectedPayments.map(p => `- Receipt ${p.receiptNo} for ${p.monthIso}: ₹${Number(p.amount).toLocaleString('en-IN')}`).join('\n') +
             `\n\nTotal Paid: ₹${totalAmount.toLocaleString('en-IN')}\n\nThank you!`;
         
-        const encodedMessage = encodeURIComponent(message);
-        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        sendWhatsAppMessage(customer.phone, message);
     };
 
     const paymentSummary = useMemo(() => {
