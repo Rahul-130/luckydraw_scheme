@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { unmarkCustomerAsWinner } from '../services/api';
-import { Container, Typography, Alert, Button, Box, Stack, Paper, IconButton } from '@mui/material';
+import { Container, Typography, Alert, Button, Box, Stack, IconButton, Paper } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useWinners } from '../hooks/useWinners';
 import StyledDataGrid from '../components/StyledDataGrid';
 import StyledSearchBar from '../components/StyledSearchBar';
+import SummaryBox from '../components/SummaryBox';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { sendWhatsAppMessage } from '../utils/whatsapp';
 import ConfirmationDialog from '../components/ConfirmationDialog';
@@ -140,26 +141,14 @@ export default function WinnersListPage() {
                         onChange={(e) => setSearchText(e.target.value)}
                     />
                 </Box>
-                <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, textAlign: 'center' }}>
-                        <Box>
-                            <Typography variant="caption" color="text.secondary">Total</Typography>
-                            <Typography variant="body1" fontWeight="bold">{winnerSummary.total}</Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="caption" color="success.main">Active Book</Typography>
-                            <Typography variant="body1" fontWeight="bold" color="success.main">
-                                {winnerSummary.activeBookWinners}
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="caption" color="error">Inactive Book</Typography>
-                            <Typography variant="body1" fontWeight="bold" color="error">
-                                {winnerSummary.inactiveBookWinners}
-                            </Typography>
-                        </Box>
-                    </Box>
-                </Paper>
+                <SummaryBox
+                  sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}
+                  items={[
+                    { label: 'Total', value: winnerSummary.total },
+                    { label: 'Active Book', value: winnerSummary.activeBookWinners, color: 'success.main' },
+                    { label: 'Inactive Book', value: winnerSummary.inactiveBookWinners, color: 'error.main' },
+                  ]}
+                />
             </Stack>
 
             <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>

@@ -38,6 +38,7 @@ import {
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import StyledDataGrid from "../components/StyledDataGrid";
 import StyledSearchBar from "../components/StyledSearchBar";
+import SummaryBox from "../components/SummaryBox";
 
 // Utility: debounce function to delay API calls
 function debounce(fn, delay) {
@@ -297,29 +298,14 @@ export default function BooksPage() {
             </Box>
 
             {/* Right side: Summary Box */}
-            <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: 2,
-                  textAlign: 'center',
-                }}
-              >
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Total</Typography>
-                  <Typography variant="body1" fontWeight="bold">{bookSummary.total}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="success.main">Active</Typography>
-                  <Typography variant="body1" fontWeight="bold" color="success.main">{bookSummary.active}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="error">Inactive</Typography>
-                  <Typography variant="body1" fontWeight="bold" color="error">{bookSummary.inactive}</Typography>
-                </Box>
-              </Box>
-            </Paper>
+            <SummaryBox
+              sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}
+              items={[
+                { label: 'Total', value: bookSummary.total },
+                { label: 'Active', value: bookSummary.active, color: 'success.main' },
+                { label: 'Inactive', value: bookSummary.inactive, color: 'error.main' },
+              ]}
+            />
           </Stack>
 
           <Paper

@@ -6,8 +6,8 @@ import {
   Typography,
   Alert,
   Button,
-  alpha,
-  Box, Stack, Paper, IconButton, } from '@mui/material';
+  Paper,
+  alpha, Box, Stack, IconButton, } from '@mui/material';
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
@@ -15,6 +15,7 @@ import StyledDataGrid from "../components/StyledDataGrid";
 import { sendWhatsAppMessage } from "../utils/whatsapp";
 import StyledSearchBar from "../components/StyledSearchBar";
 import ConfirmationDialog from "../components/ConfirmationDialog";
+import SummaryBox from "../components/SummaryBox";
 
 function debounce(fn, delay) {
   let timer;
@@ -140,14 +141,12 @@ export default function EligibleCustomersPage() {
                         onChange={(e) => setSearchText(e.target.value)}
                     />
                 </Box>
-                <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary">Total Eligible Customers</Typography>
-                        <Typography variant="body1" fontWeight="bold" color="primary.main">
-                            {customers.length}
-                        </Typography>
-                    </Box>
-                </Paper>
+                <SummaryBox
+                  sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}
+                  items={[
+                    { label: 'Total Eligible', value: customers.length, color: 'primary.main' },
+                  ]}
+                />
             </Stack>
 
             <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>

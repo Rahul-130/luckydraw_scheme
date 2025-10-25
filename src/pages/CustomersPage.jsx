@@ -25,6 +25,7 @@ import { Add, Edit, Delete, Payment, Search, ArrowBack } from "@mui/icons-materi
 import { addCustomer, editCustomer, deleteCustomer } from "../services/api";
 import StyledDataGrid from "../components/StyledDataGrid";
 import StyledSearchBar from "../components/StyledSearchBar";
+import SummaryBox from "../components/SummaryBox";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 // Utility: debounce function to delay API calls
@@ -253,33 +254,15 @@ export default function CustomersPage() {
           </Box>
 
           {/* Right side: Summary Box */}
-          <Paper elevation={2} sx={{ p: 1, borderRadius: 2, width: { xs: '90%', sm: '30%' }, boxSizing: 'border-box' }}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, // 2x2 on small screens, 4x1 on larger
-                gap: 1,
-                textAlign: 'center',
-              }}
-            >
-              <Box>
-                <Typography variant="caption" color="text.secondary">Total</Typography>
-                <Typography variant="body1" fontWeight="bold">{customerSummary.total}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="success.main">Winners</Typography>
-                <Typography variant="body1" fontWeight="bold" color="success.main">{customerSummary.winners}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="primary">Eligible</Typography>
-                <Typography variant="body1" fontWeight="bold" color="primary">{customerSummary.eligible}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="error">Not Eligible</Typography>
-                <Typography variant="body1" fontWeight="bold" color="error">{customerSummary.notEligible}</Typography>
-              </Box>
-            </Box>
-          </Paper>
+          <SummaryBox
+            sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}
+            items={[
+              { label: 'Total', value: customerSummary.total },
+              { label: 'Winners', value: customerSummary.winners, color: 'success.main' },
+              { label: 'Eligible', value: customerSummary.eligible, color: 'primary.main' },
+              { label: 'Not Eligible', value: customerSummary.notEligible, color: 'error.main' },
+            ]}
+          />
         </Stack>
 
         <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
