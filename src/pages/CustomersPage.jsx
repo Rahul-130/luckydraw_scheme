@@ -281,12 +281,12 @@ export default function CustomersPage() {
           </Box>
 
           {/* Right side: Summary Box */}
-          <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
+          <Paper elevation={2} sx={{ p: 1, borderRadius: 2, width: { xs: '90%', sm: '30%' }, boxSizing: 'border-box' }}>
             <Box
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, // 2x2 on small screens, 4x1 on larger
-                gap: 2,
+                gap: 1,
                 textAlign: 'center',
               }}
             >

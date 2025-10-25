@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from '../context/AuthContext';
-import { getEligibleCustomers, markCustomerAsWinner, sendWhatsAppMessageViaApi } from '../services/api';
+import { getEligibleCustomers, markCustomerAsWinner } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Container,
@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogContent,
   alpha,
-  DialogActions, Box, Stack, Paper, IconButton, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, } from '@mui/material';
+  DialogActions, Box, Stack, Paper, IconButton, } from '@mui/material';
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
@@ -31,7 +31,6 @@ export default function EligibleCustomersPage() {
     const [searchText, setSearchText] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null, });
-    const [whatsAppMethod, setWhatsAppMethod] = useState('waMe'); // 'waMe' or 'cloudApi'
 
     // Debounce search input to avoid excessive API calls
     useEffect(() => {
@@ -51,7 +50,7 @@ export default function EligibleCustomersPage() {
             open: true,
             title: `Mark ${customer.customerName} as Winner`,
             message: `Are you sure you want to mark ${customer.customerName} as a winner?`,
-            onConfirm: async (currentWhatsAppMethod) => {
+            onConfirm: async () => {
             try {
                 await markCustomerAsWinner(token, {
                     bookId,
@@ -65,27 +64,13 @@ export default function EligibleCustomersPage() {
 
                 // --- Send WhatsApp message based on selected method ---
                 const message = `Congratulations ${customer.customerName}! You have been selected as a winner in the lucky draw for the book "${customer.bookName}". Your prize will be sent to your address: ${customer.address}.`;
-                const cleanedPhone = customer.phone.replace(/\D/g, '');
-
-                if (currentWhatsAppMethod === 'waMe') {
-                    const encodedMessage = encodeURIComponent(message);
-                    // The phone number should be in international format (e.g., with country code, without '+', spaces, or dashes).
-                    // Example for an Indian number: 919876543210
-                    const whatsappUrl = `https://wa.me/${cleanedPhone}?text=${encodedMessage}`;
-                    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-                } else if (currentWhatsAppMethod === 'cloudApi') {
-                    try {
-                        await sendWhatsAppMessageViaApi(token, {
-                            phone: cleanedPhone,
-                            customerName: customer.customerName,
-                            bookName: customer.bookName,
-                            address: customer.address,
-                        });
-                        showSnackbar('Message Sent via Cloud API.', 'success');
-                    } catch (apiErr) {
-                        showSnackbar(apiErr.response?.data?.error || 'Failed to send WhatsApp message via Cloud API', 'error');
-                    }
+                let phone = customer.phone.replace(/\D/g, '');
+                if (phone.length === 10) {
+                    phone = `91${phone}`;
                 }
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+                window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
 
                 refetchEligibleCustomers(); // Refetch to update the list
             } catch (err) {
@@ -183,19 +168,6 @@ export default function EligibleCustomersPage() {
                         }}
                     />
                 </Box>
-                <FormControl component="fieldset" sx={{ width: { xs: '100%', sm: 'auto' } }}>
-                    <FormLabel component="legend" sx={{ color: '#000', fontWeight: 'medium', fontSize: '0.8rem' }}>Send WhatsApp via</FormLabel>
-                    <RadioGroup
-                        row
-                        aria-label="whatsapp-method"
-                        name="whatsapp-method-group"
-                        value={whatsAppMethod}
-                        onChange={(e) => setWhatsAppMethod(e.target.value)}
-                    >
-                        <FormControlLabel value="waMe" control={<Radio size="small" />} label="Browser" />
-                        <FormControlLabel value="cloudApi" control={<Radio size="small" />} label="Cloud API" />
-                    </RadioGroup>
-                </FormControl>
                 <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
                     <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="caption" color="text.secondary">Total Eligible Customers</Typography>
@@ -244,7 +216,7 @@ export default function EligibleCustomersPage() {
                     variant="contained"
                     color="primary"
                     onClick={() => {
-                        if (confirmDialog.onConfirm) confirmDialog.onConfirm(whatsAppMethod);
+                        if (confirmDialog.onConfirm) confirmDialog.onConfirm();
                         setConfirmDialog({ ...confirmDialog, open: false });
                     }}
                     >

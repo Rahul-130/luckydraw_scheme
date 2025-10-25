@@ -22,16 +22,18 @@ import {
   Paper,
   Stack,
   IconButton,
+  FormControl,
+  FormLabel,
   RadioGroup,
   FormControlLabel,
   Radio,
-  FormControl,
-  FormLabel,
+  ButtonGroup,
 } from '@mui/material';
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
-import PaymentReceipt from '../components/PaymentReceipt';
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 export default function PaymentsPage() {
@@ -188,6 +190,29 @@ export default function PaymentsPage() {
         }, 500);
     };
 
+    const handleSendWhatsApp = () => {
+        const selectedPayments = payments.filter(p => selectionModel.includes(p.id));
+        if (selectedPayments.length === 0) {
+            showSnackbar('No payments selected to send.', 'warning');
+            return;
+        }
+    
+        let phone = customer.phone.replace(/\D/g, '');
+        if (phone.length === 10) {
+            phone = `91${phone}`;
+        }
+    
+        const totalAmount = selectedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    
+        const message = `Hello ${customer.name}, here is a summary of your recent payments for book "${book.name}":\n\n` +
+            selectedPayments.map(p => `- Receipt ${p.receiptNo} for ${p.monthIso}: ₹${Number(p.amount).toLocaleString('en-IN')}`).join('\n') +
+            `\n\nTotal Paid: ₹${totalAmount.toLocaleString('en-IN')}\n\nThank you!`;
+        
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    };
+
     const paymentSummary = useMemo(() => {
         const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
         const paymentCount = payments.length;
@@ -252,24 +277,31 @@ export default function PaymentsPage() {
             >
               Add Payment
             </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Print />}
-              onClick={handlePrintSelected}
-              disabled={selectionModel.length === 0}
-              sx={{ ml: 2 }}
-            >
-              Print Selected ({selectionModel.length})
-            </Button>
+            <ButtonGroup variant="outlined" aria-label="outlined button group">
+              <Button
+                startIcon={<Print />}
+                onClick={handlePrintSelected}
+                disabled={selectionModel.length === 0}
+              >
+                Print ({selectionModel.length})
+              </Button>
+              <Button
+                onClick={handleSendWhatsApp}
+                disabled={selectionModel.length === 0}
+                color="success"
+              >
+                Send Receipt
+              </Button>
+            </ButtonGroup>
           </Stack>
 
           <Paper elevation={3} sx={{ p: 1, mb: 1, borderRadius: 2, backgroundColor: 'primary.lightest' }}>
             <Stack direction="row" spacing={4} justifyContent="center">
-              <Box textAlign="center">
+              <Box textAlign="center" sx={{ flex: 1 }}>
                 <Typography variant="h6" color="text.secondary">Total Payments</Typography>
                 <Typography variant="h5" fontWeight="bold" color="primary.main">{paymentSummary.paymentCount}</Typography>
               </Box>
-              <Box textAlign="center">
+              <Box textAlign="center" sx={{ flex: 1 }}>
                 <Typography variant="h6" color="text.secondary">Total Amount Paid</Typography>
                 <Typography variant="h5" fontWeight="bold" color="primary.main">
                   ₹ {paymentSummary.totalAmount.toLocaleString('en-IN')}
