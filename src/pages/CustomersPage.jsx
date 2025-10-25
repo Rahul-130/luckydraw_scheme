@@ -125,7 +125,7 @@ export default function CustomersPage() {
         { field: 'name', headerName: 'Name', width: 200 },
         { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
         { field: 'phone', headerName: 'Phone', width: 150 },
-        { field: 'address', headerName: 'Address', width: 200 },
+        { field: 'address', headerName: 'Address', flex: 1, minWidth: 150 },
         {
             field: 'status',
             headerName: 'Status',
@@ -203,7 +203,7 @@ export default function CustomersPage() {
         background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
       }}
     >
-      <Container maxWidth="lg">
+  <Container>
         {!token && <Navigate to="/login" replace />}
         {!bookId && <Navigate to="/books" replace />}
         {bookId && !book && <Alert severity="error">Book not found or you do not have access to it.</Alert>}

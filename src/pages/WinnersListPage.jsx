@@ -70,7 +70,7 @@ export default function WinnersListPage() {
         { field: 'customerName', headerName: 'Winner Name', width: 200 },
         { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
         { field: 'bookName', headerName: 'Book', width: 150 },
-        { field: 'address', headerName: 'Address', width: 200 },
+        { field: 'address', headerName: 'Address', flex: 1, minWidth: 150 },
         { field: 'phone', headerName: 'Phone', width: 150 },
         { 
             field: 'drawDate', 
@@ -123,7 +123,7 @@ export default function WinnersListPage() {
           background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
         }}
       >
-        <Container maxWidth="lg">
+        <Container>
             <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
                 Lucky Draw Winners
             </Typography>

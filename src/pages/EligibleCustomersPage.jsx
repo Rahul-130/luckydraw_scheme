@@ -83,7 +83,7 @@ export default function EligibleCustomersPage() {
         { field: 'customerName', headerName: 'Customer Name', width: 200 },
         { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
         { field: 'phone', headerName: 'Phone', width: 150 },
-        { field: 'address', headerName: 'Address', width: 300 },
+        { field: 'address', headerName: 'Address', flex: 1, minWidth: 200 },
         {
             field: 'actions',
             headerName: 'Actions',
@@ -123,7 +123,7 @@ export default function EligibleCustomersPage() {
           background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
         }}
       >
-        <Container maxWidth="lg">
+        <Container>
             <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
                 Eligible for Lucky Draw
             </Typography>

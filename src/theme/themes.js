@@ -10,6 +10,13 @@ export const lightThemeOptions = {
       paper: '#ffffff',
     },
   },
+  components: {
+    MuiContainer: {
+      defaultProps: {
+        maxWidth: false, // Disables the max-width constraint
+      },
+    },
+  },
 };
 
 export const darkThemeOptions = {
@@ -24,6 +31,13 @@ export const darkThemeOptions = {
     background: {
       default: '#121212',
       paper: '#1e1e1e',
+    },
+  },
+  components: {
+    MuiContainer: {
+      defaultProps: {
+        maxWidth: false, // Disables the max-width constraint
+      },
     },
   },
 };

@@ -225,7 +225,7 @@ export default function PaymentsPage() {
           background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
         }}
       >
-        <Container maxWidth="lg">
+        <Container>
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
             <IconButton onClick={() => navigate(`/books/${bookId}/customers`)} sx={{ color: '#000' }}>
               <ArrowBack />
@@ -322,8 +322,7 @@ export default function PaymentsPage() {
                     headerName: 'Date', 
                     width: 200, 
                     valueFormatter: (value) => value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''
-                  },
-                  { field: 'receiptNo', headerName: 'Receipt No.', width: 150 },
+                  },                  { field: 'receiptNo', headerName: 'Receipt No.', flex: 1, minWidth: 120 },
                   { field: 'paymentType', headerName: 'Type', width: 120 },
                   {
                       field: 'actions',

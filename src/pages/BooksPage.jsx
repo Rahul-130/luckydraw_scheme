@@ -157,7 +157,7 @@ export default function BooksPage() {
   const columns = useMemo(
     () => [
       { field: "id", headerName: "ID", width: 80 },
-      { field: "name", headerName: "Name", width: 200 },
+      { field: "name", headerName: "Name", flex: 1, minWidth: 150 },
       { field: "maxCustomers", headerName: "Max Customers", width: 150 },
       { field: "isActive", headerName: "Active", width: 100, type: "boolean" },
       { field: "startMonthIso", headerName: "Start Month", width: 150 },
@@ -265,7 +265,7 @@ export default function BooksPage() {
           background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
         }}
       >
-        <Container maxWidth="lg">
+        <Container>
           <Typography
             variant="h4"
             sx={{
