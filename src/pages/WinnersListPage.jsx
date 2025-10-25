@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { unmarkCustomerAsWinner } from '../services/api';
-import { Container, Typography, Alert, Button, TextField, Box, Stack, Paper, IconButton } from '@mui/material';
+import { Container, Typography, Alert, Button, Box, Stack, Paper, IconButton } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useWinners } from '../hooks/useWinners';
 import StyledDataGrid from '../components/StyledDataGrid';
+import StyledSearchBar from '../components/StyledSearchBar';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { sendWhatsAppMessage } from '../utils/whatsapp';
 import ConfirmationDialog from '../components/ConfirmationDialog';
@@ -133,31 +134,10 @@ export default function WinnersListPage() {
                 sx={{ mb: 2 }}
             >   
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
-                    <TextField
+                    <StyledSearchBar
                         label="Search Winners"
-                        variant="outlined"
-                        size="small"
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        sx={{
-                            flexGrow: 1,
-                            "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            "& .MuiInputBase-input": { color: '#000' },
-                            "& .MuiInputLabel-root": { color: '#000' },
-                            "& .MuiInputLabel-root.Mui-focused": { color: '#000' },
-                            "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
-                                borderColor: '#000',
-                            },
-                            "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
-                                borderColor: '#000',
-                            },
-                            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                                borderColor: '#000',
-                            },
-                        }}
-                        InputProps={{
-                            startAdornment: <Search fontSize="small" sx={{ mr: 0.5, color: '#000' }} />,
-                        }}
                     />
                 </Box>
                 <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>

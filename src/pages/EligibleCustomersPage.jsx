@@ -6,7 +6,6 @@ import {
   Typography,
   Alert,
   Button,
-  TextField,
   alpha,
   Box, Stack, Paper, IconButton, } from '@mui/material';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -14,6 +13,7 @@ import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
 import StyledDataGrid from "../components/StyledDataGrid";
 import { sendWhatsAppMessage } from "../utils/whatsapp";
+import StyledSearchBar from "../components/StyledSearchBar";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 function debounce(fn, delay) {
@@ -134,31 +134,10 @@ export default function EligibleCustomersPage() {
                 sx={{ mb: 2 }}
             >   
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
-                    <TextField
+                    <StyledSearchBar
                         label="Search Customers"
-                        variant="outlined"
-                        size="small"
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        sx={{
-                            flexGrow: 1,
-                            "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            "& .MuiInputBase-input": { color: '#000' },
-                            "& .MuiInputLabel-root": { color: '#000' },
-                            "& .MuiInputLabel-root.Mui-focused": { color: '#000' },
-                            "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
-                                borderColor: '#000',
-                            },
-                            "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
-                                borderColor: '#000',
-                            },
-                            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                                borderColor: '#000',
-                            },
-                        }}
-                        InputProps={{
-                            startAdornment: <Search fontSize="small" sx={{ mr: 0.5, color: '#000' }} />,
-                        }}
                     />
                 </Box>
                 <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>

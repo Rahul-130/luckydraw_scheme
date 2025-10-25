@@ -5,10 +5,10 @@ import { useSnackbar } from "../context/SnackbarContext";
 import { useCustomers } from "../hooks/useCustomers";
 import { useBooks } from "../hooks/useBooks";
 import {
+  TextField,
   Button,
   Container,
   Dialog,
-  TextField,
   Typography,
   Box,
   Stack,
@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { Add, Edit, Delete, Payment, Search, ArrowBack } from "@mui/icons-material";
 import { addCustomer, editCustomer, deleteCustomer } from "../services/api";
 import StyledDataGrid from "../components/StyledDataGrid";
+import StyledSearchBar from "../components/StyledSearchBar";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 // Utility: debounce function to delay API calls
@@ -236,39 +237,10 @@ export default function CustomersPage() {
         >
           {/* Left side: Search and Add Button */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
-              <TextField
+              <StyledSearchBar
                 label="Search Customers"
-                variant="outlined"
-                size="small"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                sx={{
-                  flexGrow: 1,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                  "& .MuiInputBase-input": {
-                    color: '#000', // Force black text color
-                  },
-                  "& .MuiInputLabel-root": {
-                    color: '#000', // Force black label color
-                  },
-                  "& .MuiInputLabel-root.Mui-focused": {
-                    color: '#000', // Keep label black when focused
-                  },
-                  "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
-                    borderColor: '#000',
-                  },
-                  "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
-                    borderColor: '#000',
-                  },
-                  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: '#000',
-                  },
-                }}
-                InputProps={{
-                  startAdornment: <Search fontSize="small" sx={{ mr: 0.5, color: '#000' }} />,
-                }}
               />
               <Button
                 variant="contained"
