@@ -183,3 +183,13 @@ export const backupToGoogleDrive = (token) =>
     axios.post(`${API_URL}/backup/googledrive`, {}, {
         headers: { Authorization: `Bearer ${token}` },
     });
+
+export const sendWhatsAppMessageViaApi = (token, data) =>
+    axios.post(`${API_URL}/notifications/whatsapp`, data, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+export const sendUnmarkWhatsAppMessageViaApi = (token, data) =>
+    axios.post(`${API_URL}/notifications/whatsapp/unmark`, data, {
+        headers: { Authorization: `Bearer ${token}` },
+    });

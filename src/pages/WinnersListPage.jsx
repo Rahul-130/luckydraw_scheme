@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { unmarkCustomerAsWinner } from '../services/api';
+import { unmarkCustomerAsWinner, sendUnmarkWhatsAppMessageViaApi } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
 import { Container, Typography, Alert, Button, TextField, Dialog,
   DialogTitle,
@@ -10,6 +10,7 @@ import { Container, Typography, Alert, Button, TextField, Dialog,
   Stack,
   Paper,
   IconButton,
+  FormControl, FormLabel, RadioGroup, FormControlLabel, Radio,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
@@ -30,6 +31,7 @@ export default function WinnersListPage() {
     const [searchText, setSearchText] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null, });
+    const [whatsAppMethod, setWhatsAppMethod] = useState('waMe'); // 'waMe' or 'cloudApi'
 
     useEffect(() => {
       const handler = setTimeout(() => {
@@ -49,13 +51,34 @@ export default function WinnersListPage() {
             open: true,
             title: `Unmark ${customer.customerName} as Winner`,
             message: `Are you sure you want to unmark ${customer.customerName} as a winner?`,
-            onConfirm: async () => {
+            onConfirm: async (currentWhatsAppMethod) => {
             try {
                 await unmarkCustomerAsWinner(token, {
                     bookId,
                     customerId
                 });
                 showSnackbar(`Unmarked ${customer.customerName} as a winner!`, 'success');
+
+                // --- Send WhatsApp message based on selected method ---
+                const message = `Hello ${customer.customerName}, your winner status for the lucky draw has been revoked. Please contact us for more details.`;
+                const cleanedPhone = customer.phone.replace(/\D/g, '');
+
+                if (currentWhatsAppMethod === 'waMe') {
+                    const encodedMessage = encodeURIComponent(message);
+                    const whatsappUrl = `https://wa.me/${cleanedPhone}?text=${encodedMessage}`;
+                    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+                } else if (currentWhatsAppMethod === 'cloudApi') {
+                    try {
+                        await sendUnmarkWhatsAppMessageViaApi(token, {
+                            phone: cleanedPhone,
+                            customerName: customer.customerName,
+                        });
+                        showSnackbar('Unmark notification sent via Cloud API.', 'info');
+                    } catch (apiErr) {
+                        showSnackbar(apiErr.response?.data?.error || 'Failed to send unmark notification', 'error');
+                    }
+                }
+
                 refetchWinners();
             } catch (err) {
                 showSnackbar(err.response?.data?.error || 'Failed to unmark customer as winner', 'error');
@@ -132,7 +155,7 @@ export default function WinnersListPage() {
                 spacing={2}
                 alignItems={{ sm: 'center' }}
                 sx={{ mb: 2 }}
-            >
+            >   
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
                     <TextField
                         label="Search Winners"
@@ -161,6 +184,19 @@ export default function WinnersListPage() {
                         }}
                     />
                 </Box>
+                <FormControl component="fieldset" sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                    <FormLabel component="legend" sx={{ color: '#000', fontWeight: 'medium', fontSize: '0.8rem' }}>Send WhatsApp via</FormLabel>
+                    <RadioGroup
+                        row
+                        aria-label="whatsapp-method"
+                        name="whatsapp-method-group"
+                        value={whatsAppMethod}
+                        onChange={(e) => setWhatsAppMethod(e.target.value)}
+                    >
+                        <FormControlLabel value="waMe" control={<Radio size="small" />} label="Browser" />
+                        <FormControlLabel value="cloudApi" control={<Radio size="small" />} label="Cloud API" />
+                    </RadioGroup>
+                </FormControl>
                 <Paper elevation={2} sx={{ p: 1.5, borderRadius: 2, width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}>
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, textAlign: 'center' }}>
                         <Box>
@@ -228,7 +264,7 @@ export default function WinnersListPage() {
                     variant="contained"
                     color="primary"
                     onClick={() => {
-                        if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                        if (confirmDialog.onConfirm) confirmDialog.onConfirm(whatsAppMethod);
                         setConfirmDialog({ ...confirmDialog, open: false });
                     }}
                     >
