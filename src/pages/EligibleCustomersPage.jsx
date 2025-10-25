@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from '../context/AuthContext';
 import { getEligibleCustomers, markCustomerAsWinner } from '../services/api';
-import { DataGrid } from '@mui/x-data-grid';
 import {
   Container,
   Typography,
@@ -13,6 +12,7 @@ import {
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
+import StyledDataGrid from "../components/StyledDataGrid";
 import { sendWhatsAppMessage } from "../utils/whatsapp";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
@@ -173,21 +173,11 @@ export default function EligibleCustomersPage() {
 
             <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
             <Box sx={{ height: 500, width: '100%' }}>
-                <DataGrid
+                <StyledDataGrid
                     rows={customers}
                     columns={columns}
                     loading={loading}
                     pageSizeOptions={[5, 10, 20, 100]}
-                    sx={{
-                        "& .MuiDataGrid-row:hover": { backgroundColor: "rgba(0, 123, 255, 0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
-                        "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
-                        "& .MuiDataGrid-columnHeaders": {                             
-                            color: (theme) => theme.palette.text.primary, 
-                            fontWeight: "bold" 
-                        },
-                        borderRadius: 2,
-                        "& .MuiDataGrid-cell": { py: 1.2 },
-                    }}
                 />
             </Box>
             </Paper>

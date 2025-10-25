@@ -6,7 +6,6 @@ import {
   toggleBookActive,
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { DataGrid } from "@mui/x-data-grid";
 import { useBooks } from "../hooks/useBooks";
 import {
   TextField,
@@ -37,6 +36,7 @@ import {
   Search,
 } from "@mui/icons-material";
 import ConfirmationDialog from "../components/ConfirmationDialog";
+import StyledDataGrid from "../components/StyledDataGrid";
 
 // Utility: debounce function to delay API calls
 function debounce(fn, delay) {
@@ -353,32 +353,22 @@ export default function BooksPage() {
             sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}
           >
             <Box sx={{ height: 500, width: "100%" }}>
-              <DataGrid
+              <StyledDataGrid
                 rows={books || []}
                 rowCount={rowCount || 0}
                 columns={columns}
                 loading={booksLoading}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
+                onRowClick={(params) => navigate(`/books/${params.row.id}/customers`)}
                 paginationMode="server"
                 getRowClassName={(params) =>
                   params.row.isActive
                     ? "super-app-theme--active"
                     : "super-app-theme--inactive"
                 }
-                pageSizeOptions={[5, 10, 20, 100]}
                 sx={{
-                  "& .MuiDataGrid-row:hover": {
-                    backgroundColor: "rgba(0, 123, 255, 0.08)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  },
-                  "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
-                  "& .MuiDataGrid-columnHeaders": {
-                    color: (theme) => theme.palette.text.primary,
-                    fontWeight: "bold",
-                  },
-                  borderRadius: 2,
-                  "& .MuiDataGrid-cell": { py: 1.2 },
+                  '& .MuiDataGrid-row': { cursor: 'pointer' },
                   "& .super-app-theme--active": {
                     "&:hover": { backgroundColor: "rgba(46, 125, 50, 0.2)" },
                   },

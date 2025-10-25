@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { createRoot } from 'react-dom/client';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../context/SnackbarContext';
-import { DataGrid } from '@mui/x-data-grid';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -34,6 +33,7 @@ import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import StyledDataGrid from '../components/StyledDataGrid';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import { sendWhatsAppMessage } from '../utils/whatsapp';
 
@@ -308,12 +308,11 @@ export default function PaymentsPage() {
 
           <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
             <Box sx={{ height: 500, width: "100%" }}>
-              <DataGrid
+              <StyledDataGrid
                 rows={payments}
                 checkboxSelection
                 onRowSelectionModelChange={(newSelectionModel) => setSelectionModel(newSelectionModel)}
                 rowSelectionModel={selectionModel}
-                disableRowSelectionOnClick
                 columns={[
                   { field: 'id', headerName: 'ID', width: 90 },
                   { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (params) => `₹ ${params}` },
@@ -376,21 +375,6 @@ export default function PaymentsPage() {
                       )
                   }
                 ]}
-                pageSizeOptions={[5, 10, 20, 100]}
-                sx={{
-                  "& .MuiDataGrid-row:hover": {
-                    backgroundColor: "rgba(0, 123, 255, 0.08)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  },
-                  "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
-                  "& .MuiDataGrid-columnHeaders": {
-                    backgroundColor: "#fff",
-                    color: "#000",
-                    fontWeight: "bold",
-                  },
-                  borderRadius: 2,
-                  "& .MuiDataGrid-cell": { py: 1.2 },
-                }}
               />
             </Box>
           </Paper>

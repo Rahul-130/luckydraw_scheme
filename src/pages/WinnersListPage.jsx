@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { unmarkCustomerAsWinner } from '../services/api';
-import { DataGrid } from '@mui/x-data-grid';
 import { Container, Typography, Alert, Button, TextField, Box, Stack, Paper, IconButton } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useWinners } from '../hooks/useWinners';
+import StyledDataGrid from '../components/StyledDataGrid';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { sendWhatsAppMessage } from '../utils/whatsapp';
 import ConfirmationDialog from '../components/ConfirmationDialog';
@@ -184,7 +184,7 @@ export default function WinnersListPage() {
 
             <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
             <Box sx={{ height: 500, width: '100%' }}>
-                <DataGrid
+                <StyledDataGrid
                     rows={winners}
                     columns={columns}
                     loading={loading}
@@ -192,20 +192,6 @@ export default function WinnersListPage() {
                     getRowClassName={(params) =>
                         !params.row.isBookActive && "super-app-theme--inactive"
                     }
-                    sx={{
-                        "& .MuiDataGrid-row:hover": { backgroundColor: "rgba(0, 123, 255, 0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
-                        "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
-                        "& .MuiDataGrid-columnHeaders": {                             
-                            color: (theme) => theme.palette.text.primary, 
-                            fontWeight: "bold" 
-                        },
-                        borderRadius: 2,
-                        "& .MuiDataGrid-cell": { py: 1.2 },
-                        "& .super-app-theme--inactive": {
-                            backgroundColor: "rgba(211, 47, 47, 0.1)",
-                            "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.2)" },
-                        },
-                    }}
                 />
             </Box>
             </Paper>

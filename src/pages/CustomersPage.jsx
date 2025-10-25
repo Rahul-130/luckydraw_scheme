@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
 import { useCustomers } from "../hooks/useCustomers";
 import { useBooks } from "../hooks/useBooks";
-import { DataGrid } from "@mui/x-data-grid";
 import {
   Button,
   Container,
@@ -24,6 +23,7 @@ import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { Add, Edit, Delete, Payment, Search, ArrowBack } from "@mui/icons-material";
 import { addCustomer, editCustomer, deleteCustomer } from "../services/api";
+import StyledDataGrid from "../components/StyledDataGrid";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 // Utility: debounce function to delay API calls
@@ -312,24 +312,13 @@ export default function CustomersPage() {
 
         <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
           <Box sx={{ height: 500, width: "100%" }}>
-            <DataGrid
+            <StyledDataGrid
                 rows={customers}
                 columns={columns}
                 loading={customersLoading}
+                onRowClick={(params) => navigate(`/books/${bookId}/customers/${params.row.id}/payments`)}
                 pageSizeOptions={[5, 10, 20, 100]}
-                sx={{
-                  "& .MuiDataGrid-row:hover": {
-                    backgroundColor: "rgba(0, 123, 255, 0.08)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  },
-                  "& .MuiDataGrid-row.Mui-even": { backgroundColor: "#f9f9f9" },
-                  "& .MuiDataGrid-columnHeaders": {
-                    color: (theme) => theme.palette.text.primary,
-                    fontWeight: "bold",
-                  },
-                  borderRadius: 2,
-                  "& .MuiDataGrid-cell": { py: 1.2 },
-                }}
+                sx={{ '& .MuiDataGrid-row': { cursor: 'pointer' } }}
             />
           </Box>
         </Paper>
