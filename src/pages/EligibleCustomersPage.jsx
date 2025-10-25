@@ -8,15 +8,13 @@ import {
   Alert,
   Button,
   TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   alpha,
-  DialogActions, Box, Stack, Paper, IconButton, } from '@mui/material';
+  Box, Stack, Paper, IconButton, } from '@mui/material';
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
 import { sendWhatsAppMessage } from "../utils/whatsapp";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 function debounce(fn, delay) {
   let timer;
@@ -200,25 +198,16 @@ export default function EligibleCustomersPage() {
                 </Alert>
             )}
 
-            <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}>
-                <DialogTitle>{confirmDialog.title}</DialogTitle>
-                <DialogContent>
-                    <Typography>{confirmDialog.message}</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>Cancel</Button>
-                    <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => {
-                        if (confirmDialog.onConfirm) confirmDialog.onConfirm();
-                        setConfirmDialog({ ...confirmDialog, open: false });
-                    }}
-                    >
-                    Confirm
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <ConfirmationDialog
+                open={confirmDialog.open}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
+                onConfirm={() => {
+                    if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                    setConfirmDialog({ ...confirmDialog, open: false });
+                }}
+            />
 
         </Container>
       </Box>

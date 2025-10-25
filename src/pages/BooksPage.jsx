@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   createBook,
   editBook,
@@ -12,10 +12,8 @@ import {
   TextField,
   Button,
   Container,
-  Typography,
-  Dialog,
-  DialogActions,
-  DialogContent,
+  Typography,  Dialog,
+  DialogActions,  DialogContent,
   DialogTitle,
   Alert,
   Box,
@@ -38,6 +36,7 @@ import {
   ToggleOff,
   Search,
 } from "@mui/icons-material";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 // Utility: debounce function to delay API calls
 function debounce(fn, delay) {
@@ -84,8 +83,7 @@ export default function BooksPage() {
     maxCustomers: "",
     startMonthIso: "",
   });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [bookToDelete, setBookToDelete] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
 
   const navigate = useNavigate();
 
@@ -111,34 +109,44 @@ export default function BooksPage() {
     }
   };
 
-  // delete book with confirmation
-  const handleDelete = async (bookId) => {
-    setBookToDelete(bookId);
-    setConfirmOpen(true);
-  };
-
-  // confirm deletion
-  const handleConfirmDelete = async () => {
-    if (!bookToDelete) return;
-    try {
-      await deleteBook(bookToDelete, token);
-      setBookToDelete(null);
-      setConfirmOpen(false);
-      refetchBooks();
-    } catch (err) {
-      console.error(err.response?.data?.message || "Failed to delete book");
-    }
-  };
+  const handleDelete = useCallback((bookId, bookName) => {
+    setConfirmDialog({
+        open: true,
+        title: `Delete Book "${bookName}"?`,
+        message: 'Are you sure you want to delete this book and all its related data? This action cannot be undone.',
+        onConfirm: async () => {
+            try {
+                await deleteBook(bookId, token);
+                refetchBooks();
+            } catch (err) {
+                console.error(err.response?.data?.message || "Failed to delete book");
+            }
+        },
+        confirmColor: 'error',
+        confirmText: 'Delete'
+    });
+  }, [token, refetchBooks]);
 
   // toggle book active status
-  const handleToggle = async (bookId) => {
-    try {
-      await toggleBookActive(bookId, token);
-      refetchBooks();
-    } catch (err) {
-      console.error(err.response?.data?.message || "Failed to toggle book");
-    }
-  };
+  const handleToggle = useCallback((bookId, bookName, isActive) => {
+    const action = isActive ? "deactivate" : "activate";
+    setConfirmDialog({
+      open: true,
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} "${bookName}"?`,
+      message: `Are you sure you want to ${action} this book?`,
+      onConfirm: async () => {
+        try {
+          await toggleBookActive(bookId, token);
+          refetchBooks();
+        } catch (err) {
+          console.error(err.response?.data?.message || "Failed to toggle book");
+        }
+      },
+      confirmColor: isActive ? 'warning' : 'success',
+      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
+    });
+  }, [token, refetchBooks]);
+
 
   const handleBackup = () => {
     alert("Backup triggered!");
@@ -193,7 +201,7 @@ export default function BooksPage() {
 
             {/* Delete */}
             <IconButton
-              onClick={() => handleDelete(params.row.id)}
+              onClick={() => handleDelete(params.row.id, params.row.name)}
               sx={{
                 backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
                 "&:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2), transform: "scale(1.05)" },
@@ -208,7 +216,7 @@ export default function BooksPage() {
 
             {/* Toggle Active */}
             <IconButton
-              onClick={() => handleToggle(params.row.id)}
+              onClick={() => handleToggle(params.row.id, params.row.name, params.row.isActive)}
               sx={{
                 backgroundColor: (theme) => params.row.isActive ? alpha(theme.palette.warning.main, 0.1) : alpha(theme.palette.success.main, 0.1),
                 "&:hover": { 
@@ -231,7 +239,7 @@ export default function BooksPage() {
         ),
       },
     ],
-    [navigate]
+    [navigate, handleToggle, handleDelete]
   );
 
   const bookSummary = useMemo(() => {
@@ -490,25 +498,20 @@ export default function BooksPage() {
             </DialogActions>
           </Dialog>
 
-          {/* Delete Confirmation Dialog */}
-          <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogContent>
-              <Typography>
-                Are you sure you want to delete this book and its related data?
-              </Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={handleConfirmDelete}
-              >
-                Delete
-              </Button>
-            </DialogActions>
-          </Dialog>
+          <ConfirmationDialog
+              open={confirmDialog.open}
+              title={confirmDialog.title}
+              message={confirmDialog.message}
+              onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
+              onConfirm={async () => {
+                if (confirmDialog.onConfirm) {
+                    await confirmDialog.onConfirm();
+                }
+                setConfirmDialog({ ...confirmDialog, open: false });
+              }}
+              confirmColor={confirmDialog.confirmColor}
+              confirmText={confirmDialog.confirmText}
+          />
         </Container>
       </Box>
     </LocalizationProvider>

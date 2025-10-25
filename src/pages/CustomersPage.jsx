@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
-import { addCustomer, getCustomers, editCustomer, deleteCustomer } from "../services/api";
 import { useCustomers } from "../hooks/useCustomers";
 import { useBooks } from "../hooks/useBooks";
 import { DataGrid } from "@mui/x-data-grid";
@@ -10,9 +9,6 @@ import {
   Button,
   Container,
   Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   TextField,
   Typography,
   Box,
@@ -20,10 +16,15 @@ import {
   Paper,
   IconButton,
   Alert,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { Add, Edit, Delete, Payment, Search, ArrowBack } from "@mui/icons-material";
+import { addCustomer, editCustomer, deleteCustomer } from "../services/api";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 // Utility: debounce function to delay API calls
 function debounce(fn, delay) {
@@ -62,8 +63,7 @@ export default function CustomersPage() {
     });
     const [editForm, setEditForm] = useState({ id: '', name: '', relationInfo: '', phone: '', address: '' });
     const { showSnackbar } = useSnackbar();
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [customerToDelete, setCustomerToDelete] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
     const navigate = useNavigate();
 
     const handleCreate = async () => {
@@ -87,22 +87,22 @@ export default function CustomersPage() {
         refetchCustomers();
     };
 
-    const handleDelete = useCallback((customerId) => {
-        setCustomerToDelete(customerId);
-        setConfirmOpen(true);
-    }, []);
-
-    const handleConfirmDelete = async () => {
-        if (!customerToDelete) return;
-      try {
-        await deleteCustomer(bookId, customerToDelete, token);
-      } catch (error) {
-        showSnackbar(error.response?.data?.error || "Failed to delete customer", 'error');
-      }
-        setCustomerToDelete(null);
-        setConfirmOpen(false);
-        refetchCustomers();
-    };
+    const handleDelete = useCallback((customerId, customerName) => {
+        setConfirmDialog({
+            open: true,
+            title: `Delete Customer "${customerName}"?`,
+            message: 'Are you sure you want to delete this customer and all their associated payments? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await deleteCustomer(bookId, customerId, token);
+                    refetchCustomers();
+                    showSnackbar('Customer deleted successfully.', 'success');
+                } catch (error) {
+                    showSnackbar(error.response?.data?.error || "Failed to delete customer", 'error');
+                }
+            }
+        });
+    }, [bookId, token, refetchCustomers, showSnackbar]);
 
     const customerSummary = useMemo(() => {
         const total = customers.length;
@@ -175,7 +175,7 @@ export default function CustomersPage() {
                         <Edit fontSize="small" />
                     </IconButton>
                     <IconButton
-                        onClick={() => handleDelete(params.row.id)}
+                        onClick={() => handleDelete(params.row.id, params.row.name)}
                         sx={{
                             backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
                             "&:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2), transform: "scale(1.05)" },
@@ -437,17 +437,18 @@ export default function CustomersPage() {
                 >Save</Button>
             </DialogActions>
         </Dialog>
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogContent>
-                <Typography>Are you sure you want to delete this customer and all their payments?</Typography>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-                <Button onClick={handleConfirmDelete} variant="contained" color="error">Delete</Button>
-            </DialogActions>
-        </Dialog>
+        <ConfirmationDialog
+            open={confirmDialog.open}
+            title={confirmDialog.title}
+            message={confirmDialog.message}
+            onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
+            onConfirm={() => {
+                if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                setConfirmDialog({ ...confirmDialog, open: false });
+            }}
+            confirmColor="error"
+            confirmText="Delete"
+        />
       </Container>
     </Box>
   )

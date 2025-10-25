@@ -34,6 +34,7 @@ import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import ConfirmationDialog from '../components/ConfirmationDialog';
 import { sendWhatsAppMessage } from '../utils/whatsapp';
 
 
@@ -48,8 +49,7 @@ export default function PaymentsPage() {
     const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'online' });
     const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '', paymentType: 'online'});
     const { showSnackbar } = useSnackbar();
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [paymentToDelete, setPaymentToDelete] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
     const navigate = useNavigate();
     const [is_frozen, setIsFrozen] = useState(false);
     const [selectionModel, setSelectionModel] = useState([]);
@@ -114,17 +114,19 @@ export default function PaymentsPage() {
         getPayments(bookId, customerId, token).then(res => setPayments(res.data));
     };
 
-    const handleDelete = async (paymentId) => {
-        setPaymentToDelete(paymentId);
-        setConfirmOpen(true);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!paymentToDelete) return;
-        await deletePayment(bookId, customerId, paymentToDelete, token);
-        setPaymentToDelete(null);
-        setConfirmOpen(false);
-        getPayments(bookId, customerId, token).then(res => setPayments(res.data));
+    const handleDelete = (paymentId) => {
+        setConfirmDialog({
+            open: true,
+            title: 'Confirm Payment Deletion',
+            message: 'Are you sure you want to delete this payment? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await deletePayment(bookId, customerId, paymentId, token);
+                    getPayments(bookId, customerId, token).then(res => setPayments(res.data));
+                    showSnackbar('Payment deleted successfully.', 'success');
+                } catch (err) { showSnackbar(err.response?.data?.error || 'Failed to delete payment.', 'error'); }
+            }
+        });
     };
 
     const handleOpenAddDialog = () => {
@@ -440,7 +442,7 @@ export default function PaymentsPage() {
           </DialogActions>
         </Dialog> {/* Added fullWidth and maxWidth */}
         <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
-          <DialogTitle>Edit Payment</DialogTitle>
+          <DialogTitle>Edit Payment</DialogTitle> 
           <DialogContent>
               <TextField select label="Amount" fullWidth margin="normal" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}>
                   {[500, 1000, 1500, 2000, 2500].map((amt) => (
@@ -450,7 +452,7 @@ export default function PaymentsPage() {
                   ))}
               </TextField>
               <FormControl component="fieldset" margin="normal">
-                <FormLabel component="legend">Payment Type</FormLabel>
+                <FormLabel component="legend">Payment Type</FormLabel> 
                 <RadioGroup
                   row
                   value={editForm.paymentType || 'online'}
@@ -484,16 +486,18 @@ export default function PaymentsPage() {
               <Button onClick={handleEditSave} variant="contained">Save</Button>
           </DialogActions>
         </Dialog> {/* Added fullWidth and maxWidth */}
-        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogContent>
-                <Typography>Are you sure you want to delete this payment?</Typography>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-                <Button onClick={handleConfirmDelete} variant="contained" color="error">Delete</Button>
-            </DialogActions>
-        </Dialog>
+        <ConfirmationDialog
+            open={confirmDialog.open}
+            title={confirmDialog.title}
+            message={confirmDialog.message}
+            onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
+            onConfirm={() => {
+                if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                setConfirmDialog({ ...confirmDialog, open: false });
+            }}
+            confirmColor="error"
+            confirmText="Delete"
+        />
       </Box>
     </LocalizationProvider>
   )

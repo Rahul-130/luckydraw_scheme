@@ -2,21 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { unmarkCustomerAsWinner } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
-import { Container, Typography, Alert, Button, TextField, Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Box,
-  Stack,
-  Paper,
-  IconButton
-} from '@mui/material';
+import { Container, Typography, Alert, Button, TextField, Box, Stack, Paper, IconButton } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useWinners } from '../hooks/useWinners';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { sendWhatsAppMessage } from '../utils/whatsapp';
+import ConfirmationDialog from '../components/ConfirmationDialog';
 
 function debounce(fn, delay) {
   let timer;
@@ -223,25 +216,18 @@ export default function WinnersListPage() {
                 </Alert>
             )}
 
-            <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}>
-                <DialogTitle>{confirmDialog.title}</DialogTitle>
-                <DialogContent>
-                    <Typography>{confirmDialog.message}</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>Cancel</Button>
-                    <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => {
-                        if (confirmDialog.onConfirm) confirmDialog.onConfirm();
-                        setConfirmDialog({ ...confirmDialog, open: false });
-                    }}
-                    >
-                    Confirm
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <ConfirmationDialog
+                open={confirmDialog.open}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
+                onConfirm={() => {
+                    if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                    setConfirmDialog({ ...confirmDialog, open: false });
+                }}
+                confirmColor="warning"
+                confirmText="Unmark"
+            />
         </Container>
       </Box>
     );
