@@ -1,38 +1,27 @@
-# ---- Base Stage ----
-# Use an official Node.js runtime as a parent image
-FROM node:20-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# ---- Build Stage ----
+FROM node:20-alpine AS build
 
-# ---- Builder Stage: Install all dependencies and build the frontend ----
-FROM base AS builder
+# Set the working directory
 WORKDIR /app
-COPY package.json package-lock.json ./
+
+# Copy package files and install dependencies
+COPY package*.json ./
 RUN npm install
+
+# Copy the rest of the application source code
 COPY . .
-# Build the frontend
+
+# Build the React app for production
 RUN npm run build
 
-# ---- Production Stage: Create the final, lean image ----
-FROM base AS production
-WORKDIR /app
-ENV NODE_ENV=production
+# ---- Serve Stage ----
+FROM nginx:stable-alpine
 
-# Set the timezone for the container to match your local environment
-ENV TZ=Asia/Kolkata
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# Copy the built static files from the build stage to the Nginx server directory
+COPY --from=build /app/dist /usr/share/nginx/html
 
+# Copy the custom Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy only the necessary production dependencies
-COPY package.json package-lock.json ./
-RUN npm install --production
-
-# Copy the backend source code
-COPY backend ./backend
-
-# Copy the built frontend from the builder stage
-COPY --from=builder /app/dist ./dist
-
-WORKDIR /app/backend
-CMD ["npm", "start"]
+# Expose port 80
+EXPOSE 80

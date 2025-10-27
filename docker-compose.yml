@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # This tells the React app where to find the backend API.
+        # 'backend' is the service name defined above.
+        VITE_API_URL: http://backend:4000/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

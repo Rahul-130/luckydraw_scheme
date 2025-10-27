@@ -31,8 +31,6 @@ import {
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import StyledDataGrid from '../components/StyledDataGrid';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import { sendWhatsAppMessage } from '../utils/whatsapp';
