@@ -18,7 +18,7 @@ router.get('/', requireAuth, async (req, res) => {
     // This query reads directly from the denormalized winner table,
     // filtered by books owned by the user.
     const result = await conn.execute(
-      `SELECT w.ID, w.BOOK_ID, w.CUSTOMER_ID, w.CUSTOMER_NAME, w.BOOK_NAME, w.ADDRESS, w.PHONE, w.WIN_DATE, b.IS_ACTIVE
+      `SELECT w.ID, w.BOOK_ID, w.CUSTOMER_ID, w.CUSTOMER_NAME, w.RELATION_INFO, w.BOOK_NAME, w.ADDRESS, w.PHONE, w.WIN_DATE, b.IS_ACTIVE
        FROM winner w
        JOIN books b ON w.BOOK_ID = b.ID
        WHERE b.OWNER_ID = :owner_id ${search ? searchClause : ''}
@@ -33,6 +33,7 @@ router.get('/', requireAuth, async (req, res) => {
       bookId: row.BOOK_ID,
       customerId: row.CUSTOMER_ID,
       customerName: row.CUSTOMER_NAME,
+      relationInfo: row.RELATION_INFO,
       bookName: row.BOOK_NAME,
       address: row.ADDRESS,
       phone: row.PHONE,
@@ -51,8 +52,8 @@ router.get('/', requireAuth, async (req, res) => {
 
 // Manually mark a customer as a winner
 router.post('/mark', requireAuth, async (req, res) => {
-  const { bookId, customerId, bookName, customerName, address, phone } = req.body;
-  if (!bookId || !customerId || !bookName || !customerName || !address || !phone) {
+  const { bookId, customerId, bookName, customerName, relationInfo, address, phone } = req.body;
+  if (!bookId || !customerId || !bookName || !customerName || !relationInfo || !address || !phone) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
   const conn = await getConnection();
@@ -63,9 +64,9 @@ router.post('/mark', requireAuth, async (req, res) => {
     );
 
     await conn.execute(
-      `INSERT INTO winner (book_id, book_name, customer_id, customer_name, address, phone, is_manual, win_date)
-       VALUES (:book_id, :book_name, :customer_id, :customer_name, :address, :phone, 1, CURRENT_TIMESTAMP)`,
-      { book_id: bookId, book_name: bookName, customer_id: customerId, customer_name: customerName, address, phone }
+      `INSERT INTO winner (book_id, book_name, customer_id, customer_name, relation_info, address, phone, is_manual, win_date)
+       VALUES (:book_id, :book_name, :customer_id, :customer_name, :relation_info, :address, :phone, 1, CURRENT_TIMESTAMP)`,
+      { book_id: bookId, book_name: bookName, customer_id: customerId, customer_name: customerName, relation_info: relationInfo, address, phone }
     );
     await conn.commit();
     res.json({ success: true });

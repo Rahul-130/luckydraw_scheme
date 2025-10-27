@@ -57,6 +57,7 @@ export default function EligibleCustomersPage() {
                     customerId,
                     bookName: customer.bookName,
                     customerName: customer.customerName,
+                    relationInfo: customer.relationInfo,
                     address: customer.address,
                     phone: customer.phone
                 });
