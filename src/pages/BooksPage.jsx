@@ -319,8 +319,14 @@ export default function BooksPage() {
                 columns={columns}
                 loading={booksLoading}
                 paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-                onRowClick={(params) => navigate(`/books/${params.row.id}/customers`)}
+                onPaginationModelChange={setPaginationModel}                onCellClick={(params, event) => {
+                  // Prevent navigation when clicking on the 'actions' column.
+                  // The buttons within the cell will handle their own click events.
+                  if (params.field === 'actions') {
+                    return;
+                  }
+                  navigate(`/books/${params.row.id}/customers`);
+                }}
                 paginationMode="server"
                 getRowClassName={(params) =>
                   params.row.isActive

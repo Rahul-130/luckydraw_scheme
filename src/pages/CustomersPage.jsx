@@ -271,7 +271,13 @@ export default function CustomersPage() {
                 rows={customers}
                 columns={columns}
                 loading={customersLoading}
-                onRowClick={(params) => navigate(`/books/${bookId}/customers/${params.row.id}/payments`)}
+                onCellClick={(params) => {
+                  // Prevent navigation when clicking on the 'actions' column.
+                  if (params.field === 'actions') {
+                    return;
+                  }
+                  navigate(`/books/${bookId}/customers/${params.row.id}/payments`);
+                }}
                 pageSizeOptions={[5, 10, 20, 100]}
                 sx={{ '& .MuiDataGrid-row': { cursor: 'pointer' } }}
             />
