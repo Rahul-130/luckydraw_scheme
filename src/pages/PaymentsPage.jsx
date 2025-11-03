@@ -30,6 +30,7 @@ import {
 } from '@mui/material';
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
+import PaymentReceipt from '../components/PaymentReceipt';
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
 import StyledDataGrid from '../components/StyledDataGrid';
 import ConfirmationDialog from '../components/ConfirmationDialog';
