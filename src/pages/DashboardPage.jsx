@@ -94,6 +94,7 @@ const COLORS = {
   notEligible: '#ed6c02',
   online: '#ff9800', // Orange for Online
   cash: '#4caf50',   // Green for Cash
+  instore: '#9c27b0', // Purple for In-Store
   total: '#5f6368',
 };
 
@@ -231,7 +232,7 @@ export default function DashboardPage() {
     stats.yearlyPayments.forEach(p => {
       const year = p.PAYMENT_YEAR;
       if (!dataMap.has(year)) {
-        dataMap.set(year, { year, total: 0, online: 0, cash: 0, total_count: 0, online_count: 0, cash_count: 0 });
+        dataMap.set(year, { year, total: 0, online: 0, cash: 0, instore: 0, total_count: 0, online_count: 0, cash_count: 0, instore_count: 0 });
       }
       const entry = dataMap.get(year);
       const amount = p.TOTAL_AMOUNT || 0;
@@ -248,6 +249,7 @@ export default function DashboardPage() {
   const paymentMethodMixData = stats ? [
     { name: 'Online', value: stats.paymentStats.online?.currentMonth?.amount || 0 },
     { name: 'Cash', value: stats.paymentStats.cash?.currentMonth?.amount || 0 },
+    { name: 'In-Store', value: stats.paymentStats.instore?.currentMonth?.amount || 0 },
   ] : [];
 
   const customerGrowthData = (() => {
@@ -327,7 +329,7 @@ export default function DashboardPage() {
   const renderChart = (chartType, data, colorMapping) => {
     const bars = Object.keys(colorMapping).map(key => (
       <Bar key={key} dataKey={key} name={key.charAt(0).toUpperCase() + key.slice(1)} fill={colorMapping[key]} />
-    ));
+    )).filter(bar => data.some(d => d[bar.props.dataKey] > 0)); // Only render bars if data exists for them
     const lines = Object.keys(colorMapping).map(key => (
       <Line key={key} type="monotone" dataKey={key} name={key.charAt(0).toUpperCase() + key.slice(1)} stroke={colorMapping[key]} strokeWidth={2} />
     ));
@@ -418,17 +420,19 @@ export default function DashboardPage() {
           {overview === 'daily' && (
             <>
               <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Daily Overview</Typography>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {loading ? (
-                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                  [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
                 ) : (
                   <>
                     <ComparisonStatCard title="Total Amount" value={stats.dailyPaymentStats.all?.today?.amount || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.amount || 0} period="day" />
                     <ComparisonStatCard title="Online Amount" value={stats.dailyPaymentStats.online?.today?.amount || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.amount || 0} period="day" />
                     <ComparisonStatCard title="Cash Amount" value={stats.dailyPaymentStats.cash?.today?.amount || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.amount || 0} period="day" />
+                    <ComparisonStatCard title="In-Store Amount" value={stats.dailyPaymentStats.instore?.today?.amount || 0} prevValue={stats.dailyPaymentStats.instore?.yesterday?.amount || 0} period="day" />
                     <ComparisonStatCard title="Total Payments count" value={stats.dailyPaymentStats.all?.today?.count || 0} prevValue={stats.dailyPaymentStats.all?.yesterday?.count || 0} period="day" />
                     <ComparisonStatCard title="Total Online Payments count" value={stats.dailyPaymentStats.online?.today?.count || 0} prevValue={stats.dailyPaymentStats.online?.yesterday?.count || 0} period="day" />
                     <ComparisonStatCard title="Total Cash Payments count" value={stats.dailyPaymentStats.cash?.today?.count || 0} prevValue={stats.dailyPaymentStats.cash?.yesterday?.count || 0} period="day" />
+                    <ComparisonStatCard title="Total In-Store payments count" value={stats.dailyPaymentStats.instore?.today?.count || 0} prevValue={stats.dailyPaymentStats.instore?.yesterday?.count || 0} period="day" />
                   </>
                 )}
               </div>
@@ -439,17 +443,19 @@ export default function DashboardPage() {
           {overview === 'weekly' && (
             <>
               <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#000' }}>Weekly Summary (Mon-Sun)</Typography>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {loading ? (
-                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                  [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
                 ) : (
                   <>
                     <ComparisonStatCard title="Total Amount"  value={stats.weeklyPaymentStats.all?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.amount || 0} period="week" />
                     <ComparisonStatCard title="Online Amount"  value={stats.weeklyPaymentStats.online?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.amount || 0} period="week" />
                     <ComparisonStatCard title="Cash Amount"  value={stats.weeklyPaymentStats.cash?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.amount || 0} period="week" />
+                    <ComparisonStatCard title="In-Store Amount"  value={stats.weeklyPaymentStats.instore?.current?.amount || 0} prevValue={stats.weeklyPaymentStats.instore?.previous?.amount || 0} period="week" />
                     <ComparisonStatCard title="Total Payments count" value={stats.weeklyPaymentStats.all?.current?.count || 0} prevValue={stats.weeklyPaymentStats.all?.previous?.count || 0} period="week" />
                     <ComparisonStatCard title="Total Online Payments count" value={stats.weeklyPaymentStats.online?.current?.count || 0} prevValue={stats.weeklyPaymentStats.online?.previous?.count || 0} period="week" />
                     <ComparisonStatCard title="Total Cash Payments count" value={stats.weeklyPaymentStats.cash?.current?.count || 0} prevValue={stats.weeklyPaymentStats.cash?.previous?.count || 0} period="week" />
+                    <ComparisonStatCard title="Total In-Store payments count"  value={stats.weeklyPaymentStats.instore?.current?.count || 0} prevValue={stats.weeklyPaymentStats.instore?.previous?.count || 0} period="week" />
                   </>
                 )}
               </div>
@@ -460,17 +466,19 @@ export default function DashboardPage() {
           {overview === 'monthly' && (
             <>
               <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>Monthly Overview</Typography>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {loading ? (
-                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                  [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
                 ) : (
                   <>
                     <ComparisonStatCard title="Total Amount"  value={stats.paymentStats.all?.currentMonth?.amount || 0} prevValue={stats.paymentStats.all?.previousMonth?.amount || 0} />
                     <ComparisonStatCard title="Online Amount"  value={stats.paymentStats.online?.currentMonth?.amount || 0} prevValue={stats.paymentStats.online?.previousMonth?.amount || 0} />
                     <ComparisonStatCard title="Cash Amount"  value={stats.paymentStats.cash?.currentMonth?.amount || 0} prevValue={stats.paymentStats.cash?.previousMonth?.amount || 0} />
+                    <ComparisonStatCard title="In-Store Amount"  value={stats.paymentStats.instore?.currentMonth?.amount || 0} prevValue={stats.paymentStats.instore?.previousMonth?.amount || 0} />
                     <ComparisonStatCard title="Total Payments count" value={stats.paymentStats.all?.currentMonth?.count || 0} prevValue={stats.paymentStats.all?.previousMonth?.count || 0} />
                     <ComparisonStatCard title="Total Online Payments count" value={stats.paymentStats.online?.currentMonth?.count || 0} prevValue={stats.paymentStats.online?.previousMonth?.count || 0} />
                     <ComparisonStatCard title="Total Cash Payments count" value={stats.paymentStats.cash?.currentMonth?.count || 0} prevValue={stats.paymentStats.cash?.previousMonth?.count || 0} />
+                    <ComparisonStatCard title="Total In-Store payments count"  value={stats.paymentStats.instore?.currentMonth?.count || 0} prevValue={stats.paymentStats.instore?.previousMonth?.count || 0} />
                   </>
                 )}
               </div>
@@ -481,17 +489,19 @@ export default function DashboardPage() {
           {overview === 'yearly' && (
             <>
               <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>Yearly Overview</Typography>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {loading ? (
-                  [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+                  [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
                 ) : (
                   <>
                     <ComparisonStatCard title="Total Amount"  value={stats.yearlyOverviewStats.all?.current?.amount || 0} prevValue={stats.yearlyOverviewStats.all?.previous?.amount || 0} period="year" />
                     <ComparisonStatCard title="Online Amount"  value={stats.yearlyOverviewStats.online?.current?.amount || 0} prevValue={stats.yearlyOverviewStats.online?.previous?.amount || 0} period="year" />
                     <ComparisonStatCard title="Cash Amount"  value={stats.yearlyOverviewStats.cash?.current?.amount || 0} prevValue={stats.yearlyOverviewStats.cash?.previous?.amount || 0} period="year" />
+                    <ComparisonStatCard title="In-Store Amount"  value={stats.yearlyOverviewStats.instore?.current?.amount || 0} prevValue={stats.yearlyOverviewStats.instore?.previous?.amount || 0} period="year" />
                     <ComparisonStatCard title="Total Payments count" value={stats.yearlyOverviewStats.all?.current?.count || 0} prevValue={stats.yearlyOverviewStats.all?.previous?.count || 0} period="year" />
                     <ComparisonStatCard title="Total Online Payments count" value={stats.yearlyOverviewStats.online?.current?.count || 0} prevValue={stats.yearlyOverviewStats.online?.previous?.count || 0} period="year" />
                     <ComparisonStatCard title="Total Cash Payments count" value={stats.yearlyOverviewStats.cash?.current?.count || 0} prevValue={stats.yearlyOverviewStats.cash?.previous?.count || 0} period="year" />
+                    <ComparisonStatCard title="Total In-Store payments count"  value={stats.yearlyOverviewStats.instore?.current?.count || 0} prevValue={stats.yearlyOverviewStats.instore?.previous?.count || 0} period="year" />
                   </>
                 )}
               </div>
@@ -522,7 +532,7 @@ export default function DashboardPage() {
                       <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend />
-                      {renderChart(chartTypes.monthly, monthlyPaymentData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash })}
+                      {renderChart(chartTypes.monthly, monthlyPaymentData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash, instore: COLORS.instore })}
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -549,7 +559,7 @@ export default function DashboardPage() {
                       <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend />
-                      {renderChart(chartTypes.yearly, yearlyPaymentData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash })}
+                      {renderChart(chartTypes.yearly, yearlyPaymentData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash, instore: COLORS.instore })}
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -574,7 +584,7 @@ export default function DashboardPage() {
                       <YAxis tickFormatter={(value) => `₹${value / 1000}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend />
-                      {renderChart(chartTypes.daily, last7DaysData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash })}
+                      {renderChart(chartTypes.daily, last7DaysData, { total: COLORS.total, online: COLORS.online, cash: COLORS.cash, instore: COLORS.instore })}
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -662,6 +672,7 @@ export default function DashboardPage() {
                       <Pie data={paymentMethodMixData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="80%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
                         <Cell key="cell-0" fill={COLORS.online} />
                         <Cell key="cell-1" fill={COLORS.cash} />
+                        <Cell key="cell-2" fill={COLORS.instore} />
                       </Pie>
                       <Tooltip formatter={(value) => `₹${value.toLocaleString('en-IN')}`} />
                       <Legend />

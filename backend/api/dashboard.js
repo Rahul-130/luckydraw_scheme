@@ -90,10 +90,12 @@ router.get('/stats', requireAuth, async (req, res) => {
         all: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
         online: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
         cash: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
+        instore: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
     };
 
     paymentStatsResult.rows.forEach(row => {
-        const type = row.PAYMENT_TYPE || 'online'; // Default to online if null
+        const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
+        if (!paymentStats[type]) return; // Skip unknown payment types
         paymentStats[type].currentMonth.count = row.CURRENT_MONTH_COUNT || 0;
         paymentStats[type].currentMonth.amount = row.CURRENT_MONTH_AMOUNT || 0;
         paymentStats[type].previousMonth.count = row.PREVIOUS_MONTH_COUNT || 0;
@@ -125,9 +127,11 @@ router.get('/stats', requireAuth, async (req, res) => {
       all: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
       online: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
       cash: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
+      instore: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
     };
     dailyPaymentStatsResult.rows.forEach(row => {
-      const type = row.PAYMENT_TYPE || 'online'; // Default to online if null
+      const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
+      if (!dailyPaymentStats[type]) return; // Skip unknown payment types
       dailyPaymentStats[type].today.count = row.TODAY_COUNT || 0;
       dailyPaymentStats[type].today.amount = row.TODAY_AMOUNT || 0;
       dailyPaymentStats[type].yesterday.count = row.YESTERDAY_COUNT || 0;
@@ -159,9 +163,11 @@ router.get('/stats', requireAuth, async (req, res) => {
       all: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
       online: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
       cash: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      instore: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
     };
     weeklyPaymentStatsResult.rows.forEach(row => {
-      const type = row.PAYMENT_TYPE || 'online';
+      const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
+      if (!weeklyPaymentStats[type]) return; // Skip unknown payment types
       weeklyPaymentStats[type].current.count = row.CURRENT_WEEK_COUNT || 0;
       weeklyPaymentStats[type].current.amount = row.CURRENT_WEEK_AMOUNT || 0;
       weeklyPaymentStats[type].previous.count = row.PREVIOUS_WEEK_COUNT || 0;
@@ -192,9 +198,11 @@ router.get('/stats', requireAuth, async (req, res) => {
       all: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
       online: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
       cash: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      instore: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
     };
     yearlyOverviewStatsResult.rows.forEach(row => {
-      const type = row.PAYMENT_TYPE || 'online';
+      const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
+      if (!yearlyOverviewStats[type]) return; // Skip unknown payment types
       yearlyOverviewStats[type].current.count = row.CURRENT_YEAR_COUNT || 0;
       yearlyOverviewStats[type].current.amount = row.CURRENT_YEAR_AMOUNT || 0;
       yearlyOverviewStats[type].previous.count = row.PREVIOUS_YEAR_COUNT || 0;
