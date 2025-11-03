@@ -44,8 +44,8 @@ export default function PaymentsPage() {
     const [book, setBook] = useState(null);
     const [open, setOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
-    const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'online' });
-    const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '', paymentType: 'online'});
+    const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'cash' });
+    const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '', paymentType: 'cash'});
     const { showSnackbar } = useSnackbar();
     const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
     const navigate = useNavigate();
@@ -135,7 +135,7 @@ export default function PaymentsPage() {
             amount: amount,
             monthIso: month,
             receiptNo: uniqueReceiptNo,
-            paymentType: 'online' // Default to online
+            paymentType: 'cash' // Default to cash
         });
         setOpen(true);
     };
@@ -395,8 +395,9 @@ export default function PaymentsPage() {
                   value={form.paymentType}
                   onChange={(e) => setForm({ ...form, paymentType: e.target.value })}
                 >
-                  <FormControlLabel value="online" control={<Radio />} label="Online" />
                   <FormControlLabel value="cash" control={<Radio />} label="Cash" />
+                  <FormControlLabel value="online" control={<Radio />} label="Online" />
+                  <FormControlLabel value="instore" control={<Radio />} label="In-Store Online" />
                 </RadioGroup>
               </FormControl>
             <TextField label="Receipt No." fullWidth margin="normal" value={form.receiptNo} onChange={e => setForm({ ...form, receiptNo: e.target.value })} onFocus={event => event.target.select()} />
@@ -436,12 +437,13 @@ export default function PaymentsPage() {
                 <FormLabel component="legend">Payment Type</FormLabel> 
                 <RadioGroup
                   row
-                  value={editForm.paymentType || 'online'}
+                  value={editForm.paymentType || 'cash'}
                   onChange={(e) => setEditForm({ ...editForm, paymentType: e.target.value })}
                 >
-                  <FormControlLabel value="online" control={<Radio />} label="Online" />
                   <FormControlLabel value="cash" control={<Radio />} label="Cash" />
-                </RadioGroup>
+                  <FormControlLabel value="online" control={<Radio />} label="Online" />
+                  <FormControlLabel value="instore" control={<Radio />} label="In-Store Online" />
+                  </RadioGroup>
               </FormControl>
               <TextField label="Receipt No." fullWidth margin="normal" value={editForm.receiptNo} onChange={e => setEditForm({ ...editForm, receiptNo: e.target.value })} onFocus={event => event.target.select()} />
               <DatePicker // Label already good

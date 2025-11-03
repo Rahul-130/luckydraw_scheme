@@ -26,3 +26,16 @@ UPDATE payments SET payment_date = payment_date - INTERVAL '32' DAY where id = 2
 
 DELETE FROM payments WHERE id = 14;
 COMMIT;
+
+-- create a user for project luckydraw with necessary privileges as similar to user hr
+CREATE USER luckydraw IDENTIFIED BY Luckydraw123;
+GRANT CONNECT, RESOURCE, DBA TO luckydraw;
+GRANT CREATE SESSION TO luckydraw;
+GRANT CREATE TABLE TO luckydraw;
+GRANT CREATE VIEW, CREATE PROCEDURE, CREATE SEQUENCE TO luckydraw;
+GRANT UNLIMITED TABLESPACE TO luckydraw;
+GRANT CREATE MATERIALIZED VIEW TO luckydraw;
+GRANT CREATE TRIGGER, CREATE SYNONYM TO luckydraw;
+GRANT CREATE DATABASE LINK TO luckydraw;
+GRANT GLOBAL QUERY REWRITE TO luckydraw;
+GRANT SELECT ANY TABLE TO luckydraw;
