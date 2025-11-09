@@ -1,8 +1,13 @@
 import React from 'react';
-import { Paper } from '@mui/material';
+import { Paper, Button } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 const DateRangePicker = ({ dateRange, onDateRangeChange }) => {
+  const handleReset = () => {
+    // Directly set the state to its initial value
+    onDateRangeChange({ start: null, end: null });
+  };
+
   return (
     <Paper sx={{ p: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, borderRadius: 2, alignItems: 'center' }}>
       <DatePicker
@@ -17,6 +22,14 @@ const DateRangePicker = ({ dateRange, onDateRangeChange }) => {
         onChange={(newValue) => onDateRangeChange(prev => ({ ...prev, end: newValue }))}
         slotProps={{ textField: { size: 'small' } }}
       />
+      <Button
+        onClick={handleReset}
+        variant="outlined"
+        size="medium"
+        disabled={!dateRange.start && !dateRange.end}
+      >
+        Reset
+      </Button>
     </Paper>
   );
 };
