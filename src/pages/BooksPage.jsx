@@ -45,7 +45,7 @@ import PageLayout from "../components/PageLayout";
 import FormDialog from "../components/FormDialog";
 import ActionIconButton from "../components/ActionIconButton";
 import BookFormFields from "../components/BookFormFields";
-import DataGridHeader from "../components/DataGridHeader";
+import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 
 export default function BooksPage() {
@@ -231,7 +231,7 @@ export default function BooksPage() {
             My Books
           </Typography>
 
-          <DataGridHeader
+          <SearchAndSummaryBox
             searchLabel="Search Books"
             searchText={searchText}
             onSearchChange={(e) => setSearchText(e.target.value)}
@@ -244,14 +244,9 @@ export default function BooksPage() {
             <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
               Add Book
             </Button>
-          </DataGridHeader>
+          </SearchAndSummaryBox>
 
-          <Paper
-            elevation={6}
-            sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}
-          >
-            <Box sx={{ height: 500, width: "100%" }}>
-              <StyledDataGrid
+          <StyledDataGrid
                 rows={books || []}
                 rowCount={rowCount || 0}
                 columns={columns}
@@ -276,8 +271,6 @@ export default function BooksPage() {
                   },
                 }}
               />
-            </Box>
-          </Paper>
 
           {booksError && (
             <Alert severity="error" sx={{ mt: 2 }}>

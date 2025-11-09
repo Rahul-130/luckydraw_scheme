@@ -32,7 +32,7 @@ import ActionIconButton from "../components/ActionIconButton";
 import PageLayout from "../components/PageLayout";
 import FormDialog from "../components/FormDialog";
 import CustomerFormFields from "../components/CustomerFormFields";
-import DataGridHeader from "../components/DataGridHeader";
+import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import PageHeader from "../components/PageHeader";
 import StatusChip from "../components/StatusChip";
 import { extractApiErrorMessage } from "../utils/apiUtils";
@@ -173,7 +173,7 @@ export default function CustomersPage() {
           </Typography>
         </PageHeader>
 
-        <DataGridHeader
+        <SearchAndSummaryBox
           searchLabel="Search Customers"
           searchText={searchText}
           onSearchChange={(e) => setSearchText(e.target.value)}
@@ -187,11 +187,9 @@ export default function CustomersPage() {
           <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
             Add Customer
           </Button>
-        </DataGridHeader>
+        </SearchAndSummaryBox>
 
-        <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
-          <Box sx={{ height: 500, width: "100%" }}>
-            <StyledDataGrid
+        <StyledDataGrid
                 rows={customers}
                 columns={columns}
                 loading={customersLoading}
@@ -199,8 +197,6 @@ export default function CustomersPage() {
                 pageSizeOptions={[5, 10, 20, 100]}
                 sx={{ '& .MuiDataGrid-row': { cursor: 'pointer' } }}
             />
-          </Box>
-        </Paper>
 
         {customersError && (
           <Alert severity="error" sx={{ mt: 2 }}>

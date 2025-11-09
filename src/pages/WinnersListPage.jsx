@@ -14,7 +14,7 @@ import { Search, EmojiEvents } from "@mui/icons-material";
 import { sendUnmarkWinnerMessage } from '../utils/whatsapp';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import PageLayout from '../components/PageLayout';
-import DataGridHeader from '../components/DataGridHeader';
+import SearchAndSummaryBox from '../components/SearchAndSummaryBox';
 
 
 export default function WinnersListPage() {
@@ -104,7 +104,7 @@ export default function WinnersListPage() {
                 Lucky Draw Winners
             </Typography>
 
-            <DataGridHeader
+            <SearchAndSummaryBox
               searchLabel="Search Winners"
               searchText={searchText}
               onSearchChange={(e) => setSearchText(e.target.value)}
@@ -115,9 +115,7 @@ export default function WinnersListPage() {
               ]}
             />
 
-            <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
-            <Box sx={{ height: 500, width: '100%' }}>
-                <StyledDataGrid
+            <StyledDataGrid
                     rows={winners}
                     columns={columns}
                     loading={loading}
@@ -126,8 +124,6 @@ export default function WinnersListPage() {
                         !params.row.isBookActive && "super-app-theme--inactive"
                     }
                 />
-            </Box>
-            </Paper>
 
             {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>

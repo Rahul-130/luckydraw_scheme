@@ -3,7 +3,7 @@ import { Stack, Box } from '@mui/material';
 import StyledSearchBar from './StyledSearchBar';
 import SummaryBox from './SummaryBox';
 
-const DataGridHeader = ({
+const SearchAndSummaryBox = ({
   searchLabel,
   searchText,
   onSearchChange,
@@ -29,4 +29,4 @@ const DataGridHeader = ({
   );
 };
 
-export default DataGridHeader;
+export default SearchAndSummaryBox;

@@ -249,9 +249,7 @@ export default function PaymentsPage() {
             ]}
           />
 
-          <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
-            <Box sx={{ height: 500, width: "100%" }}>
-              <StyledDataGrid
+          <StyledDataGrid
                 rows={payments}
                 loading={loading}
                 checkboxSelection
@@ -259,8 +257,6 @@ export default function PaymentsPage() {
                 rowSelectionModel={selectionModel}
                 columns={columns}
               />
-            </Box>
-          </Paper>
       {/* Dialogs */}
         <FormDialog open={open} onClose={() => setOpen(false)} title="Add Payment" onSubmit={handleCreate} submitText="Create">
           <PaymentFormFields formState={form} onFormChange={setForm} />

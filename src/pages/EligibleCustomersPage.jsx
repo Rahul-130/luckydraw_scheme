@@ -18,7 +18,7 @@ import { sendWinnerCongratulationsMessage } from "../utils/whatsapp";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import SummaryBox from "../components/SummaryBox";
 import PageLayout from "../components/PageLayout";
-import DataGridHeader from "../components/DataGridHeader";
+import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 
 // Add the manuall winner to the winner page
 export default function EligibleCustomersPage() {
@@ -106,7 +106,7 @@ export default function EligibleCustomersPage() {
                 Eligible for Lucky Draw
             </Typography>
 
-            <DataGridHeader
+            <SearchAndSummaryBox
               searchLabel="Search Customers"
               searchText={searchText}
               onSearchChange={(e) => setSearchText(e.target.value)}
@@ -115,16 +115,12 @@ export default function EligibleCustomersPage() {
               ]}
             />
 
-            <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
-            <Box sx={{ height: 500, width: '100%' }}>
-                <StyledDataGrid
+            <StyledDataGrid
                     rows={customers}
                     columns={columns}
                     loading={loading}
                     pageSizeOptions={[5, 10, 20, 100]}
                 />
-            </Box>
-            </Paper>
 
             {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>

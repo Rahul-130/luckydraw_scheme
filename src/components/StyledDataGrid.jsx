@@ -9,7 +9,7 @@ import {
     gridFilteredSortedRowIdsSelector,
 } from '@mui/x-data-grid';
 import { alpha } from '@mui/material/styles';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
 
 const CustomNoRowsOverlay = () => (
@@ -52,61 +52,64 @@ const CustomToolbar = () => (
 );
 
 const StyledDataGrid = ({ onRowClick, ...props }) => {
-    const handleCellClick = (params, event) => {
-        // If a custom onRowClick is provided, and the click is not on an action cell, call it.
-        if (onRowClick && params.field !== 'actions') {
-            onRowClick(params, event);
-        }
-        // If a prop-based onCellClick exists, call it as well.
-        props.onCellClick?.(params, event);
-    };
+  const handleCellClick = (params, event) => {
+    if (onRowClick && params.field !== 'actions') {
+      onRowClick(params, event);
+    }
+    props.onCellClick?.(params, event);
+  };
 
-    return (
+  return (
+    <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
+      <Box sx={{ height: 500, width: "100%" }}>
         <DataGrid
-            {...props}
-            onCellClick={handleCellClick}            slots={{
-                toolbar: CustomToolbar,
-                noRowsOverlay: CustomNoRowsOverlay,
-                ...props.slots,
-            }}
-            sx={{
-                border: 'none',
-                // Header styles
-                '& .MuiDataGrid-columnHeaders': {
-                    backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.1),
-                    color: (theme) => theme.palette.text.primary,
-                    fontWeight: 'bold',
-                    fontSize: '0.9rem',
-                    textTransform: 'uppercase',
-                    borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-                },
-                // Column separator
-                '& .MuiDataGrid-columnSeparator': {
-                    color: (theme) => theme.palette.divider,
-                },
-                // Cell styles
-                '& .MuiDataGrid-cell': {
-                    py: 1.2,
-                    borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-                },
-                // Row hover styles
-                '& .MuiDataGrid-row:hover': {
-                    backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                },
-                // Even row background for readability
-                '& .MuiDataGrid-row.Mui-even': { backgroundColor: '#f9f9f9' },
-                // Footer styles
-                '& .MuiDataGrid-footerContainer': {
-                    borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                    backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.05),
-                },
-                '& .MuiToolbar-root': { color: (theme) => theme.palette.text.secondary },
-                borderRadius: 2,
-                ...props.sx, // Allow for additional sx props to be passed
-            }}
+          {...props}
+          onCellClick={handleCellClick}
+          slots={{
+            toolbar: CustomToolbar,
+            noRowsOverlay: CustomNoRowsOverlay,
+            ...props.slots,
+          }}
+          sx={{
+            border: 'none',
+            // Header styles
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.1),
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: 'bold',
+              fontSize: '0.9rem',
+              textTransform: 'uppercase',
+              borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
+            },
+            // Column separator
+            '& .MuiDataGrid-columnSeparator': {
+              color: (theme) => theme.palette.divider,
+            },
+            // Cell styles
+            '& .MuiDataGrid-cell': {
+              py: 1.2,
+              borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+            },
+            // Row hover styles
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.08),
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            },
+            // Even row background for readability
+            '& .MuiDataGrid-row.Mui-even': { backgroundColor: '#f9f9f9' },
+            // Footer styles
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+              backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.05),
+            },
+            '& .MuiToolbar-root': { color: (theme) => theme.palette.text.secondary },
+            borderRadius: 2,
+            ...props.sx, // Allow for additional sx props to be passed
+          }}
         />
-    );
+      </Box>
+    </Paper>
+  );
 };
 
 export default StyledDataGrid;
