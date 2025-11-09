@@ -1,6 +1,7 @@
 import { createTheme } from '@mui/material/styles';
+import { blue, pink } from '@mui/material/colors';
 
-const theme = createTheme({
+export const theme = createTheme({
   palette: {
     primary: {
       main: '#1976d2', // A standard blue
@@ -81,4 +82,60 @@ const theme = createTheme({
   },
 });
 
-export default theme;
+export const CHART_COLORS = {
+  active: '#2e7d32',
+  inactive: '#d32f2f',
+  eligible: '#1976d2',
+  notEligible: '#ed6c02',
+  online: '#ff9800', // Orange for Online
+  cash: '#4caf50',   // Green for Cash
+  instore: '#9c27b0', // Purple for In-Store
+  total: '#5f6368',
+};
+
+
+
+export const lightThemeOptions = {
+  palette: {
+    mode: 'light',
+    primary: blue,
+    secondary: pink,
+    background: {
+      default: '#f0f4f8',
+      paper: '#ffffff',
+    },
+  },
+  components: {
+    MuiContainer: {
+      defaultProps: {
+        maxWidth: false, // Disables the max-width constraint
+      },
+    },
+  },
+};
+
+export const darkThemeOptions = {
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#90caf9', // A lighter blue for dark mode
+    },
+    secondary: {
+      main: '#f48fb1', // A lighter pink for dark mode
+    },
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+  },
+  components: {
+    MuiContainer: {
+      defaultProps: {
+        maxWidth: false, // Disables the max-width constraint
+      },
+    },
+  },
+};
+
+
+export default {theme, CHART_COLORS, lightThemeOptions, darkThemeOptions};

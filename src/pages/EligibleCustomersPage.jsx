@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useAuth } from '../context/AuthContext';
 import { getEligibleCustomers, markCustomerAsWinner } from '../services/api';
 import {
@@ -11,34 +11,21 @@ import {
 import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
+import { useDebounce } from "../hooks/useDebounce";
+import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
 import StyledDataGrid from "../components/StyledDataGrid";
-import { sendWhatsAppMessage } from "../utils/whatsapp";
-import StyledSearchBar from "../components/StyledSearchBar";
+import { sendWinnerCongratulationsMessage } from "../utils/whatsapp";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import SummaryBox from "../components/SummaryBox";
-
-function debounce(fn, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
+import PageLayout from "../components/PageLayout";
+import DataGridHeader from "../components/DataGridHeader";
 
 // Add the manuall winner to the winner page
 export default function EligibleCustomersPage() {
     const { token } = useAuth();
     const [searchText, setSearchText] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null, });
-
-    // Debounce search input to avoid excessive API calls
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedSearch(searchText);
-      }, 500);
-      return () => clearTimeout(handler);
-    }, [searchText]);
+    const debouncedSearch = useDebounce(searchText, 500);
+    const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
 
     const { customers, loading, error, refetch: refetchEligibleCustomers } = useEligibleCustomers(debouncedSearch);
 
@@ -46,8 +33,7 @@ export default function EligibleCustomersPage() {
 
     const handleMarkAsWinner = async (customer) => {
         const [bookId, customerId] = customer.id.split('-').map(Number);
-        setConfirmDialog({
-            open: true,
+        showConfirmation({
             title: `Mark ${customer.customerName} as Winner`,
             message: `Are you sure you want to mark ${customer.customerName} as a winner?`,
             onConfirm: async () => {
@@ -64,8 +50,7 @@ export default function EligibleCustomersPage() {
                 showSnackbar(`Marked ${customer.customerName} as a winner!`, 'success');
 
                 // --- Send WhatsApp message based on selected method ---
-                const message = `Congratulations ${customer.customerName}! You have been selected as a winner in the lucky draw for the book "${customer.bookName}". Your prize will be sent to your address: ${customer.address}.`;
-                sendWhatsAppMessage(customer.phone, message);
+                sendWinnerCongratulationsMessage(customer);
 
                 refetchEligibleCustomers(); // Refetch to update the list
             } catch (err) {
@@ -108,7 +93,7 @@ export default function EligibleCustomersPage() {
                 );
             }
         }
-    ], []);
+    ], [handleMarkAsWinner]);
 
     if (error) {
         showSnackbar(error, 'error');
@@ -116,39 +101,19 @@ export default function EligibleCustomersPage() {
 
 
     return (
-        <Box
-        sx={{
-          minHeight: "100vh",
-          py: 4,
-          px: 2,
-          background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
-        }}
-      >
-        <Container>
+        <PageLayout>
             <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
                 Eligible for Lucky Draw
             </Typography>
 
-            <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={2}
-                alignItems={{ sm: 'center' }}
-                sx={{ mb: 2 }}
-            >   
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
-                    <StyledSearchBar
-                        label="Search Customers"
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                    />
-                </Box>
-                <SummaryBox
-                  sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}
-                  items={[
-                    { label: 'Total Eligible', value: customers.length, color: 'primary.main' },
-                  ]}
-                />
-            </Stack>
+            <DataGridHeader
+              searchLabel="Search Customers"
+              searchText={searchText}
+              onSearchChange={(e) => setSearchText(e.target.value)}
+              summaryItems={[
+                { label: 'Total Eligible', value: customers.length, color: 'primary.main' },
+              ]}
+            />
 
             <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
             <Box sx={{ height: 500, width: '100%' }}>
@@ -168,17 +133,12 @@ export default function EligibleCustomersPage() {
             )}
 
             <ConfirmationDialog
-                open={confirmDialog.open}
-                title={confirmDialog.title}
-                message={confirmDialog.message}
-                onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
-                onConfirm={() => {
-                    if (confirmDialog.onConfirm) confirmDialog.onConfirm();
-                    setConfirmDialog({ ...confirmDialog, open: false });
-                }}
+                open={dialogConfig.open}
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                onClose={handleClose}
+                onConfirm={handleConfirm}
             />
-
-        </Container>
-      </Box>
+        </PageLayout>
     );
 }

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useMemo, useContext, useEffect } from 'react';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
-import { lightThemeOptions, darkThemeOptions } from '../theme/themes';
+import { lightThemeOptions, darkThemeOptions } from '../theme/theme';
 
 const ThemeContext = createContext({
   toggleTheme: () => {},

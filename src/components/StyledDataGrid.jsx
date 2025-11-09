@@ -51,11 +51,20 @@ const CustomToolbar = () => (
     </GridToolbarContainer>
 );
 
-const StyledDataGrid = (props) => {
+const StyledDataGrid = ({ onRowClick, ...props }) => {
+    const handleCellClick = (params, event) => {
+        // If a custom onRowClick is provided, and the click is not on an action cell, call it.
+        if (onRowClick && params.field !== 'actions') {
+            onRowClick(params, event);
+        }
+        // If a prop-based onCellClick exists, call it as well.
+        props.onCellClick?.(params, event);
+    };
+
     return (
         <DataGrid
             {...props}
-            slots={{
+            onCellClick={handleCellClick}            slots={{
                 toolbar: CustomToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 ...props.slots,

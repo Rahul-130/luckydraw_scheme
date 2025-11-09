@@ -11,10 +11,11 @@ import { Container, Typography, Button, TextField, Dialog,
     Paper,
     CircularProgress,
     InputAdornment,
-    IconButton,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { EmojiEvents, Visibility, VisibilityOff } from '@mui/icons-material';
+import { EmojiEvents } from '@mui/icons-material';
+import PasswordInput from '../components/PasswordInput';
+import PageLayout from '../components/PageLayout';
 
 
 export default function LuckyDrawPage() {
@@ -24,8 +25,6 @@ export default function LuckyDrawPage() {
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleConfirmRun = async () => {
@@ -71,15 +70,7 @@ export default function LuckyDrawPage() {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        py: 4,
-        px: 2,
-        background: 'linear-gradient(to right, #f0f4f8, #d9e2ec)',
-      }}
-    >
-      <Container maxWidth="lg">
+    <PageLayout>
         <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
           Lucky Draw
         </Typography>
@@ -146,40 +137,20 @@ export default function LuckyDrawPage() {
             <Typography variant="body2" sx={{ mb: 2 }}>
               To ensure security, please enter your password and a one-time password (OTP) from your authenticator app to proceed.
             </Typography>
-            <TextField
+            <PasswordInput
               label="Password"
-              type={showPassword ? 'text' : 'password'}
               fullWidth
               margin="normal"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoFocus
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
             />
-            <TextField
+            <PasswordInput
               label="Authenticator OTP"
-              type={showOtp ? 'text' : 'password'}
               fullWidth
               margin="normal"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowOtp(!showOtp)} edge="end">
-                      {showOtp ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
             />
           </DialogContent>
           <DialogActions>
@@ -194,7 +165,6 @@ export default function LuckyDrawPage() {
             </Button>
           </DialogActions>
         </Dialog>
-      </Container>
-    </Box>
+    </PageLayout>
   );
 }

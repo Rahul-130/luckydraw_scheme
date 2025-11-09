@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { unmarkCustomerAsWinner } from '../services/api';
 import { Container, Typography, Alert, Button, Box, Stack, IconButton, Paper } from '@mui/material';
@@ -6,64 +6,50 @@ import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useWinners } from '../hooks/useWinners';
+import { useDebounce } from '../hooks/useDebounce';
+import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
 import StyledDataGrid from '../components/StyledDataGrid';
-import StyledSearchBar from '../components/StyledSearchBar';
 import SummaryBox from '../components/SummaryBox';
 import { Search, EmojiEvents } from "@mui/icons-material";
-import { sendWhatsAppMessage } from '../utils/whatsapp';
+import { sendUnmarkWinnerMessage } from '../utils/whatsapp';
 import ConfirmationDialog from '../components/ConfirmationDialog';
+import PageLayout from '../components/PageLayout';
+import DataGridHeader from '../components/DataGridHeader';
 
-function debounce(fn, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
 
 export default function WinnersListPage() {
     const { token } = useAuth();
     const [searchText, setSearchText] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null, });
-
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedSearch(searchText);
-      }, 500);
-      return () => clearTimeout(handler);
-    }, [searchText]);
+    const debouncedSearch = useDebounce(searchText, 500);
+    const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
+    const { showSnackbar } = useSnackbar();
 
     const { winners, loading, error, refetch: refetchWinners } = useWinners(debouncedSearch);
 
-    const handleUnmarkAsWinner = async (customer) => {
-        const bookId = customer.bookId;
-        const customerId = customer.customerId;
-        
-    
-        setConfirmDialog({
-            open: true,
+    const handleUnmarkAsWinner = useCallback((customer) => {
+        showConfirmation({
             title: `Unmark ${customer.customerName} as Winner`,
             message: `Are you sure you want to unmark ${customer.customerName} as a winner?`,
             onConfirm: async () => {
             try {
                 await unmarkCustomerAsWinner(token, {
-                    bookId,
-                    customerId
+                    bookId: customer.bookId,
+                    customerId: customer.customerId
                 });
                 showSnackbar(`Unmarked ${customer.customerName} as a winner!`, 'success');
     
                 // --- Send WhatsApp message based on selected method ---
-                const message = `Hello ${customer.customerName}, your winner status for the lucky draw has been revoked. Please contact us for more details.`;
-                sendWhatsAppMessage(customer.phone, message);
+                sendUnmarkWinnerMessage(customer);
     
                 refetchWinners();
             } catch (err) {
                 showSnackbar(err.response?.data?.error || 'Failed to unmark customer as winner', 'error');
             }
-            }
-        });  
-    };
+            },
+            confirmColor: 'warning',
+            confirmText: 'Unmark'
+        });
+    }, [token, showSnackbar, refetchWinners, showConfirmation]);
 
     const columns = useMemo(() => [
         { field: 'id', headerName: 'ID', width: 80 },
@@ -101,8 +87,6 @@ export default function WinnersListPage() {
         }
     ], [handleUnmarkAsWinner]);
 
-    const { showSnackbar } = useSnackbar();
-
     const winnerSummary = useMemo(() => {
         const total = winners.length;
         const activeBookWinners = winners.filter(w => w.isBookActive).length;
@@ -115,41 +99,21 @@ export default function WinnersListPage() {
     }, [winners]);
 
     return (
-        <Box
-        sx={{
-          minHeight: "100vh",
-          py: 4,
-          px: 2,
-          background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
-        }}
-      >
-        <Container>
+        <PageLayout>
             <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
                 Lucky Draw Winners
             </Typography>
 
-            <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={2}
-                alignItems={{ sm: 'center' }}
-                sx={{ mb: 2 }}
-            >   
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
-                    <StyledSearchBar
-                        label="Search Winners"
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                    />
-                </Box>
-                <SummaryBox
-                  sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}
-                  items={[
-                    { label: 'Total', value: winnerSummary.total },
-                    { label: 'Active Book', value: winnerSummary.activeBookWinners, color: 'success.main' },
-                    { label: 'Inactive Book', value: winnerSummary.inactiveBookWinners, color: 'error.main' },
-                  ]}
-                />
-            </Stack>
+            <DataGridHeader
+              searchLabel="Search Winners"
+              searchText={searchText}
+              onSearchChange={(e) => setSearchText(e.target.value)}
+              summaryItems={[
+                { label: 'Total', value: winnerSummary.total },
+                { label: 'Active Book', value: winnerSummary.activeBookWinners, color: 'success.main' },
+                { label: 'Inactive Book', value: winnerSummary.inactiveBookWinners, color: 'error.main' },
+              ]}
+            />
 
             <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
             <Box sx={{ height: 500, width: '100%' }}>
@@ -172,18 +136,14 @@ export default function WinnersListPage() {
             )}
 
             <ConfirmationDialog
-                open={confirmDialog.open}
-                title={confirmDialog.title}
-                message={confirmDialog.message}
-                onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
-                onConfirm={() => {
-                    if (confirmDialog.onConfirm) confirmDialog.onConfirm();
-                    setConfirmDialog({ ...confirmDialog, open: false });
-                }}
+                open={dialogConfig.open}
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                onClose={handleClose}
+                onConfirm={handleConfirm}
                 confirmColor="warning"
                 confirmText="Unmark"
             />
-        </Container>
-      </Box>
+        </PageLayout>
     );
 }

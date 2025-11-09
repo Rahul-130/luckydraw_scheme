@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   createBook,
   editBook,
@@ -6,7 +6,9 @@ import {
   toggleBookActive,
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { useDebounce } from "../hooks/useDebounce";
 import { useBooks } from "../hooks/useBooks";
+import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
 import {
   TextField,
   Button,
@@ -39,28 +41,17 @@ import ConfirmationDialog from "../components/ConfirmationDialog";
 import StyledDataGrid from "../components/StyledDataGrid";
 import StyledSearchBar from "../components/StyledSearchBar";
 import SummaryBox from "../components/SummaryBox";
-
-// Utility: debounce function to delay API calls
-function debounce(fn, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
+import PageLayout from "../components/PageLayout";
+import FormDialog from "../components/FormDialog";
+import ActionIconButton from "../components/ActionIconButton";
+import BookFormFields from "../components/BookFormFields";
+import DataGridHeader from "../components/DataGridHeader";
+import { extractApiErrorMessage } from "../utils/apiUtils";
 
 export default function BooksPage() {
   const { token } = useAuth();
   const [searchText, setSearchText] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState();
-
-  // debounce search input to avoid excessive API calls
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(searchText);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchText]);
+  const debouncedSearch = useDebounce(searchText, 500);
 
   const {
     books,
@@ -85,7 +76,7 @@ export default function BooksPage() {
     maxCustomers: "",
     startMonthIso: "",
   });
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
+  const { dialogConfig, showConfirmation, handleClose: handleConfirmClose, handleConfirm } = useConfirmationDialog();
 
   const navigate = useNavigate();
 
@@ -96,7 +87,7 @@ export default function BooksPage() {
       setOpen(false);
       refetchBooks();
     } catch (err) {
-      console.error(err.response?.data?.message || "Failed to create book");
+      console.error(extractApiErrorMessage(err, "Failed to create book"));
     }
   };
 
@@ -107,12 +98,12 @@ export default function BooksPage() {
       setEditOpen(false);
       refetchBooks();
     } catch (err) {
-      console.error(err.response?.data?.message || "Failed to edit book");
+      console.error(extractApiErrorMessage(err, "Failed to edit book"));
     }
   };
 
   const handleDelete = useCallback((bookId, bookName) => {
-    setConfirmDialog({
+    showConfirmation({
         open: true,
         title: `Delete Book "${bookName}"?`,
         message: 'Are you sure you want to delete this book and all its related data? This action cannot be undone.',
@@ -121,18 +112,18 @@ export default function BooksPage() {
                 await deleteBook(bookId, token);
                 refetchBooks();
             } catch (err) {
-                console.error(err.response?.data?.message || "Failed to delete book");
+                console.error(extractApiErrorMessage(err, "Failed to delete book"));
             }
         },
         confirmColor: 'error',
         confirmText: 'Delete'
     });
-  }, [token, refetchBooks]);
+  }, [token, refetchBooks, showConfirmation]);
 
   // toggle book active status
   const handleToggle = useCallback((bookId, bookName, isActive) => {
     const action = isActive ? "deactivate" : "activate";
-    setConfirmDialog({
+    showConfirmation({
       open: true,
       title: `${action.charAt(0).toUpperCase() + action.slice(1)} "${bookName}"?`,
       message: `Are you sure you want to ${action} this book?`,
@@ -141,13 +132,13 @@ export default function BooksPage() {
           await toggleBookActive(bookId, token);
           refetchBooks();
         } catch (err) {
-          console.error(err.response?.data?.message || "Failed to toggle book");
+          console.error(extractApiErrorMessage(err, "Failed to toggle book"));
         }
       },
       confirmColor: isActive ? 'warning' : 'success',
       confirmText: action.charAt(0).toUpperCase() + action.slice(1),
     });
-  }, [token, refetchBooks]);
+  }, [token, refetchBooks, showConfirmation]);
 
 
   const handleBackup = () => {
@@ -184,59 +175,29 @@ export default function BooksPage() {
             </Button>
 
             {/* Edit */}
-            <IconButton
-              onClick={() => {
+            <ActionIconButton color="info" onClick={() => {
                 setEditForm(params.row);
                 setEditOpen(true);
-              }}
-              sx={{
-                backgroundColor: (theme) => alpha(theme.palette.info.main, 0.1),
-                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.info.main, 0.2), transform: "scale(1.05)" },
-                borderRadius: 1.5,
-                padding: 0.7,
-                color: "info.main",
-                transition: "all 0.2s",
-              }}
-            >
+              }}>
               <Edit fontSize="small" />
-            </IconButton>
+            </ActionIconButton>
 
             {/* Delete */}
-            <IconButton
-              onClick={() => handleDelete(params.row.id, params.row.name)}
-              sx={{
-                backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
-                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2), transform: "scale(1.05)" },
-                borderRadius: 1.5,
-                padding: 0.7,
-                color: "error.main",
-                transition: "all 0.2s",
-              }}
-            >
+            <ActionIconButton color="error" onClick={() => handleDelete(params.row.id, params.row.name)}>
               <Delete fontSize="small" />
-            </IconButton>
+            </ActionIconButton>
 
             {/* Toggle Active */}
-            <IconButton
+            <ActionIconButton
               onClick={() => handleToggle(params.row.id, params.row.name, params.row.isActive)}
-              sx={{
-                backgroundColor: (theme) => params.row.isActive ? alpha(theme.palette.warning.main, 0.1) : alpha(theme.palette.success.main, 0.1),
-                "&:hover": { 
-                  backgroundColor: (theme) => params.row.isActive ? alpha(theme.palette.warning.main, 0.2) : alpha(theme.palette.success.main, 0.2),
-                  transform: "scale(1.05)",
-                },
-                borderRadius: 1.5,
-                padding: 0.7,
-                color: params.row.isActive ? "warning.main" : "success.main",
-                transition: "all 0.2s",
-              }}
+              color={params.row.isActive ? "warning" : "success"}
             >
               {params.row.isActive ? (
                 <ToggleOff fontSize="small" />
               ) : (
                 <ToggleOn fontSize="small" />
               )}
-            </IconButton>
+            </ActionIconButton>
           </Stack>
         ),
       },
@@ -257,15 +218,7 @@ export default function BooksPage() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box
-        sx={{
-          minHeight: "100vh",
-          py: 4,
-          px: 2,
-          background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
-        }}
-      >
-        <Container>
+      <PageLayout>
           <Typography
             variant="h4"
             sx={{
@@ -278,35 +231,20 @@ export default function BooksPage() {
             My Books
           </Typography>
 
-          {/* Toolbar */}
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            alignItems={{ sm: 'center' }}
-            sx={{ mb: 2 }}
+          <DataGridHeader
+            searchLabel="Search Books"
+            searchText={searchText}
+            onSearchChange={(e) => setSearchText(e.target.value)}
+            summaryItems={[
+              { label: 'Total', value: bookSummary.total },
+              { label: 'Active', value: bookSummary.active, color: 'success.main' },
+              { label: 'Inactive', value: bookSummary.inactive, color: 'error.main' },
+            ]}
           >
-            {/* Left side: Search and Action Buttons */}
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
-                <StyledSearchBar
-                  label="Search Books"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                />
-                <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
-                  Add Book
-                </Button>
-            </Box>
-
-            {/* Right side: Summary Box */}
-            <SummaryBox
-              sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }}
-              items={[
-                { label: 'Total', value: bookSummary.total },
-                { label: 'Active', value: bookSummary.active, color: 'success.main' },
-                { label: 'Inactive', value: bookSummary.inactive, color: 'error.main' },
-              ]}
-            />
-          </Stack>
+            <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
+              Add Book
+            </Button>
+          </DataGridHeader>
 
           <Paper
             elevation={6}
@@ -319,14 +257,8 @@ export default function BooksPage() {
                 columns={columns}
                 loading={booksLoading}
                 paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}                onCellClick={(params, event) => {
-                  // Prevent navigation when clicking on the 'actions' column.
-                  // The buttons within the cell will handle their own click events.
-                  if (params.field === 'actions') {
-                    return;
-                  }
-                  navigate(`/books/${params.row.id}/customers`);
-                }}
+                onPaginationModelChange={setPaginationModel}
+                onRowClick={(params) => navigate(`/books/${params.row.id}/customers`)}
                 paginationMode="server"
                 getRowClassName={(params) =>
                   params.row.isActive
@@ -354,122 +286,25 @@ export default function BooksPage() {
           )}
 
           {/* Add Book Dialog */}
-          <Dialog open={open} onClose={() => setOpen(false)}>
-            <DialogTitle>Add Book</DialogTitle>
-            <DialogContent>
-              <Stack spacing={2} sx={{ mt: 1 }}>
-                <TextField
-                  label="Name"
-                  fullWidth
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-                <TextField
-                  label="Max Customers"
-                  type="number"
-                  fullWidth
-                  value={form.maxCustomers}
-                  onChange={(e) =>
-                    setForm({ ...form, maxCustomers: e.target.value })
-                  }
-                />
-                <DatePicker
-                  label="Start Month (YYYY-MM)"
-                  views={["year", "month"]}
-                  value={
-                    form.startMonthIso ? new Date(form.startMonthIso) : null
-                  }
-                  onChange={(newValue) => {
-                    if (newValue) {
-                      const year = newValue.getFullYear();
-                      const month = (newValue.getMonth() + 1)
-                        .toString()
-                        .padStart(2, "0");
-                      setForm({ ...form, startMonthIso: `${year}-${month}` });
-                    } else setForm({ ...form, startMonthIso: "" });
-                  }}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpen(false)}>Cancel</Button>
-              <Button variant="contained" onClick={handleCreate}>
-                Create
-              </Button>
-            </DialogActions>
-          </Dialog>
+          <FormDialog open={open} onClose={() => setOpen(false)} title="Add Book" onSubmit={handleCreate} submitText="Create">
+            <BookFormFields formState={form} onFormChange={setForm} />
+          </FormDialog>
 
           {/* Edit Book Dialog */}
-          <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
-            <DialogTitle>Edit Book</DialogTitle>
-            <DialogContent>
-              <Stack spacing={2} sx={{ mt: 1 }}>
-                <TextField
-                  label="Name"
-                  fullWidth
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, name: e.target.value })
-                  }
-                />
-                <TextField
-                  label="Max Customers"
-                  type="number"
-                  fullWidth
-                  value={editForm.maxCustomers}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, maxCustomers: e.target.value })
-                  }
-                />
-                <DatePicker
-                  label="Start Month (YYYY-MM)"
-                  views={["year", "month"]}
-                  value={
-                    editForm.startMonthIso
-                      ? new Date(editForm.startMonthIso)
-                      : null
-                  }
-                  onChange={(newValue) => {
-                    if (newValue) {
-                      const year = newValue.getFullYear();
-                      const month = (newValue.getMonth() + 1)
-                        .toString()
-                        .padStart(2, "0");
-                      setEditForm({
-                        ...editForm,
-                        startMonthIso: `${year}-${month}`,
-                      });
-                    } else setEditForm({ ...editForm, startMonthIso: "" });
-                  }}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-              <Button variant="contained" onClick={handleEdit}>
-                Save
-              </Button>
-            </DialogActions>
-          </Dialog>
+          <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Book" onSubmit={handleEdit}>
+            <BookFormFields formState={editForm} onFormChange={setEditForm} />
+          </FormDialog>
 
           <ConfirmationDialog
-              open={confirmDialog.open}
-              title={confirmDialog.title}
-              message={confirmDialog.message}
-              onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
-              onConfirm={async () => {
-                if (confirmDialog.onConfirm) {
-                    await confirmDialog.onConfirm();
-                }
-                setConfirmDialog({ ...confirmDialog, open: false });
-              }}
-              confirmColor={confirmDialog.confirmColor}
-              confirmText={confirmDialog.confirmText}
+              open={dialogConfig.open}
+              title={dialogConfig.title}
+              message={dialogConfig.message}
+              onClose={handleConfirmClose}
+              onConfirm={handleConfirm}
+              confirmColor={dialogConfig.confirmColor}
+              confirmText={dialogConfig.confirmText}
           />
-        </Container>
-      </Box>
+      </PageLayout>
     </LocalizationProvider>
   );
 }

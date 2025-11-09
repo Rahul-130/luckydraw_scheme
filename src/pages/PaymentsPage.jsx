@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { addPayment, getPayments, getCustomers, editPayment, deletePayment, getBook } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { createRoot } from 'react-dom/client';
+import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
+import { usePayments } from '../hooks/usePayments';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../context/SnackbarContext';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -30,45 +31,32 @@ import {
 } from '@mui/material';
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
+import PageLayout from '../components/PageLayout';
 import PaymentReceipt from '../components/PaymentReceipt';
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
+import ActionIconButton from '../components/ActionIconButton';
 import StyledDataGrid from '../components/StyledDataGrid';
 import ConfirmationDialog from '../components/ConfirmationDialog';
-import { sendWhatsAppMessage } from '../utils/whatsapp';
+import FormDialog from '../components/FormDialog';
+import SummaryBox from '../components/SummaryBox';
+import { sendPaymentReceiptMessage } from '../utils/whatsapp';
+import PaymentFormFields from '../components/PaymentFormFields';
+import PageHeader from '../components/PageHeader';
+import { renderComponentInNewWindow } from '../utils/printing';
 
 
 export default function PaymentsPage() {
     const {token} = useAuth();
     const {bookId, customerId} = useParams();
-    const [payments, setPayments] = useState([]);
-    const [customer, setCustomer] = useState(null);
-    const [book, setBook] = useState(null);
     const [open, setOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'cash' });
     const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '', paymentType: 'cash'});
     const { showSnackbar } = useSnackbar();
-    const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
+    const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
+    const { payments, customer, book, loading, error, refetch } = usePayments(bookId, customerId);
     const navigate = useNavigate();
-    const [is_frozen, setIsFrozen] = useState(false);
     const [selectionModel, setSelectionModel] = useState([]);
-
-    useEffect(() => {
-        // Fetch payments
-        getPayments(bookId, customerId, token)
-            .then(res => setPayments(res.data))
-            .catch(() => setPayments([]));
-        // Fetch customer info to check frozen status
-        getCustomers(bookId, token)
-            .then(response => {
-                const cust = response.data.find(c => c.id === customerId);
-                setCustomer(cust);
-                setIsFrozen(cust?.isFrozen);
-            });
-        getBook(bookId, token).then(response => {
-            setBook(response.data);
-        });
-    }, [bookId, customerId, token, is_frozen]);
 
     const getNextPaymentDetails = () => {
         if (!book || payments.length === 0) {
@@ -94,37 +82,36 @@ export default function PaymentsPage() {
         
         await addPayment(bookId, customerId, form, token);
         setOpen(false);
-        getPayments(bookId, customerId, token)
-        .then(res => setPayments(res.data))
-        .catch(() => setPayments([]));
+        refetch();
       } catch (error) {
         showSnackbar(error.response?.data?.error || "Failed to add payment", 'error');
       }
     };
 
-    const handleEdit = (payment) => {
+    const handleEdit = useCallback((payment) => {
         setEditForm(payment);
         setEditOpen(true);
-    };
+    }, []);
 
     const handleEditSave = async () => {
         await editPayment(bookId, customerId, editForm.id, editForm, token);
         setEditOpen(false);
-        getPayments(bookId, customerId, token).then(res => setPayments(res.data));
+        refetch();
     };
 
     const handleDelete = (paymentId) => {
-        setConfirmDialog({
-            open: true,
+        showConfirmation({
             title: 'Confirm Payment Deletion',
             message: 'Are you sure you want to delete this payment? This action cannot be undone.',
             onConfirm: async () => {
                 try {
                     await deletePayment(bookId, customerId, paymentId, token);
-                    getPayments(bookId, customerId, token).then(res => setPayments(res.data));
+                    refetch();
                     showSnackbar('Payment deleted successfully.', 'success');
                 } catch (err) { showSnackbar(err.response?.data?.error || 'Failed to delete payment.', 'error'); }
-            }
+            },
+            confirmColor: 'error',
+            confirmText: 'Delete'
         });
     };
 
@@ -142,29 +129,7 @@ export default function PaymentsPage() {
     };
 
     const handlePrint = (payment) => {
-        const printWindow = window.open('', '_blank', 'height=600,width=800');
-
-        // Find all stylesheet links in the current document and copy them to the new window
-        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-            .map(style => style.outerHTML)
-            .join('');
-
-        printWindow.document.write(`
-            <html>
-                <head><title>Payment Receipt</title>${styles}</head>
-                <body><div id="print-root"></div></body>
-            </html>`);
-        printWindow.document.close();
-        
-        const printRoot = printWindow.document.getElementById('print-root');
-        const root = createRoot(printRoot);
-        root.render(<PaymentReceipt payment={payment} customer={customer} book={book} />);
-        
-        // Wait for the component to render before printing
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 500); // A short delay to ensure rendering is complete
+        renderComponentInNewWindow(<PaymentReceipt payment={payment} customer={customer} book={book} />, 'Payment Receipt');
     };
 
     const handlePrintSelected = () => {
@@ -174,22 +139,7 @@ export default function PaymentsPage() {
             return;
         }
 
-        const printWindow = window.open('', '_blank', 'height=800,width=600');
-        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-            .map(style => style.outerHTML)
-            .join('');
-
-        printWindow.document.write(`<html><head><title>Consolidated Receipt</title>${styles}</head><body><div id="print-root"></div></body></html>`);
-        printWindow.document.close();
-
-        const printRoot = printWindow.document.getElementById('print-root');
-        const root = createRoot(printRoot);
-        root.render(<BulkPaymentReceipt payments={selectedPayments} customer={customer} book={book} />);
-
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 500);
+        renderComponentInNewWindow(<BulkPaymentReceipt payments={selectedPayments} customer={customer} book={book} />, 'Consolidated Receipt');
     };
 
     const handleSendWhatsApp = () => {
@@ -199,13 +149,7 @@ export default function PaymentsPage() {
             return;
         }
     
-        const totalAmount = selectedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
-    
-        const message = `Hello ${customer.name}, here is a summary of your recent payments for book "${book.name}":\n\n` +
-            selectedPayments.map(p => `- Receipt ${p.receiptNo} for ${p.monthIso}: ₹${Number(p.amount).toLocaleString('en-IN')}`).join('\n') +
-            `\n\nTotal Paid: ₹${totalAmount.toLocaleString('en-IN')}\n\nThank you!`;
-        
-        sendWhatsAppMessage(customer.phone, message);
+        sendPaymentReceiptMessage(customer, book, selectedPayments);
     };
 
     const paymentSummary = useMemo(() => {
@@ -214,48 +158,55 @@ export default function PaymentsPage() {
         return { totalAmount, paymentCount };
     }, [payments]);
 
+    const columns = useMemo(() => [
+      { field: 'id', headerName: 'ID', width: 90 },
+      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (params) => `₹ ${params}` },
+      { field: 'monthIso', headerName: 'Month', width: 150 },
+      { 
+        field: 'paymentDate', 
+        headerName: 'Date', 
+        width: 200, 
+        valueFormatter: (value) => value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''
+      },                  { field: 'receiptNo', headerName: 'Receipt No.', flex: 1, minWidth: 120 },
+      { field: 'paymentType', headerName: 'Type', width: 120 },
+      {
+          field: 'actions',
+          headerName: 'Actions',
+          width: 200,
+          sortable: false,
+          renderCell: (params) => (
+            <Stack direction="row" spacing={0.5}>
+              <ActionIconButton color="info" onClick={() => handleEdit(params.row)}>
+                <Edit fontSize="small" />
+              </ActionIconButton>
+              <ActionIconButton color="error" onClick={() => handleDelete(params.row.id)}>
+                <Delete fontSize="small" />
+              </ActionIconButton>
+              <ActionIconButton color="success" onClick={() => handlePrint(params.row)}>
+                <Print fontSize="small" />
+              </ActionIconButton>
+            </Stack>
+          )
+      }
+    ], [handleEdit, handleDelete, handlePrint]);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box
-        sx={{
-          minHeight: "100vh",
-          py: 4,
-          px: 2,
-          background: "linear-gradient(to right, #f0f4f8, #d9e2ec)",
-        }}
-      >
-        <Container>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-            <IconButton onClick={() => navigate(`/books/${bookId}/customers`)} sx={{ color: '#000' }}>
-              <ArrowBack />
-            </IconButton>
-            <Typography
-              variant="h5"
-              component="h1"
-              sx={{
-                color: 'text.primary',
-                fontWeight: 'bold',
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.5,
-                width: '100%',
-                textAlign: 'center',
-              }}
-            >
-              <Box component="span" sx={{ fontWeight: 'bold', color:"#000"}}>
-                Payments
-              </Box>
-              <Box component="span" sx={{ color: '#000' }}>for customer</Box>
-              <Box component="span" sx={{ color: '#000', fontWeight: 'semibold' }}>
-                {customer?.name}
-              </Box>
-              <Typography variant="subtitle1" component="span" sx={{ color: '#001', pt: 0.5 }}>
-                (Book: {book?.name})
-              </Typography>
+      <PageLayout>
+          <PageHeader backTo={`/books/${bookId}/customers`}>
+            <Typography variant="h5" component="h1" sx={{ color: 'text.primary', fontWeight: 'bold', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 0.5, width: '100%', textAlign: 'center' }}>
+                <Box component="span" sx={{ fontWeight: 'bold', color:"#000"}}>
+                  Payments
+                </Box>
+                <Box component="span" sx={{ color: '#000' }}>for customer</Box>
+                <Box component="span" sx={{ color: '#000', fontWeight: 'semibold' }}>
+                  {customer?.name}
+                </Box>
+                <Typography variant="subtitle1" component="span" sx={{ color: '#001', pt: 0.5 }}>
+                  (Book: {book?.name})
+                </Typography>
             </Typography>
-          </Stack>
+          </PageHeader>
 
           <Stack
             direction={{ xs: "column", sm: "row" }}
@@ -268,7 +219,7 @@ export default function PaymentsPage() {
               startIcon={<Add />}
               color="primary"
               onClick={handleOpenAddDialog}
-              disabled={is_frozen}
+              disabled={customer?.isFrozen}
             >
               Add Payment
             </Button>
@@ -290,199 +241,45 @@ export default function PaymentsPage() {
             </ButtonGroup>
           </Stack>
 
-          <Paper elevation={3} sx={{ p: 1, mb: 1, borderRadius: 2, backgroundColor: 'primary.lightest' }}>
-            <Stack direction="row" spacing={4} justifyContent="center">
-              <Box textAlign="center" sx={{ flex: 1 }}>
-                <Typography variant="h6" color="text.secondary">Total Payments</Typography>
-                <Typography variant="h5" fontWeight="bold" color="primary.main">{paymentSummary.paymentCount}</Typography>
-              </Box>
-              <Box textAlign="center" sx={{ flex: 1 }}>
-                <Typography variant="h6" color="text.secondary">Total Amount Paid</Typography>
-                <Typography variant="h5" fontWeight="bold" color="primary.main">
-                  ₹ {paymentSummary.totalAmount.toLocaleString('en-IN')}
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
+          <SummaryBox
+            sx={{ mb: 1 }}
+            items={[
+              { label: 'Total Payments', value: paymentSummary.paymentCount, color: 'primary.main' },
+              { label: 'Total Amount Paid', value: `₹ ${paymentSummary.totalAmount.toLocaleString('en-IN')}`, color: 'primary.main' },
+            ]}
+          />
 
           <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
             <Box sx={{ height: 500, width: "100%" }}>
               <StyledDataGrid
                 rows={payments}
+                loading={loading}
                 checkboxSelection
                 onRowSelectionModelChange={(newSelectionModel) => setSelectionModel(newSelectionModel)}
                 rowSelectionModel={selectionModel}
-                columns={[
-                  { field: 'id', headerName: 'ID', width: 90 },
-                  { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (params) => `₹ ${params}` },
-                  { field: 'monthIso', headerName: 'Month', width: 150 },
-                  { 
-                    field: 'paymentDate', 
-                    headerName: 'Date', 
-                    width: 200, 
-                    valueFormatter: (value) => value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''
-                  },                  { field: 'receiptNo', headerName: 'Receipt No.', flex: 1, minWidth: 120 },
-                  { field: 'paymentType', headerName: 'Type', width: 120 },
-                  {
-                      field: 'actions',
-                      headerName: 'Actions',
-                      width: 200,
-                      sortable: false,
-                      renderCell: (params) => (
-                        <Stack direction="row" spacing={0.5}>
-                          <IconButton
-                            onClick={() => handleEdit(params.row)}
-                            sx={{
-                                backgroundColor: (theme) => alpha(theme.palette.info.main, 0.1),
-                                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.info.main, 0.2), transform: "scale(1.05)" },
-                                borderRadius: 1.5,
-                                padding: 0.7,
-                                color: "info.main",
-                                transition: "all 0.2s",
-                              }}
-                          >
-                            <Edit fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => handleDelete(params.row.id)}
-                            sx={{
-                                backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
-                                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2), transform: "scale(1.05)" },
-                                borderRadius: 1.5,
-                                padding: 0.7,
-                                color: "error.main",
-                                transition: "all 0.2s",
-                              }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => handlePrint(params.row)}
-                            sx={{
-                                backgroundColor: (theme) => alpha(theme.palette.success.main, 0.1),
-                                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.success.main, 0.2), transform: "scale(1.05)" },
-                                borderRadius: 1.5,
-                                padding: 0.7,
-                                color: "success.main",
-                                transition: "all 0.2s",
-                              }}
-                          >
-                            <Print fontSize="small" />
-                          </IconButton>
-                        </Stack>
-                      )
-                  }
-                ]}
+                columns={columns}
               />
             </Box>
           </Paper>
-
-        </Container>
       {/* Dialogs */}
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm"> {/* Added fullWidth and maxWidth */}
-          <DialogTitle>Add Payment</DialogTitle>
-          <DialogContent>
-            <TextField select label="Amount" fullWidth margin="normal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}>
-                {[500, 1000, 1500, 2000, 2500].map((amt) => (
-                  <MenuItem key={amt} value={amt}>
-                    ₹ {amt}
-                  </MenuItem>
-                ))}
-            </TextField>
-              <FormControl component="fieldset" margin="normal">
-                <FormLabel component="legend">Payment Type</FormLabel>
-                <RadioGroup
-                  row
-                  value={form.paymentType}
-                  onChange={(e) => setForm({ ...form, paymentType: e.target.value })}
-                >
-                  <FormControlLabel value="cash" control={<Radio />} label="Cash" />
-                  <FormControlLabel value="online" control={<Radio />} label="Online" />
-                  <FormControlLabel value="instore" control={<Radio />} label="In-Store Online" />
-                </RadioGroup>
-              </FormControl>
-            <TextField label="Receipt No." fullWidth margin="normal" value={form.receiptNo} onChange={e => setForm({ ...form, receiptNo: e.target.value })} onFocus={event => event.target.select()} />
-            <DatePicker // Label already good
-              label="Month"
-              views={['year', 'month']}
-              inputFormat="yyyy-MM"
-              value={form.monthIso ? new Date(form.monthIso) : null}
-              onChange={(newValue) => {
-                if (newValue) {
-                  const year = newValue.getFullYear();
-                  const month = (newValue.getMonth() + 1).toString().padStart(2, '0');
-                  setForm({ ...form, monthIso: `${year}-${month}` });
-                } else {
-                  setForm({ ...form, monthIso: '' });
-                }
-              }}
-              slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} variant="contained">Create</Button>
-          </DialogActions>
-        </Dialog> {/* Added fullWidth and maxWidth */}
-        <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
-          <DialogTitle>Edit Payment</DialogTitle> 
-          <DialogContent>
-              <TextField select label="Amount" fullWidth margin="normal" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}>
-                  {[500, 1000, 1500, 2000, 2500].map((amt) => (
-                    <MenuItem key={amt} value={amt}>
-                      ₹ {amt}
-                    </MenuItem>
-                  ))}
-              </TextField>
-              <FormControl component="fieldset" margin="normal">
-                <FormLabel component="legend">Payment Type</FormLabel> 
-                <RadioGroup
-                  row
-                  value={editForm.paymentType || 'cash'}
-                  onChange={(e) => setEditForm({ ...editForm, paymentType: e.target.value })}
-                >
-                  <FormControlLabel value="cash" control={<Radio />} label="Cash" />
-                  <FormControlLabel value="online" control={<Radio />} label="Online" />
-                  <FormControlLabel value="instore" control={<Radio />} label="In-Store Online" />
-                  </RadioGroup>
-              </FormControl>
-              <TextField label="Receipt No." fullWidth margin="normal" value={editForm.receiptNo} onChange={e => setEditForm({ ...editForm, receiptNo: e.target.value })} onFocus={event => event.target.select()} />
-              <DatePicker // Label already good
-                label="Month"
-                views={['year', 'month']}
-                inputFormat="yyyy-MM"
-                value={editForm.monthIso ? new Date(editForm.monthIso) : null}
-                disabled={true}
-                onChange={(newValue) => {
-                  if (newValue) {
-                    const year = newValue.getFullYear();
-                    const month = (newValue.getMonth() + 1).toString().padStart(2, '0');
-                    setEditForm({ ...editForm, monthIso: `${year}-${month}` });
-                  } else {
-                    setEditForm({ ...editForm, monthIso: '' });
-                  }
-                }}
-                slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
-              />
-          </DialogContent>
-          <DialogActions>
-              <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-              <Button onClick={handleEditSave} variant="contained">Save</Button>
-          </DialogActions>
-        </Dialog> {/* Added fullWidth and maxWidth */}
+        <FormDialog open={open} onClose={() => setOpen(false)} title="Add Payment" onSubmit={handleCreate} submitText="Create">
+          <PaymentFormFields formState={form} onFormChange={setForm} />
+        </FormDialog>
+
+        <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Payment" onSubmit={handleEditSave}>
+          <PaymentFormFields formState={editForm} onFormChange={setEditForm} isMonthDisabled={true} />
+        </FormDialog>
+
         <ConfirmationDialog
-            open={confirmDialog.open}
-            title={confirmDialog.title}
-            message={confirmDialog.message}
-            onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
-            onConfirm={() => {
-                if (confirmDialog.onConfirm) confirmDialog.onConfirm();
-                setConfirmDialog({ ...confirmDialog, open: false });
-            }}
-            confirmColor="error"
-            confirmText="Delete"
+            open={dialogConfig.open}
+            title={dialogConfig.title}
+            message={dialogConfig.message}
+            onClose={handleClose}
+            onConfirm={handleConfirm}
+            confirmColor={dialogConfig.confirmColor}
+            confirmText={dialogConfig.confirmText}
         />
-      </Box>
+      </PageLayout>
     </LocalizationProvider>
   )
 }
