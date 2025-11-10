@@ -48,7 +48,7 @@ import { renderComponentInNewWindow } from '../utils/printing';
 
 
 export default function PaymentsPage() {
-    const {token} = useAuth();
+    const {token, user} = useAuth();
     const {bookId, customerId} = useParams();
     const [open, setOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
@@ -131,7 +131,7 @@ export default function PaymentsPage() {
     };
 
     const handlePrint = (payment) => {
-        renderComponentInNewWindow(<PaymentReceipt payment={payment} customer={customer} book={book} />, 'Payment Receipt');
+        renderComponentInNewWindow(<PaymentReceipt payment={payment} customer={customer} book={book} user={user} />, 'Payment Receipt');
     };
 
     const handlePrintSelected = () => {
@@ -141,7 +141,7 @@ export default function PaymentsPage() {
             return;
         }
 
-        renderComponentInNewWindow(<BulkPaymentReceipt payments={selectedPayments} customer={customer} book={book} />, 'Consolidated Receipt');
+        renderComponentInNewWindow(<BulkPaymentReceipt payments={selectedPayments} customer={customer} book={book} user={user} />, 'Consolidated Receipt');
     };
 
     const handleSendWhatsApp = () => {

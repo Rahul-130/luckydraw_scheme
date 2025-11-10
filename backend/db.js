@@ -31,7 +31,11 @@ async function initSchema() {
       password_hash VARCHAR2(255) NOT NULL,
       is_2fa_enabled NUMBER(1) DEFAULT 0 NOT NULL,
       two_fa_secret VARCHAR2(255),
-      two_fa_recovery_codes CLOB
+      two_fa_recovery_codes CLOB,
+      company_name VARCHAR2(255),
+      company_address VARCHAR2(500),
+      company_cell VARCHAR2(20),
+      company_phone VARCHAR2(20)
     )'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;`);
 
     await conn.execute(`BEGIN EXECUTE IMMEDIATE 'CREATE TABLE books (

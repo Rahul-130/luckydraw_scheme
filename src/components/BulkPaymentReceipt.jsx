@@ -1,16 +1,15 @@
 import React from 'react';
 
-const BulkPaymentReceipt = ({ payments, customer, book }) => {
+const BulkPaymentReceipt = ({ payments, customer, book, user }) => {
   const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-
   return (
     <div className="font-sans text-sm text-gray-800 bg-white p-6 print:p-0">
       {/* Header */}
       <div className="text-center mb-4">
-        <h1 className="text-2xl font-bold">{import.meta.env.VITE_COMPANY_NAME}</h1>
-        <p className="text-xs">{import.meta.env.VITE_COMPANY_ADDRESS}</p>
+        <h1 className="text-2xl font-bold">{user?.company_name || 'Your Company'}</h1>
+        <p className="text-xs">{user?.company_address || 'Your Company Address'}</p>
         <p className="text-xs">
-          Cell: {import.meta.env.VITE_COMPANY_CELL} | Phone: {import.meta.env.VITE_COMPANY_PHONE}
+          Cell: {user?.company_cell || 'N/A'} | Phone: {user?.company_phone || 'N/A'}
         </p>
       </div>
 

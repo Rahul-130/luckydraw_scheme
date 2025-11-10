@@ -14,7 +14,11 @@ router.get('/', requireAuth, async (req, res) => {
     try {
         conn = await getConnection();
         const result = await conn.execute(
-            `SELECT name, email, phone FROM users WHERE id = :userId`,
+            `SELECT 
+                name, email, phone, 
+                company_name, company_address, company_cell, company_phone 
+             FROM users 
+             WHERE id = :userId`,
             { userId }
         );
 
@@ -26,7 +30,11 @@ router.get('/', requireAuth, async (req, res) => {
         res.json({
             name: profile.NAME,
             email: profile.EMAIL,
-            phone: profile.PHONE || ''
+            phone: profile.PHONE || '',
+            company_name: profile.COMPANY_NAME || '',
+            company_address: profile.COMPANY_ADDRESS || '',
+            company_cell: profile.COMPANY_CELL || '',
+            company_phone: profile.COMPANY_PHONE || ''
         });
     } catch (error) {
         console.error('Error fetching profile:', error);
@@ -42,15 +50,22 @@ router.get('/', requireAuth, async (req, res) => {
  * @access  Private
  */
 router.put('/', requireAuth, async (req, res) => {
-    const { name, email, phone } = req.body;
+    const { name, phone, company_name, company_address, company_cell, company_phone } = req.body;
     const userId = req.user.id;
     let conn;
 
     try {
         conn = await getConnection();
         await conn.execute(
-            `UPDATE users SET name = :name, email = :email, phone = :phone WHERE id = :userId`,
-            { name, email, phone, userId }
+            `UPDATE users SET 
+                name = :name, 
+                phone = :phone,
+                company_name = :company_name,
+                company_address = :company_address,
+                company_cell = :company_cell,
+                company_phone = :company_phone
+             WHERE id = :userId`,
+            { name, phone, company_name, company_address, company_cell, company_phone, userId }
         );
         await conn.commit();
         res.json({ message: 'Profile updated successfully!' });

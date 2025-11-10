@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PaymentReceipt = ({ payment, customer, book }) => {
+const PaymentReceipt = ({ payment, customer, book, user }) => {
   const details = [
     { label: 'Group', value: book?.name || 'N/A' },
     { label: 'Name', value: `${customer?.name || 'N/A'}` },
@@ -13,12 +13,12 @@ const PaymentReceipt = ({ payment, customer, book }) => {
     // The font-sans and text-sm classes set the base font styles.
     <div className="font-sans text-sm text-gray-800 bg-white p-4 border border-black print:w-[90mm] print:mx-auto print:my-5">
         <div className="text-right text-xs leading-snug">
-          <span className='mx-2'>Cell: {import.meta.env.VITE_COMPANY_CELL}</span>
-          <span>Phone: {import.meta.env.VITE_COMPANY_PHONE}</span>
+          <span className='mx-2'>Cell: {user?.company_cell || 'N/A'}</span>
+          <span>Phone: {user?.company_phone || 'N/A'}</span>
         </div>
 
-        <h1 className="text-center text-xl font-bold mt-1">{import.meta.env.VITE_COMPANY_NAME}</h1>
-        <p className="text-center text-xs mb-4">{import.meta.env.VITE_COMPANY_ADDRESS}</p>
+        <h1 className="text-center text-xl font-bold mt-1">{user?.company_name || 'Your Company'}</h1>
+        <p className="text-center text-xs mb-4">{user?.company_address || 'Your Company Address'}</p>
 
         <div className="flex justify-between pb-2 mb-2 border-b border-dashed border-gray-300">
           <span className="text-left">No: {payment.receiptNo}</span>

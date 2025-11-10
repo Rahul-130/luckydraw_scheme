@@ -8,8 +8,11 @@ import {
   CircularProgress,
   Alert,
   Container,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
-import { AccountCircle } from '@mui/icons-material';
+import { AccountCircle, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { getProfile, updateProfile } from '../services/api';
 
 const EditProfile = ({ token, showSnackbar }) => {
@@ -17,6 +20,10 @@ const EditProfile = ({ token, showSnackbar }) => {
     name: '',
     email: '',
     phone: '',
+    company_name: '',
+    company_address: '',
+    company_cell: '',
+    company_phone: '',
   });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -98,6 +105,21 @@ const EditProfile = ({ token, showSnackbar }) => {
           <TextField margin="normal" required fullWidth id="name" label="Name" name="name" value={profile.name} onChange={handleChange} autoFocus />
           <TextField margin="normal" required fullWidth id="email" label="Email Address" name="email" value={profile.email} disabled />
           <TextField margin="normal" required fullWidth id="phone" label="Phone Number" name="phone" type="tel" value={profile.phone} onChange={handleChange} />
+
+          <Accordion sx={{ mt: 2, boxShadow: 'none', '&:before': { display: 'none' }, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography>Company Details (for Billing)</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box>
+                <TextField margin="normal" fullWidth id="company_name" label="Company Name" name="company_name" value={profile.company_name || ''} onChange={handleChange} />
+                <TextField margin="normal" fullWidth id="company_address" label="Company Address" name="company_address" value={profile.company_address || ''} onChange={handleChange} multiline rows={2} />
+                <TextField margin="normal" fullWidth id="company_cell" label="Company Cell" name="company_cell" value={profile.company_cell || ''} onChange={handleChange} />
+                <TextField margin="normal" fullWidth id="company_phone" label="Company Phone" name="company_phone" value={profile.company_phone || ''} onChange={handleChange} />
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+
           <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2, py: 1.5, transition: 'all 0.2s', '&:hover': { transform: 'scale(1.02)' } }} disabled={updating}>
             {updating ? <CircularProgress size={24} /> : 'Save Changes'}
           </Button>

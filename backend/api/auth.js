@@ -41,13 +41,26 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'email and password required' });
   const conn = await getConnection();
   try {
-    const r = await conn.execute(`SELECT id, name, phone, email, password_hash, is_2fa_enabled FROM users WHERE LOWER(email)=:e`, { e: String(email).toLowerCase() });
+    const r = await conn.execute(
+      `SELECT 
+         id, name, phone, email, password_hash, is_2fa_enabled,
+         company_name, company_address, company_cell, company_phone
+       FROM users WHERE LOWER(email)=:e`,
+      { e: String(email).toLowerCase() }
+    );
     if (!r.rows.length) return res.status(401).json({ message: 'Invalid credentials' });
     const row = r.rows[0];
     const ok = await bcrypt.compare(String(password), row.PASSWORD_HASH);
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
     const token = jwt.sign({ id: String(row.ID), email: row.EMAIL }, JWT_SECRET, { expiresIn: '1d' });
-    const user = { id: String(row.ID), name: row.NAME, phone: row.PHONE, email: row.EMAIL, is2FAEnabled: row.IS_2FA_ENABLED === 1 };
+    const user = {
+      id: String(row.ID),
+      name: row.NAME,
+      phone: row.PHONE,
+      email: row.EMAIL,
+      is2FAEnabled: row.IS_2FA_ENABLED === 1,
+      ...getCompanyData(row)
+    };
 
     res.json({ token, user });
   } catch (e) {
@@ -60,10 +73,23 @@ router.post('/login', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   const conn = await getConnection();
   try {
-    const r = await conn.execute(`SELECT id, name, phone, email, is_2fa_enabled FROM users WHERE id=:id`, { id: Number(req.user.id) });
+    const r = await conn.execute(
+      `SELECT 
+         id, name, phone, email, is_2fa_enabled,
+         company_name, company_address, company_cell, company_phone
+       FROM users WHERE id=:id`,
+      { id: Number(req.user.id) }
+    );
     if (!r.rows.length) return res.status(404).json({ message: 'User not found' });
     const row = r.rows[0];
-    const user = { id: String(row.ID), name: row.NAME, phone: row.PHONE, email: row.EMAIL, is2FAEnabled: row.IS_2FA_ENABLED === 1 };
+    const user = {
+      id: String(row.ID),
+      name: row.NAME,
+      phone: row.PHONE,
+      email: row.EMAIL,
+      is2FAEnabled: row.IS_2FA_ENABLED === 1,
+      ...getCompanyData(row)
+    };
     res.json({ user });
   } catch (e) { console.error('Get me error:', e); res.status(500).json({ error: 'internal error' }); }
   finally { await conn.close(); }
@@ -118,6 +144,16 @@ router.post('/logout', requireAuth, async (req, res) => {
   res.clearCookie('user');
   res.json({ message: 'logged out successfully' });
 });
+
+/** Helper to extract company data from a user row */
+function getCompanyData(row) {
+  return {
+    company_name: row.COMPANY_NAME || '',
+    company_address: row.COMPANY_ADDRESS || '',
+    company_cell: row.COMPANY_CELL || '',
+    company_phone: row.COMPANY_PHONE || ''
+  };
+}
 
 
 // --- 2FA Endpoints ---
