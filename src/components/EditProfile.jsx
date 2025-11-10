@@ -11,9 +11,14 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { AccountCircle, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { getProfile, updateProfile } from '../services/api';
+import { getProfile, updateProfile, verifyPassword } from '../services/api';
+import PasswordOrRecoveryCodeOrOTP from './PasswordOrRecoveryCodeOrOTP';
 
 const EditProfile = ({ token, showSnackbar }) => {
   const [profile, setProfile] = useState({
@@ -28,6 +33,12 @@ const EditProfile = ({ token, showSnackbar }) => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
+  // State for confirmation dialog
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmOtp, setConfirmOtp] = useState('');
+  const [confirmError, setConfirmError] = useState('');
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Fetch initial profile data
   useEffect(() => {
@@ -62,20 +73,38 @@ const EditProfile = ({ token, showSnackbar }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Open the confirmation dialog instead of submitting directly
+    setConfirmError('');
+    setConfirmPassword('');
+    setConfirmOtp('');
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmAndUpdate = async () => {
     if (!token) {
       showSnackbar('Authentication error. Please log in again.', 'error');
       return;
     }
-    setUpdating(true);
-    setError('');
+
+    setConfirmLoading(true);
+    setConfirmError('');
+
     try {
+      // 1. Verify credentials
+      await verifyPassword(token, confirmPassword, confirmOtp);
+
+      // 2. If verification is successful, proceed with the update
+      setUpdating(true);
+      setConfirmOpen(false); // Close dialog on success
+
       const response = await updateProfile(profile, token);
       showSnackbar(response.data.message || 'Profile updated successfully!', 'success');
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'An unknown error occurred while updating.';
-      setError(errorMessage);
-      showSnackbar(errorMessage, 'error');
+      // If verification fails, show error inside the dialog
+      const errorMessage = err.response?.data?.message || 'An unknown error occurred.';
+      setConfirmError(errorMessage);
     } finally {
+      setConfirmLoading(false);
       setUpdating(false);
     }
   };
@@ -125,6 +154,27 @@ const EditProfile = ({ token, showSnackbar }) => {
           </Button>
         </Box>
       </Paper>
+
+      {/* Security Confirmation Dialog */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirm Changes</DialogTitle>
+        <DialogContent>
+          {confirmError && <Alert severity="error" sx={{ mb: 2 }}>{confirmError}</Alert>}
+          <PasswordOrRecoveryCodeOrOTP
+            descriptionText="For your security, please confirm your identity by entering your password or an OTP/Recovery code."
+            passwordValue={confirmPassword}
+            onPasswordChange={(e) => setConfirmPassword(e.target.value)}
+            otpValue={confirmOtp}
+            onOtpChange={(e) => setConfirmOtp(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={handleConfirmAndUpdate} variant="contained" disabled={confirmLoading || (!confirmPassword && !confirmOtp)}>
+            {confirmLoading ? <CircularProgress size={24} /> : 'Confirm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

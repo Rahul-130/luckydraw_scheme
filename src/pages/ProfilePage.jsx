@@ -27,12 +27,12 @@ const ProfilePage = () => {
       <Box sx={{ flexGrow: 1, p: 3 }}>
         <Grid container spacing={4} justifyContent="center">
           {/* Left Spacer - This will be empty on larger screens */}
-          <Grid item md={1} sx={{ display: { xs: 'none', md: 'block' } }} />
+          <Grid md={1} sx={{ display: { xs: 'none', md: 'block' } }} />
 
           
 
           {/* Navigation Menu (Right Side) */}
-          <Grid item xs={12} md={3}>
+          <Grid xs={12} md={3}>
             <Paper>
               <List>
                 <ListItem disablePadding>
@@ -52,13 +52,13 @@ const ProfilePage = () => {
           </Grid>
 
           {/* Main Content Area (Center) */}
-          <Grid item xs={12} md={7}>
+          <Grid xs={12} md={7}>
             {activeSection === 'profile' && <EditProfile token={token} showSnackbar={showSnackbar} />}
             {activeSection === 'password' && <ChangePassword token={token} showSnackbar={showSnackbar} />}
           </Grid>
 
           {/* Right Spacer - This will be empty on larger screens */}
-          <Grid item md={1} sx={{ display: { xs: 'none', md: 'block' } }} />
+          <Grid md={1} sx={{ display: { xs: 'none', md: 'block' } }} />
         </Grid>
       </Box>
     </PageLayout>
