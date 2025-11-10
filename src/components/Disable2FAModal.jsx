@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { disable2FA } from '../services/api';
 import PasswordInput from './PasswordInput';
+import PasswordOrRecoveryCodeOrOTP from './PasswordOrRecoveryCodeOrOTP';
 
 const Disable2FAModal = ({ open, onClose, onSuccess }) => {
   const { token } = useAuth();
@@ -46,9 +47,13 @@ const Disable2FAModal = ({ open, onClose, onSuccess }) => {
       <DialogTitle>Disable Two-Factor Authentication</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <DialogContentText>For your security, please enter your current password OR an OTP/Recovery code to disable 2FA.</DialogContentText>
-        <PasswordInput autoFocus margin="dense" label="Password (optional)" fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <PasswordInput margin="dense" label="OTP or Recovery Code (optional)" fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} />
+        <PasswordOrRecoveryCodeOrOTP
+          descriptionText="For your security, please enter your current password OR an OTP/Recovery code to disable 2FA."
+          passwordValue={password}
+          onPasswordChange={(e) => setPassword(e.target.value)}
+          otpValue={otp}
+          onOtpChange={(e) => setOtp(e.target.value)}
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

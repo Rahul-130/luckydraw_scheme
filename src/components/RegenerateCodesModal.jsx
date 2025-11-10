@@ -16,6 +16,7 @@ import { verifyPassword, regenerate2FACodes } from '../services/api';
 import { useSnackbar } from '../context/SnackbarContext';
 import PasswordInput from './PasswordInput';
 import { ContentCopy as ContentCopyIcon } from '@mui/icons-material';
+import PasswordOrRecoveryCodeOrOTP from './PasswordOrRecoveryCodeOrOTP';
 
 const RegenerateCodesModal = ({ open, onClose }) => {
   const { token } = useAuth();
@@ -76,9 +77,13 @@ const RegenerateCodesModal = ({ open, onClose }) => {
           </>
         ) : (
           <>
-            <DialogContentText>For your security, please enter your current password OR an OTP/Recovery code to generate new recovery codes. This will invalidate all of your old ones.</DialogContentText>
-            <PasswordInput autoFocus margin="dense" label="Password (optional)" fullWidth variant="standard" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <PasswordInput margin="dense" label="OTP or Recovery Code (optional)" fullWidth variant="standard" value={otp} onChange={(e) => setOtp(e.target.value)} />
+            <PasswordOrRecoveryCodeOrOTP
+              descriptionText="For your security, please enter your current password OR an OTP/Recovery code to generate new recovery codes. This will invalidate all of your old ones."
+              passwordValue={password}
+              onPasswordChange={(e) => setPassword(e.target.value)}
+              otpValue={otp}
+              onOtpChange={(e) => setOtp(e.target.value)}
+            />
           </>
         )}
       </DialogContent>
