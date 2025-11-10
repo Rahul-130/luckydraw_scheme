@@ -48,6 +48,7 @@ import CustomTooltip from '../components/CustomTooltip';
 import { processTrendData, processYearlyPaymentData, processCustomerGrowthData } from '../utils/chartUtils';
 import RecentActivity from '../components/RecentActivity';
 import PieChartCard from '../components/PieChartCard';
+import { useDashboardData } from '../hooks/useDashboardData';
 import DateRangePicker from '../components/DateRangePicker';
 import CollapsibleSection from '../components/CollapsibleSection';
 import { CHART_COLORS } from '../theme/theme';
@@ -94,54 +95,17 @@ export default function DashboardPage() {
     return <Container><Alert severity="error" sx={{ mt: 2 }}>{error}</Alert></Container>;
   }
 
-  const bookChartData = stats ? [
-    { name: 'Active', value: stats.bookCounts.active }, { name: 'Inactive', value: stats.bookCounts.inactive },
-  ] : [];
-
-  const winnerChartData = stats ? [
-    { name: 'From Active Books', value: stats.winnerCounts.fromActiveBooks }, { name: 'From Inactive Books', value: stats.winnerCounts.fromInactiveBooks },
-  ] : [];
-
-  const eligibilityChartData = stats ? [
-    { name: 'Eligible', value: stats.eligibilityCounts.eligible }, { name: 'Not Eligible', value: stats.eligibilityCounts.notEligible },
-  ] : [];
-
-  const customerChartData = stats ? [
-    { name: 'Total Customers', value: stats.customerCounts.total }, { name: 'From Active Books', value: stats.customerCounts.fromActiveBooks }, { name: 'From Inactive Books', value: stats.customerCounts.fromInactiveBooks },
-  ] : [];
-
-  const monthlyPaymentData = processTrendData(
-    stats?.monthlyPayments || [],
-    'PAYMENT_MONTH',
-    { month: 'short', year: '2-digit' },
-    12,
-    (d, i) => d.setMonth(d.getMonth() - i)
-  );
-
-  const last7DaysData = processTrendData(
-    stats?.dailyPayments || [],
-    'PAYMENT_DAY',
-    { weekday: 'short', day: 'numeric' },
-    7,
-    (d, i) => d.setDate(d.getDate() - i)
-  );
-
-  const yearlyPaymentData = processYearlyPaymentData(stats?.yearlyPayments);
-
-  const paymentMethodMixData = stats ? [
-    { name: 'Online', value: stats.paymentStats.online?.currentMonth?.amount || 0 },
-    { name: 'Cash', value: stats.paymentStats.cash?.currentMonth?.amount || 0 },
-    { name: 'In-Store', value: stats.paymentStats.instore?.currentMonth?.amount || 0 },
-  ] : [];
-
-  const customerGrowthData = processCustomerGrowthData(stats?.customerGrowth);
-
-  const winsPerBookData = (stats?.winsPerBook || [])
-    .map(item => ({
-      name: item.BOOK_NAME,
-      value: item.WIN_COUNT,
-    }))
-    .slice(0, 10); // Show top 10 books by wins
+  const {
+    bookChartData,
+    winnerChartData,
+    eligibilityChartData,
+    monthlyPaymentData,
+    last7DaysData,
+    yearlyPaymentData,
+    paymentMethodMixData,
+    customerGrowthData,
+    winsPerBookData,
+  } = useDashboardData(stats);
 
   const handleChartTypeChange = (chartName, newType) => {
     if (newType) {
