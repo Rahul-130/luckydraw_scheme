@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext';
-import { login, loginWithOTP, requestPasswordReset, completePasswordReset } from '../services/api';
+import { login, loginWithOTP } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import {
   TextField,
@@ -10,16 +10,12 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Link,
 } from "@mui/material";
 import { Login as LoginIcon, VpnKey, Lock } from "@mui/icons-material";
-import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
-import { validatePassword, PASSWORD_REQUIREMENTS } from '../utils/validation';
 import PasswordInput from '../components/PasswordInput';
 import AuthLayout from '../components/AuthLayout';
+import PasswordResetModal from '../components/PasswordResetModal';
 
 export default function LoginPage() {
     const { login: loginUser } = useAuth();
@@ -34,12 +30,6 @@ export default function LoginPage() {
 
     // State for Password Reset Modal
     const [resetModalOpen, setResetModalOpen] = useState(false);
-    const [resetStep, setResetStep] = useState('request'); // 'request' or 'complete'
-    const [resetEmail, setResetEmail] = useState('');
-    const [resetOtp, setResetOtp] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [resetError, setResetError] = useState('');
-    const [resetSuccess, setResetSuccess] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -57,49 +47,6 @@ export default function LoginPage() {
         } catch (err) { 
             setError(err.response?.data?.message || 'Invalid credentials. Please try again.');
         }
-    };
-
-    const handleResetRequest = async () => {
-        setResetError('');
-        try {
-            await requestPasswordReset(resetEmail);
-            setResetStep('complete');
-        } catch (err) {
-            setResetError(err.response?.data?.message || 'Could not process request. Ensure user exists and has 2FA enabled.');
-        }
-    };
-
-    const handleResetComplete = async () => {
-        setResetError('');
-        setResetSuccess('');
-
-        const passwordError = validatePassword(newPassword);
-        if (passwordError) {
-            setResetError(passwordError);
-            return;
-        }
-        try {
-            await completePasswordReset(resetEmail, resetOtp, newPassword);
-            setResetSuccess('Password has been reset successfully! You can now close this and log in.');
-            setTimeout(() => {
-                handleCloseResetModal();
-            }, 2000);
-        } catch (err) {
-            setResetError(err.response?.data?.message || 'Invalid OTP or password. Please try again.');
-        }
-    };
-
-    const handleCloseResetModal = () => {
-        setResetModalOpen(false);
-        // Reset modal state for next time
-        setTimeout(() => {
-            setResetStep('request');
-            setResetEmail('');
-            setResetOtp('');
-            setNewPassword('');
-            setResetError('');
-            setResetSuccess('');
-        }, 300);
     };
 
     const handleLoginMethodChange = (event, newMethod) => {
@@ -159,35 +106,7 @@ export default function LoginPage() {
         </div>
       </form>
       {/* Password Reset Modal */}
-      <Dialog open={resetModalOpen} onClose={handleCloseResetModal}>
-        <DialogTitle>{resetStep === 'request' ? 'Reset Password' : 'Enter Details'}</DialogTitle>
-        <DialogContent>
-            {resetError && <Alert severity="error" className="!mb-4">{resetError}</Alert>}
-            {resetSuccess && <Alert severity="success" className="!mb-4">{resetSuccess}</Alert>}
-            {resetStep === 'request' ? (
-                <>
-                    <Typography variant="body2" className="!mb-4">Enter your email to begin the reset process. 2FA must be enabled on your account.</Typography>
-                    <TextField autoFocus margin="dense" label="Email Address" type="email" fullWidth variant="standard" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
-                </>
-            ) : (
-                <>
-                    <Typography variant="body2" className="!mb-4">Enter an OTP from your authenticator app or a recovery code, along with your new password.</Typography>
-                    <PasswordInput margin="dense" label="Authenticator OTP or Recovery Code" fullWidth variant="standard" value={resetOtp} onChange={(e) => setResetOtp(e.target.value)} />
-                    <PasswordInput margin="dense" label="New Password" fullWidth variant="standard" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={!!(newPassword && validatePassword(newPassword))} helperText={PASSWORD_REQUIREMENTS} />
-                    {newPassword && <PasswordStrengthMeter password={newPassword} />}
-                    
-                </>
-            )}
-        </DialogContent>
-        <DialogActions>
-            <Button onClick={handleCloseResetModal}>Cancel</Button>
-            {resetStep === 'request' ? (
-                <Button onClick={handleResetRequest} variant="contained">Request Reset</Button>
-            ) : (
-                <Button onClick={handleResetComplete} variant="contained" disabled={!!resetSuccess}>Complete Reset</Button>
-            )}
-        </DialogActions>
-      </Dialog>
+      <PasswordResetModal open={resetModalOpen} onClose={() => setResetModalOpen(false)} />
     </AuthLayout>
   );
 }
