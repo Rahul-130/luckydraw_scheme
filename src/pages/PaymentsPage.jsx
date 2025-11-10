@@ -33,7 +33,6 @@ import {
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
 import PageLayout from '../components/PageLayout';
-import PaymentReceipt from '../components/PaymentReceipt';
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
 import ActionIconButton from '../components/ActionIconButton';
 import StyledDataGrid from '../components/StyledDataGrid';
@@ -131,7 +130,8 @@ export default function PaymentsPage() {
     };
 
     const handlePrint = (payment) => {
-        renderComponentInNewWindow(<PaymentReceipt payment={payment} customer={customer} book={book} user={user} />, 'Payment Receipt');
+        // Use BulkPaymentReceipt for single prints by wrapping the payment in an array
+        renderComponentInNewWindow(<BulkPaymentReceipt payments={[payment]} customer={customer} book={book} user={user} />, 'Payment Receipt');
     };
 
     const handlePrintSelected = () => {
