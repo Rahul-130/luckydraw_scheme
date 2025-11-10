@@ -12,7 +12,7 @@ import PaymentsPage from './pages/PaymentsPage';
 import LuckyDrawPage from './pages/LuckyDrawPage';
 import WinnersListPage from './pages/WinnersListPage';
 import EligibleCustomersPage from './pages/EligibleCustomersPage';
-import ChangePasswordPage from './pages/ChangePasswordPage';
+import ChangePassword from './components/ChangePassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import Setup2FAPage from './pages/Setup2FAPage';
 import SecurityPage from './pages/SecurityPage';
@@ -43,7 +43,7 @@ export default function App() {
                 <Route path="/lucky-draw" element={<LuckyDrawPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/change-password" element={<ChangePasswordPage />} />
+                <Route path="/change-password" element={<ChangePassword />} />
                 <Route path="/security" element={<SecurityPage />} />
               </Route>
     

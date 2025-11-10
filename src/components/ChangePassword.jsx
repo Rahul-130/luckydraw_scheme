@@ -13,13 +13,13 @@ import {
 } from "@mui/material";
 import { changePassword } from "../services/api";
 import { LockReset } from "@mui/icons-material";
-import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
-import PasswordInput from "../components/PasswordInput";
-import PageLayout from "../components/PageLayout";
+import PasswordStrengthMeter from "./PasswordStrengthMeter";
+import PasswordInput from "./PasswordInput";
+import PageLayout from "./PageLayout";
 import { validatePassword, PASSWORD_REQUIREMENTS } from "../utils/validation";
 import { extractApiErrorMessage } from '../utils/apiUtils';
 
-export default function ChangePasswordPage() {
+export default function ChangePassword() {
   const { token, logout } = useAuth();
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
