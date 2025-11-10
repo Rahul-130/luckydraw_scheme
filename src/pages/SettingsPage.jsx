@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeContext } from '../context/ThemeContext';
-import LockResetIcon from '@mui/icons-material/LockReset';
 import SecurityIcon from '@mui/icons-material/Security';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -94,17 +93,6 @@ export default function SettingsPage() {
               <Brightness4Icon sx={{ color: mode === 'dark' ? 'primary.main' : 'text.disabled' }} />
             </Box>
           </Box>
-
-          <Divider sx={{ my: 4 }} />
-
-          {/* Change Password Section */}
-          <Typography variant="h6">Password</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Change your account password.
-          </Typography>
-          <Button variant="outlined" startIcon={<LockResetIcon />} onClick={() => navigate('/change-password')}>
-            Change Password
-          </Button>
 
           <Divider sx={{ my: 4 }} />
 
