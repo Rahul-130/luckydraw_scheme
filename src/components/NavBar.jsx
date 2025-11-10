@@ -28,6 +28,7 @@ import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import React, { useState, Fragment } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -160,6 +161,19 @@ export default function NavBar() {
                         textProps={textTypographyProps}
                       />
                     ))}
+                    {token && (
+                    <DrawerItem
+                      in={isDrawerOpen}
+                      timeout={500}
+                      style={{ transitionDelay: isDrawerOpen ? `${navItems.length * 50}ms` : '0ms' }}
+                      onClick={() => handleNavigate('/profile')}
+                      selected={pathname === '/profile'}
+                      sx={getActiveStyles(theme)}
+                      icon={<AccountCircleIcon />}
+                      text="Profile"
+                      textProps={textTypographyProps}
+                    />
+                  )}
                   {token && (
                     <DrawerItem
                       in={isDrawerOpen}
@@ -221,6 +235,9 @@ export default function NavBar() {
                   open={Boolean(anchorElUser)}
                   onClose={handleCloseUserMenu}
                 >
+                  <MenuItem onClick={() => handleNavigate('/profile')}>
+                    <Typography textAlign="center">Profile</Typography>
+                  </MenuItem>
                   <MenuItem onClick={() => handleNavigate('/settings')}>
                     <Typography textAlign="center">Settings</Typography>
                   </MenuItem>
