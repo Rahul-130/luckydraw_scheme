@@ -21,6 +21,8 @@ import {
   Stack,
   Paper,
   IconButton,
+  MenuItem,
+  ListItemIcon,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -46,6 +48,7 @@ import FormDialog from "../components/FormDialog";
 import ActionIconButton from "../components/ActionIconButton";
 import BookFormFields from "../components/BookFormFields";
 import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
+import ActionMenu from "../components/ActionMenu";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 
 export default function BooksPage() {
@@ -157,49 +160,37 @@ export default function BooksPage() {
         headerName: "Actions",
         width: 350,
         sortable: false,
-        renderCell: (params) => (
-          <Stack direction="row" spacing={0.5}>
-            {/* View */}
-            <Button
-              onClick={() => navigate(`/books/${params.row.id}/customers`)}
-              sx={{
-                backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                "&:hover": { backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2), transform: "scale(1.05)" },
-                borderRadius: 1.5,
-                padding: 0.7,
-                color: "primary.main",
-                transition: "all 0.2s",
-              }}
-            >
-              <Visibility fontSize="small" className="px-1" /> customers
-            </Button>
-
-            {/* Edit */}
-            <ActionIconButton color="info" onClick={() => {
-                setEditForm(params.row);
-                setEditOpen(true);
-              }}>
-              <Edit fontSize="small" />
-            </ActionIconButton>
-
-            {/* Delete */}
-            <ActionIconButton color="error" onClick={() => handleDelete(params.row.id, params.row.name)}>
-              <Delete fontSize="small" />
-            </ActionIconButton>
-
-            {/* Toggle Active */}
-            <ActionIconButton
-              onClick={() => handleToggle(params.row.id, params.row.name, params.row.isActive)}
-              color={params.row.isActive ? "warning" : "success"}
-            >
-              {params.row.isActive ? (
-                <ToggleOff fontSize="small" />
-              ) : (
-                <ToggleOn fontSize="small" />
-              )}
-            </ActionIconButton>
-          </Stack>
-        ),
+        renderCell: (params) => {
+          const { row } = params;
+          return (
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Button
+                startIcon={<Visibility fontSize="small" />}
+                onClick={() => navigate(`/books/${row.id}/customers`)}
+                size="small"
+                variant="outlined"
+              >
+                Customers
+              </Button>
+              <ActionMenu>
+                <MenuItem onClick={() => { setEditForm(row); setEditOpen(true); }}>
+                  <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+                  Edit
+                </MenuItem>
+                <MenuItem onClick={() => handleDelete(row.id, row.name)}>
+                  <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
+                  Delete
+                </MenuItem>
+                <MenuItem onClick={() => handleToggle(row.id, row.name, row.isActive)}>
+                  <ListItemIcon>
+                    {row.isActive ? <ToggleOff fontSize="small" /> : <ToggleOn fontSize="small" />}
+                  </ListItemIcon>
+                  {row.isActive ? 'Deactivate' : 'Activate'}
+                </MenuItem>
+              </ActionMenu>
+            </Stack>
+          );
+        },
       },
     ],
     [navigate, handleToggle, handleDelete]

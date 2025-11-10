@@ -28,6 +28,7 @@ import {
   FormControlLabel,
   Radio,
   ButtonGroup,
+  ListItemIcon,
 } from '@mui/material';
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
@@ -42,6 +43,7 @@ import SummaryBox from '../components/SummaryBox';
 import { sendPaymentReceiptMessage } from '../utils/whatsapp';
 import PaymentFormFields from '../components/PaymentFormFields';
 import PageHeader from '../components/PageHeader';
+import ActionMenu from '../components/ActionMenu';
 import { renderComponentInNewWindow } from '../utils/printing';
 
 
@@ -174,19 +176,22 @@ export default function PaymentsPage() {
           headerName: 'Actions',
           width: 200,
           sortable: false,
-          renderCell: (params) => (
-            <Stack direction="row" spacing={0.5}>
-              <ActionIconButton color="info" onClick={() => handleEdit(params.row)}>
-                <Edit fontSize="small" />
-              </ActionIconButton>
-              <ActionIconButton color="error" onClick={() => handleDelete(params.row.id)}>
-                <Delete fontSize="small" />
-              </ActionIconButton>
-              <ActionIconButton color="success" onClick={() => handlePrint(params.row)}>
-                <Print fontSize="small" />
-              </ActionIconButton>
-            </Stack>
-          )
+          renderCell: (params) => {
+            const { row } = params;
+            return (
+              <ActionMenu>
+                <MenuItem onClick={() => handleEdit(row)}>
+                  <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+                  Edit
+                </MenuItem>
+                <MenuItem onClick={() => handleDelete(row.id)}>
+                  <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
+                  Delete
+                </MenuItem>
+                <MenuItem onClick={() => handlePrint(row)}><ListItemIcon><Print fontSize="small" /></ListItemIcon>Print Receipt</MenuItem>
+              </ActionMenu>
+            );
+          }
       }
     ], [handleEdit, handleDelete, handlePrint]);
 

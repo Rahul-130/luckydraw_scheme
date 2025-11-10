@@ -19,6 +19,8 @@ import {
   Alert,
   DialogTitle,
   DialogContent,
+  MenuItem,
+  ListItemIcon,
   DialogActions,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -34,6 +36,7 @@ import FormDialog from "../components/FormDialog";
 import CustomerFormFields from "../components/CustomerFormFields";
 import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import PageHeader from "../components/PageHeader";
+import ActionMenu from "../components/ActionMenu";
 import StatusChip from "../components/StatusChip";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 
@@ -131,30 +134,31 @@ export default function CustomersPage() {
             field: 'actions',
             headerName: 'Actions',
             width: 225,
-            renderCell: (params) => (
-                <Stack direction="row" spacing={0.5}>
-                    <Button
-                        startIcon={<Payment fontSize="small" />}
-                        onClick={() => navigate(`/books/${bookId}/customers/${params.row.id}/payments`)}
-                        sx={{
-                            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                            "&:hover": { backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2), transform: "scale(1.05)" },
-                            borderRadius: 1.5,
-                            padding: 0.7,
-                            color: "primary.main",
-                            transition: "all 0.2s",
-                          }}
-                    >
-                        Payments
-                    </Button>
-                    <ActionIconButton color="info" onClick={() => handleEdit(params.row)}>
-                        <Edit fontSize="small" />
-                    </ActionIconButton>
-                    <ActionIconButton color="error" onClick={() => handleDelete(params.row.id, params.row.name)}>
-                        <Delete fontSize="small" />
-                    </ActionIconButton>
-                </Stack>
-            )
+            renderCell: (params) => {
+                const { row } = params;
+                return (
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Button
+                            startIcon={<Payment fontSize="small" />}
+                            onClick={() => navigate(`/books/${bookId}/customers/${row.id}/payments`)}
+                            size="small"
+                            variant="outlined"
+                        >
+                            Payments
+                        </Button>
+                        <ActionMenu>
+                            <MenuItem onClick={() => handleEdit(row)}>
+                                <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+                                Edit
+                            </MenuItem>
+                            <MenuItem onClick={() => handleDelete(row.id, row.name)}>
+                                <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
+                                Delete
+                            </MenuItem>
+                        </ActionMenu>
+                    </Stack>
+                );
+            }
         }
     ], [bookId, navigate, handleEdit, handleDelete]);
 
