@@ -178,18 +178,26 @@ export default function PaymentsPage() {
           sortable: false,
           renderCell: (params) => {
             const { row } = params;
+            const actionItems = [
+              {
+                label: 'Edit',
+                icon: <Edit fontSize="small" />,
+                onClick: () => handleEdit(row),
+              },
+              {
+                label: 'Delete',
+                icon: <Delete fontSize="small" />,
+                onClick: () => handleDelete(row.id),
+                color: 'error.main',
+              },
+              {
+                label: 'Print Receipt',
+                icon: <Print fontSize="small" />,
+                onClick: () => handlePrint(row),
+              },
+            ];
             return (
-              <ActionMenu>
-                <MenuItem onClick={() => handleEdit(row)}>
-                  <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
-                  Edit
-                </MenuItem>
-                <MenuItem onClick={() => handleDelete(row.id)}>
-                  <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
-                  Delete
-                </MenuItem>
-                <MenuItem onClick={() => handlePrint(row)}><ListItemIcon><Print fontSize="small" /></ListItemIcon>Print Receipt</MenuItem>
-              </ActionMenu>
+              <ActionMenu items={actionItems} />
             );
           }
       }

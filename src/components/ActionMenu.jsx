@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { IconButton, Menu } from '@mui/material';
+import { IconButton, Menu, MenuItem, ListItemIcon, Typography } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 
-const ActionMenu = ({ children }) => {
+const ActionMenu = ({ items = [] }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -12,6 +12,11 @@ const ActionMenu = ({ children }) => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleItemClick = (onClick) => {
+    handleClose();
+    if (onClick) onClick();
   };
 
   return (
@@ -27,7 +32,16 @@ const ActionMenu = ({ children }) => {
         <MoreVertIcon />
       </IconButton>
       <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-        {React.Children.map(children, (child) => React.cloneElement(child, { onClick: () => { child.props.onClick(); handleClose(); } }))}
+        {items.map((item, index) => (
+          <MenuItem
+            key={index}
+            onClick={() => handleItemClick(item.onClick)}
+            disabled={item.disabled}
+          >
+            {item.icon && <ListItemIcon>{item.icon}</ListItemIcon>}
+            <Typography variant="inherit" sx={{ color: item.color }}>{item.label}</Typography>
+          </MenuItem>
+        ))}
       </Menu>
     </>
   );

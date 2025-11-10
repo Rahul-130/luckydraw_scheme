@@ -162,6 +162,25 @@ export default function BooksPage() {
         sortable: false,
         renderCell: (params) => {
           const { row } = params;
+          const actionItems = [
+            {
+              label: 'Edit',
+              icon: <Edit fontSize="small" />,
+              onClick: () => { setEditForm(row); setEditOpen(true); },
+            },
+            {
+              label: 'Delete',
+              icon: <Delete fontSize="small" />,
+              onClick: () => handleDelete(row.id, row.name),
+              color: 'error.main',
+            },
+            {
+              label: row.isActive ? 'Deactivate' : 'Activate',
+              icon: row.isActive ? <ToggleOff fontSize="small" /> : <ToggleOn fontSize="small" />,
+              onClick: () => handleToggle(row.id, row.name, row.isActive),
+            },
+          ];
+
           return (
             <Stack direction="row" spacing={0.5} alignItems="center">
               <Button
@@ -172,22 +191,7 @@ export default function BooksPage() {
               >
                 Customers
               </Button>
-              <ActionMenu>
-                <MenuItem onClick={() => { setEditForm(row); setEditOpen(true); }}>
-                  <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
-                  Edit
-                </MenuItem>
-                <MenuItem onClick={() => handleDelete(row.id, row.name)}>
-                  <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
-                  Delete
-                </MenuItem>
-                <MenuItem onClick={() => handleToggle(row.id, row.name, row.isActive)}>
-                  <ListItemIcon>
-                    {row.isActive ? <ToggleOff fontSize="small" /> : <ToggleOn fontSize="small" />}
-                  </ListItemIcon>
-                  {row.isActive ? 'Deactivate' : 'Activate'}
-                </MenuItem>
-              </ActionMenu>
+              <ActionMenu items={actionItems} />
             </Stack>
           );
         },

@@ -136,6 +136,19 @@ export default function CustomersPage() {
             width: 225,
             renderCell: (params) => {
                 const { row } = params;
+                const actionItems = [
+                  {
+                    label: 'Edit',
+                    icon: <Edit fontSize="small" />,
+                    onClick: () => handleEdit(row),
+                  },
+                  {
+                    label: 'Delete',
+                    icon: <Delete fontSize="small" />,
+                    onClick: () => handleDelete(row.id, row.name),
+                    color: 'error.main',
+                  },
+                ];
                 return (
                     <Stack direction="row" spacing={0.5} alignItems="center">
                         <Button
@@ -146,16 +159,7 @@ export default function CustomersPage() {
                         >
                             Payments
                         </Button>
-                        <ActionMenu>
-                            <MenuItem onClick={() => handleEdit(row)}>
-                                <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
-                                Edit
-                            </MenuItem>
-                            <MenuItem onClick={() => handleDelete(row.id, row.name)}>
-                                <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
-                                Delete
-                            </MenuItem>
-                        </ActionMenu>
+                        <ActionMenu items={actionItems} />
                     </Stack>
                 );
             }
