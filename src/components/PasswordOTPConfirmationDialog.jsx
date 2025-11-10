@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import PasswordInput from './PasswordInput';
 
-const LuckyDrawConfirmationDialog = ({ open, onClose, onConfirm, loading }) => {
+const PasswordOTPConfirmationDialog = ({ open, onClose, onConfirm, loading }) => {
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
 
@@ -58,4 +58,4 @@ const LuckyDrawConfirmationDialog = ({ open, onClose, onConfirm, loading }) => {
   );
 };
 
-export default LuckyDrawConfirmationDialog;
+export default PasswordOTPConfirmationDialog;

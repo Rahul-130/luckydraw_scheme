@@ -13,7 +13,7 @@ import { EmojiEvents } from '@mui/icons-material';
 import PasswordInput from '../components/PasswordInput';
 import PageLayout from '../components/PageLayout';
 import StyledDataGrid from '../components/StyledDataGrid';
-import LuckyDrawConfirmationDialog from '../components/LuckyDrawConfirmationDialog';
+import PasswordOTPConfirmationDialog from '../components/PasswordOTPConfirmationDialog';
 
 
 export default function LuckyDrawPage() {
@@ -108,7 +108,7 @@ export default function LuckyDrawPage() {
         />
 
         {/* Confirmation Dialog */}
-        <LuckyDrawConfirmationDialog
+        <PasswordOTPConfirmationDialog
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           onConfirm={handleConfirmRun}
