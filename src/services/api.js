@@ -183,3 +183,15 @@ export const backupToGoogleDrive = (token) =>
     axios.post(`${API_URL}/backup/googledrive`, {}, {
         headers: { Authorization: `Bearer ${token}` },
     });
+
+// --- Profile ---
+
+export const getProfile = (token) =>
+    axios.get(`${API_URL}/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+export const updateProfile = (data, token) =>
+    axios.put(`${API_URL}/profile`, data, {
+        headers: { Authorization: `Bearer ${token}` }
+    });

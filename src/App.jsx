@@ -18,6 +18,7 @@ import Setup2FAPage from './pages/Setup2FAPage';
 import SecurityPage from './pages/SecurityPage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/winners" element={<WinnersListPage />} />
                 <Route path="/eligible-customers" element={<EligibleCustomersPage />} />
                 <Route path="/lucky-draw" element={<LuckyDrawPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/security" element={<SecurityPage />} />

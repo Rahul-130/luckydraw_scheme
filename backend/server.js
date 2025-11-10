@@ -15,6 +15,7 @@ const eligibleCustomersRoutes = require('./api/eligibleCustomers');
 const backupRoutes = require('./api/backup');
 const dashboardRoutes = require('./api/dashboard');
 const notificationRoutes = require('./api/notificationRoutes');
+const profileRoutes = require('./api/profile');
 
 const app = express();
 app.use(cors());
@@ -52,6 +53,7 @@ app.use('/api/eligible-customers', eligibleCustomersRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/profile', profileRoutes);
 
 // The "catchall" handler: for any request that doesn't match one above,
 // send back the React app's index.html file.
