@@ -19,6 +19,7 @@ import SecurityPage from './pages/SecurityPage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
+import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   return (
@@ -47,7 +48,7 @@ export default function App() {
                 <Route path="/security" element={<SecurityPage />} />
               </Route>
     
-              <Route path="*" element={<Navigate to="/books" />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </SnackbarProvider>
         </Router>
