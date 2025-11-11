@@ -172,11 +172,11 @@ export default function CustomersPage() {
         {!bookId && <Navigate to="/books" replace />}
         {bookId && !book && <Alert severity="error">Book not found or you do not have access to it.</Alert>}
 
-        <PageHeader backTo="/books">
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "#000" }}>
+        <PageHeader backTo="/books" title="Customers">
+          <Typography variant="h5" sx={{ color: "text.secondary" }} >
             Customers
           </Typography>
-          <Typography variant="h5" sx={{ color: "#000" }} >
+          <Typography variant="h6" sx={{ color: "text.secondary" }} >
             for Book: {book?.name}
           </Typography>
         </PageHeader>

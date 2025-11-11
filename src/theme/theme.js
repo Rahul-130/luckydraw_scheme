@@ -1,141 +1,131 @@
 import { createTheme } from '@mui/material/styles';
-import { blue, pink } from '@mui/material/colors';
 
-export const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2', // A standard blue
-    },
-    secondary: {
-      main: '#dc004e', // A standard red
-    },
-    success: {
-      main: '#4caf50',
-    },
-    error: {
-      main: '#f44336',
-    },
-    warning: {
-      main: '#ff9800',
-    },
-    info: {
-      main: '#2196f3',
-    },
-  },
+const sharedThemeOptions = {
   typography: {
+    fontFamily: '"Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
     h4: {
-      fontWeight: 600,
-      marginBottom: '16px', // Consistent bottom margin for main titles
+      fontWeight: 700,
+      fontSize: '2rem',
     },
     h5: {
-      fontWeight: 500,
-      marginBottom: '12px',
+      fontWeight: 600,
+      fontSize: '1.5rem',
     },
     h6: {
-      fontWeight: 500,
-      marginBottom: '8px',
+      fontWeight: 600,
+      fontSize: '1.25rem',
     },
     body1: {
       fontSize: '1rem',
     },
   },
+  shape: {
+    borderRadius: 8,
+  },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none', // Prevent uppercase by default
-          // marginRight: '8px', // Consistent spacing between buttons, can be applied via sx prop
+          textTransform: 'none',
+          borderRadius: '8px',
+          fontWeight: 600,
         },
       },
     },
     MuiContainer: {
       defaultProps: {
-        maxWidth: 'lg', // Default to large container for most pages
+        maxWidth: 'lg',
       },
     },
     MuiTextField: {
       defaultProps: {
-        variant: 'outlined', // Consistent text field variant
+        variant: 'outlined',
       },
     },
-    MuiDialogTitle: {
+    MuiPaper: {
       styleOverrides: {
         root: {
-          paddingBottom: '8px', // Adjust padding for dialog titles
-        },
-      },
-    },
-    MuiDialogContent: {
-      styleOverrides: {
-        root: {
-          paddingTop: '8px', // Adjust padding for dialog content
+          backgroundImage: 'none', // Ensure paper components don't have background images from the theme
         },
       },
     },
     MuiDataGrid: {
       styleOverrides: {
         root: {
-          border: '1px solid rgba(224, 224, 224, 1)', // Add a subtle border to DataGrids
+          border: 'none',
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid #e0e0e0', // Softer cell border
+          },
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#f5f5f5',
+            borderBottom: '1px solid #e0e0e0',
+          },
         },
       },
     },
   },
-});
-
-export const CHART_COLORS = {
-  active: '#2e7d32',
-  inactive: '#d32f2f',
-  eligible: '#1976d2',
-  notEligible: '#ed6c02',
-  online: '#ff9800', // Orange for Online
-  cash: '#4caf50',   // Green for Cash
-  instore: '#9c27b0', // Purple for In-Store
-  total: '#5f6368',
 };
 
-
-
 export const lightThemeOptions = {
+  ...sharedThemeOptions,
   palette: {
     mode: 'light',
-    primary: blue,
-    secondary: pink,
-    background: {
-      default: '#f0f4f8',
-      paper: '#ffffff',
+    primary: {
+      main: '#007BFF', // A vibrant, modern blue
+      light: '#69a9ff',
+      dark: '#0050cb',
     },
-  },
-  components: {
-    MuiContainer: {
-      defaultProps: {
-        maxWidth: false, // Disables the max-width constraint
-      },
+    secondary: {
+      main: '#17A2B8', // A complementary teal
+      light: '#62d4ea',
+      dark: '#007388',
+    },
+    background: {
+      default: '#F8F9FA', // A very light grey for the page background
+      paper: '#FFFFFF',
     },
   },
 };
 
 export const darkThemeOptions = {
+  ...sharedThemeOptions,
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90caf9', // A lighter blue for dark mode
+      main: '#4DABF7', // A lighter, vibrant blue for dark mode
+      light: '#86cdfa',
+      dark: '#007cce',
     },
     secondary: {
-      main: '#f48fb1', // A lighter pink for dark mode
+      main: '#36C2CE', // A lighter teal for dark mode
+      light: '#76f5ff',
+      dark: '#00919d',
     },
     background: {
       default: '#121212',
       paper: '#1e1e1e',
     },
   },
-  components: {
-    MuiContainer: {
-      defaultProps: {
-        maxWidth: false, // Disables the max-width constraint
-      },
-    },
-  },
 };
 
+/**
+ * Creates a theme instance based on the provided mode.
+ * @param {'light' | 'dark'} mode
+ */
+export const createAppTheme = (mode) =>
+  createTheme(mode === 'light' ? lightThemeOptions : darkThemeOptions);
 
-export default {theme, CHART_COLORS, lightThemeOptions, darkThemeOptions};
+export const theme = createAppTheme('light'); // Default export a light theme instance
+
+export const CHART_COLORS = {
+  active: theme.palette.success.main,
+  inactive: theme.palette.error.main,
+  eligible: theme.palette.primary.main,
+  notEligible: theme.palette.warning.main,
+  online: theme.palette.info.main,
+  cash: '#4caf50',
+  instore: '#9c27b0',
+  total: theme.palette.grey[600],
+};
+
+export default { theme, CHART_COLORS, lightThemeOptions, darkThemeOptions };

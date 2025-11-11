@@ -91,7 +91,7 @@ export default function SignupPage() {
     <AuthLayout branding={{ title: "Join Us!", description: "Become a part of our community and start managing your lucky draws with ease and confidence." }}>
       <div className="flex flex-col items-center">
         <PersonAdd color="primary" className="!text-4xl mb-2" />
-        <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: '#000' }}>
+        <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: 'primary.main' }}>
           Create Your Account
         </Typography>
       </div>

@@ -100,7 +100,7 @@ export default function WinnersListPage() {
 
     return (
         <PageLayout>
-            <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
+            <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: 'text.primary' }}>
                 Lucky Draw Winners
             </Typography>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Typography,
   Paper,
   Box,
   Grid,
@@ -24,6 +25,10 @@ const ProfilePage = () => {
 
   return (
     <PageLayout>
+      <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'text.primary', textAlign: 'center' }}>
+        My Profile
+      </Typography>
+
       <Box sx={{ flexGrow: 1, p: 3 }}>
         <Grid container spacing={4} justifyContent="center">
           {/* Left Spacer - This will be empty on larger screens */}

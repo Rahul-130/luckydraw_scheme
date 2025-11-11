@@ -62,7 +62,7 @@ export default function LoginPage() {
     <AuthLayout branding={{ title: "Lucky Draw App", description: "Manage your books and customers with ease." }}>
       <div className="flex flex-col items-center">
         <LoginIcon color="primary" className="!text-4xl mb-2" />
-        <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: '#000' }}>
+        <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: 'primary.main' }}>
           Welcome Back!
         </Typography>
       </div>

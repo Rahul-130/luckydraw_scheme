@@ -214,17 +214,21 @@ export default function BooksPage() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <PageLayout>
-          <Typography
-            variant="h4"
-            sx={{
-              mb: 2,
-              fontWeight: "bold",
-              textAlign: "center",
-              color: "#000",
-            }}
-          >
-            My Books
-          </Typography>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: "bold",
+                color: "primary.main",
+                textShadow: (theme) => `1px 1px 2px ${alpha(theme.palette.primary.light, 0.2)}`,
+              }}
+            >
+              Manage Your Books
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              All your lucky draw books in one place.
+            </Typography>
+          </Box>
 
           <SearchAndSummaryBox
             searchLabel="Search Books"
@@ -257,11 +261,15 @@ export default function BooksPage() {
                 }
                 sx={{
                   '& .MuiDataGrid-row': { cursor: 'pointer' },
+                  '& .MuiDataGrid-row:hover': {
+                    transform: 'scale(1.01)',
+                    transition: 'transform 0.2s ease-in-out',
+                    boxShadow: (theme) => `0 4px 12px ${alpha(theme.palette.common.black, 0.08)}`,
+                  },
                   "& .super-app-theme--active": {
                     "&:hover": { backgroundColor: "rgba(46, 125, 50, 0.2)" },
                   },
                   "& .super-app-theme--inactive": {
-                    backgroundColor: "rgba(211, 47, 47, 0.1)",
                     "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.2)" },
                   },
                 }}

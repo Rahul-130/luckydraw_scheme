@@ -28,8 +28,8 @@ export default function SecurityPage() {
   return (
     <PageLayout>
       <Container component="main" maxWidth="md">
-      <Paper elevation={3} sx={{ mt: 8, p: 4 }}>
-        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+      <Paper elevation={3} sx={{ mt: 4, p: 4 }}>
+        <Typography component="h1" variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: 'text.primary' }}>
           Security Settings
         </Typography>
         {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}

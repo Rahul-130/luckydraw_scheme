@@ -115,11 +115,11 @@ export default function DashboardPage() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ py: 4, px: 2, background: "linear-gradient(to right, #f0f4f8, #d9e2ec)", minHeight: 'calc(100vh - 64px)' }}>
+      <Box sx={{ py: 4, px: 2, bgcolor: 'background.default', minHeight: 'calc(100vh - 64px)' }}>
         <Container maxWidth="xl">
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
-            <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#222', width: '100%', textAlign: { xs: 'center', md: 'left' } }}>
-              Dashboard
+            <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'text.primary', width: '100%', textAlign: { xs: 'center', md: 'left' } }}>
+              Welcome to your <Box component="span" sx={{ color: 'primary.main' }}>Dashboard</Box>
             </Typography>
             <DateRangePicker dateRange={dateRange} onDateRangeChange={setDateRange} />
           </Box>

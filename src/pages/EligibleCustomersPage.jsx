@@ -102,7 +102,7 @@ export default function EligibleCustomersPage() {
 
     return (
         <PageLayout>
-            <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: '#000' }}>
+            <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: 'text.primary' }}>
                 Eligible for Lucky Draw
             </Typography>
 

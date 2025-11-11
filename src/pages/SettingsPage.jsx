@@ -73,10 +73,10 @@ export default function SettingsPage() {
   
 
   return (
-    <Box sx={{ py: 4, background: (theme) => theme.palette.background.default, minHeight: 'calc(100vh - 64px)' }}>
+    <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: 'calc(100vh - 64px)' }}>
       <Container maxWidth="sm">
         <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+          <Typography component="h1" variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: 'text.primary' }}>
             Settings
           </Typography>
 

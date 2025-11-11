@@ -207,16 +207,16 @@ export default function PaymentsPage() {
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <PageLayout>
           <PageHeader backTo={`/books/${bookId}/customers`}>
-            <Typography variant="h5" component="h1" sx={{ color: 'text.primary', fontWeight: 'bold', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 0.5, width: '100%', textAlign: 'center' }}>
-                <Box component="span" sx={{ fontWeight: 'bold', color:"#000"}}>
+            <Typography variant="h4" component="h1" sx={{ color: 'text.primary', fontWeight: 'bold', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 1, width: '100%', textAlign: 'center' }}>
+                <Box component="span" sx={{ fontWeight: 'bold', color:"text.primary"}}>
                   Payments
                 </Box>
-                <Box component="span" sx={{ color: '#000' }}>for customer</Box>
-                <Box component="span" sx={{ color: '#000', fontWeight: 'semibold' }}>
+                <Box component="span" sx={{ color: 'text.secondary', fontWeight: 'normal' }}>for</Box>
+                <Box component="span" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                   {customer?.name}
                 </Box>
-                <Typography variant="subtitle1" component="span" sx={{ color: '#001', pt: 0.5 }}>
-                  (Book: {book?.name})
+                <Typography variant="subtitle1" component="span" sx={{ color: 'text.secondary', pt: 0.5, width: '100%' }}>
+                  in Book: {book?.name}
                 </Typography>
             </Typography>
           </PageHeader>
