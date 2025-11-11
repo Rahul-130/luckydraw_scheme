@@ -14,6 +14,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Pagination,
+  Divider,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -196,9 +197,12 @@ export default function DashboardPage() {
           )}
 
           {/* --- Trend Charts --- */}
-          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
-            Payment Trends
-          </Typography>
+          <Box sx={{ my: 4 }}>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary', mb: 1 }}>
+              Payment Trends
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+          </Box>
           <div className="grid grid-cols-1 gap-6 mb-6">
             <div>
               <ChartCard
@@ -271,9 +275,12 @@ export default function DashboardPage() {
           </div>
 
           {/* --- Distribution Charts --- */}
-          <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
-            Distribution Overview
-          </Typography>
+          <Box sx={{ my: 4 }}>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary', mb: 1 }}>
+              Distribution Overview
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+          </Box>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <PieChartCard
               title="Book Status"
