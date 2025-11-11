@@ -35,7 +35,7 @@ const ProfilePage = () => {
           <Grid md={1} sx={{ display: { xs: 'none', md: 'block' } }} />
 
           
-
+          
           {/* Navigation Menu (Right Side) */}
           <Grid xs={12} md={3}>
             <Paper>
@@ -58,8 +58,10 @@ const ProfilePage = () => {
 
           {/* Main Content Area (Center) */}
           <Grid xs={12} md={7}>
-            {activeSection === 'profile' && <EditProfile token={token} showSnackbar={showSnackbar} />}
-            {activeSection === 'password' && <ChangePassword token={token} showSnackbar={showSnackbar} />}
+            <Paper sx={{ p: { xs: 2, md: 4 } }}>
+              {activeSection === 'profile' && <EditProfile token={token} showSnackbar={showSnackbar} />}
+              {activeSection === 'password' && <ChangePassword token={token} showSnackbar={showSnackbar} />}
+            </Paper>
           </Grid>
 
           {/* Right Spacer - This will be empty on larger screens */}

@@ -35,27 +35,33 @@ export default function SecurityPage() {
         {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        <Typography variant="h6">Two-Factor Authentication (2FA)</Typography>
-        {user?.is2FAEnabled ? (
-          <Box sx={{ mt: 2 }}>
-            <Alert severity="success" variant="outlined">2FA is currently <strong>enabled</strong> on your account.</Alert>
-            <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-              <Button variant="outlined" color="warning" onClick={() => setRegenerateModalOpen(true)}>
-                Regenerate Recovery Codes
-              </Button>
-              <Button variant="contained" color="error" onClick={() => setDisableModalOpen(true)}>
-                Disable 2FA
+        <Box>
+          <Typography variant="h6" component="h2">Two-Factor Authentication (2FA)</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Add an extra layer of security to your account. Once enabled, you will be required to enter a code from your authenticator app to log in.
+          </Typography>
+
+          {user?.is2FAEnabled ? (
+            <Box sx={{ mt: 2 }}>
+              <Alert severity="success" variant="outlined" sx={{ mb: 3 }}>2FA is currently <strong>enabled</strong> on your account.</Alert>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                <Button variant="outlined" color="warning" onClick={() => setRegenerateModalOpen(true)}>
+                  Regenerate Recovery Codes
+                </Button>
+                <Button variant="contained" color="error" onClick={() => setDisableModalOpen(true)}>
+                  Disable 2FA
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <Box sx={{ mt: 2 }}>
+              <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>2FA is currently <strong>disabled</strong>. We strongly recommend enabling it.</Alert>
+              <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate('/setup-2fa')}>
+                Enable 2FA
               </Button>
             </Box>
-          </Box>
-        ) : (
-          <Box sx={{ mt: 2 }}>
-            <Alert severity="info" variant="outlined">2FA is currently <strong>disabled</strong>. We strongly recommend enabling it.</Alert>
-            <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate('/setup-2fa')}>
-              Enable 2FA
-            </Button>
-          </Box>
-        )}
+          )}
+        </Box>
 
       </Paper>
 
