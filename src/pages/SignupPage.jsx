@@ -4,6 +4,7 @@ import {
   TextField,
   Button,
   Container,
+  Paper,
   Typography,
   Box,
   Alert,
@@ -89,31 +90,33 @@ export default function SignupPage() {
 
   return (
     <AuthLayout branding={{ title: "Join Us!", description: "Become a part of our community and start managing your lucky draws with ease and confidence." }}>
-      <div className="flex flex-col items-center">
-        <PersonAdd color="primary" className="!text-4xl mb-2" />
-        <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: 'primary.main' }}>
-          Create Your Account
-        </Typography>
-      </div>
-      <form onSubmit={handleSubmit} className="mt-4">
-        <div className="space-y-4">
-          <TextField name="name" label="Full Name" fullWidth margin="normal" value={form.name} onChange={handleChange} required autoFocus />
-          <TextField name="phone" label="Phone Number" fullWidth margin="normal" value={form.phone} onChange={handleChange} required inputProps={{ maxLength: 10 }} error={form.phone.length > 0 && form.phone.length !== 10} helperText={form.phone.length > 0 && form.phone.length !== 10 ? "Phone number must be 10 digits" : ""} />
-          <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required error={!!(form.email && validateEmail(form.email))} helperText={form.email ? validateEmail(form.email) : ""} />
-          <PasswordInput name="password" label="Password" fullWidth margin="normal" value={form.password} onChange={handleChange} required error={!!(form.password && validatePassword(form.password))} helperText={PASSWORD_REQUIREMENTS} />
-          {form.password && <PasswordStrengthMeter password={form.password} />}
-          <PasswordInput name="confirmPassword" label="Confirm Password" fullWidth margin="normal" value={form.confirmPassword} onChange={handleChange} required error={form.confirmPassword.length > 0 && form.password !== form.confirmPassword} helperText={form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? "Passwords do not match" : ""} />
+      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 2 }}>
+        <div className="flex flex-col items-center">
+          <PersonAdd color="primary" className="!text-4xl mb-2" />
+          <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: 'primary.main' }}>
+            Create Your Account
+          </Typography>
         </div>
-        {error && <Alert severity="error" className="!mt-4 w-full">{error}</Alert>}
-        {success && <Alert severity="success" className="!mt-4 w-full">{success}</Alert>}
-        <Button type="submit" fullWidth variant="contained" className="!mt-6 !py-3" disabled={isButtonDisabled}>
-          Sign Up
-        </Button>
-        <Typography variant="body2" sx={{ mt: 2, textAlign: 'center' }} color="text.secondary">
-          Already have an account?{" "}
-          <Button onClick={() => navigate("/login")} size="small">Login</Button>
-        </Typography>
-      </form>
+        <form onSubmit={handleSubmit} className="mt-4">
+          <div className="space-y-4">
+            <TextField name="name" label="Full Name" fullWidth margin="normal" value={form.name} onChange={handleChange} required autoFocus />
+            <TextField name="phone" label="Phone Number" fullWidth margin="normal" value={form.phone} onChange={handleChange} required inputProps={{ maxLength: 10 }} error={form.phone.length > 0 && form.phone.length !== 10} helperText={form.phone.length > 0 && form.phone.length !== 10 ? "Phone number must be 10 digits" : ""} />
+            <TextField name="email" label="Email Address" type="email" fullWidth margin="normal" value={form.email} onChange={handleChange} required error={!!(form.email && validateEmail(form.email))} helperText={form.email ? validateEmail(form.email) : ""} />
+            <PasswordInput name="password" label="Password" fullWidth margin="normal" value={form.password} onChange={handleChange} required error={!!(form.password && validatePassword(form.password))} helperText={PASSWORD_REQUIREMENTS} />
+            {form.password && <PasswordStrengthMeter password={form.password} />}
+            <PasswordInput name="confirmPassword" label="Confirm Password" fullWidth margin="normal" value={form.confirmPassword} onChange={handleChange} required error={form.confirmPassword.length > 0 && form.password !== form.confirmPassword} helperText={form.confirmPassword.length > 0 && form.password !== form.confirmPassword ? "Passwords do not match" : ""} />
+          </div>
+          {error && <Alert severity="error" className="!mt-4 w-full">{error}</Alert>}
+          {success && <Alert severity="success" className="!mt-4 w-full">{success}</Alert>}
+          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, py: 1.5 }} disabled={isButtonDisabled}>
+            Sign Up
+          </Button>
+          <Typography variant="body2" sx={{ mt: 2, textAlign: 'center' }} color="text.secondary">
+            Already have an account?{" "}
+            <Button onClick={() => navigate("/login")} size="small">Login</Button>
+          </Typography>
+        </form>
+      </Paper>
     </AuthLayout>
   );
 }

@@ -217,6 +217,7 @@ export default function DashboardPage() {
                     chartType={chartTypes.monthly}
                     data={monthlyPaymentData}
                     colorMapping={{ total: CHART_COLORS.total, online: CHART_COLORS.online, cash: CHART_COLORS.cash, instore: CHART_COLORS.instore }}
+                    seriesProps={{ cursor: 'pointer' }}
                   />
                 </BarChart>
               </ChartCard>
@@ -240,6 +241,7 @@ export default function DashboardPage() {
                     chartType={chartTypes.yearly}
                     data={yearlyPaymentData}
                     colorMapping={{ total: CHART_COLORS.total, online: CHART_COLORS.online, cash: CHART_COLORS.cash, instore: CHART_COLORS.instore }}
+                    seriesProps={{ cursor: 'pointer' }}
                   />
                 </BarChart>
               </ChartCard>
@@ -261,6 +263,7 @@ export default function DashboardPage() {
                     chartType={chartTypes.daily}
                     data={last7DaysData}
                     colorMapping={{ total: CHART_COLORS.total, online: CHART_COLORS.online, cash: CHART_COLORS.cash, instore: CHART_COLORS.instore }}
+                    seriesProps={{ cursor: 'pointer' }}
                   />
                 </BarChart>
               </ChartCard>
@@ -312,7 +315,7 @@ export default function DashboardPage() {
                   <YAxis allowDecimals={false} />
                   <Tooltip formatter={(value) => [value, 'New Customers']} labelStyle={{ fontWeight: 'bold' }} />
                   <Legend verticalAlign="top" />
-                  <Line type="monotone" dataKey="count" name="New Customers" stroke={CHART_COLORS.eligible} strokeWidth={2} activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="count" name="New Customers" stroke={CHART_COLORS.eligible} strokeWidth={2} activeDot={{ r: 10, strokeWidth: 2 }} />
                 </LineChart>
               </ChartCard>
             </div>

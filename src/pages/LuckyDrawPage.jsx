@@ -82,7 +82,7 @@ export default function LuckyDrawPage() {
               py: 1.5,
               borderRadius: 2,
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              '&:hover': {
+            transition: (theme) => theme.transitions.create(['transform', 'box-shadow']),            '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
               },

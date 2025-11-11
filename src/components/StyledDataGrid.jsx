@@ -60,7 +60,7 @@ const StyledDataGrid = ({ onRowClick, ...props }) => {
   };
 
   return (
-    <Paper elevation={6} sx={{ p: 2, borderRadius: 3, backgroundColor: "#fff" }}>
+    <Paper elevation={2} sx={{ p: 2, borderRadius: 3, bgcolor: 'background.paper', overflow: 'hidden' }}>
       <Box sx={{ height: 500, width: "100%" }}>
         <DataGrid
           {...props}
@@ -73,14 +73,14 @@ const StyledDataGrid = ({ onRowClick, ...props }) => {
           sx={{
             border: 'none',
             // Header styles
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.1),
-              color: (theme) => theme.palette.text.primary,
+            '& .MuiDataGrid-columnHeaders': (theme) => ({
+              backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : alpha(theme.palette.background.default, 0.8),
+              color: theme.palette.text.primary,
               fontWeight: 'bold',
               fontSize: '0.9rem',
               textTransform: 'uppercase',
-              borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
-            },
+              borderBottom: `1px solid ${theme.palette.divider}`,
+            }),
             // Column separator
             '& .MuiDataGrid-columnSeparator': {
               color: (theme) => theme.palette.divider,
@@ -91,12 +91,14 @@ const StyledDataGrid = ({ onRowClick, ...props }) => {
               borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
             },
             // Row hover styles
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.08),
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            },
-            // Even row background for readability
-            '& .MuiDataGrid-row.Mui-even': { backgroundColor: '#f9f9f9' },
+            '& .MuiDataGrid-row:hover': (theme) => ({
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              boxShadow: theme.shadows[2],
+            }),
+            // Even row background for readability (zebra striping)
+            '& .MuiDataGrid-row.Mui-even': (theme) => ({
+              backgroundColor: theme.palette.action.hover,
+            }),
             // Footer styles
             '& .MuiDataGrid-footerContainer': {
               borderTop: (theme) => `1px solid ${theme.palette.divider}`,

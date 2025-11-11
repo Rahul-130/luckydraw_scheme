@@ -38,7 +38,7 @@ export default function SecurityPage() {
         <Typography variant="h6">Two-Factor Authentication (2FA)</Typography>
         {user?.is2FAEnabled ? (
           <Box sx={{ mt: 2 }}>
-            <Alert severity="success">2FA is currently <strong>enabled</strong> on your account.</Alert>
+            <Alert severity="success" variant="outlined">2FA is currently <strong>enabled</strong> on your account.</Alert>
             <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
               <Button variant="outlined" color="warning" onClick={() => setRegenerateModalOpen(true)}>
                 Regenerate Recovery Codes
@@ -50,7 +50,7 @@ export default function SecurityPage() {
           </Box>
         ) : (
           <Box sx={{ mt: 2 }}>
-            <Alert severity="info">2FA is currently <strong>disabled</strong>. We strongly recommend enabling it.</Alert>
+            <Alert severity="info" variant="outlined">2FA is currently <strong>disabled</strong>. We strongly recommend enabling it.</Alert>
             <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate('/setup-2fa')}>
               Enable 2FA
             </Button>

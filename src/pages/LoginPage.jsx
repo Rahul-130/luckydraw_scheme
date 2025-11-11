@@ -6,6 +6,7 @@ import {
   TextField,
   Button,
   Typography,
+  Paper,
   Alert,
   ToggleButtonGroup,
   ToggleButton,
@@ -60,51 +61,53 @@ export default function LoginPage() {
 
   return (
     <AuthLayout branding={{ title: "Lucky Draw App", description: "Manage your books and customers with ease." }}>
-      <div className="flex flex-col items-center">
-        <LoginIcon color="primary" className="!text-4xl mb-2" />
-        <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: 'primary.main' }}>
-          Welcome Back!
-        </Typography>
-      </div>
-      <ToggleButtonGroup
-        value={loginMethod}
-        exclusive
-        onChange={handleLoginMethodChange}
-        fullWidth
-        className="!mt-6"
-      >
-        <ToggleButton value="password" aria-label="login with password">
-          <Lock className="!mr-2" />
-          Password
-        </ToggleButton>
-        <ToggleButton value="otp" aria-label="login with otp">
-          <VpnKey className="!mr-2" />
-          OTP
-        </ToggleButton>
-      </ToggleButtonGroup>
-      <form onSubmit={handleSubmit} className="mt-4">
-        <div className="space-y-4">
-          {error && <Alert severity="error" className="w-full">{error}</Alert>}
-          <TextField required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
-          {loginMethod === 'password' ? (
-            <PasswordInput required fullWidth label="Password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-          ) : (
-            <PasswordInput required fullWidth label="Authenticator OTP or Recovery Code" value={otp} onChange={(e) => setOtp(e.target.value)} />
-          )}
+      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 2 }}>
+        <div className="flex flex-col items-center">
+          <LoginIcon color="primary" className="!text-4xl mb-2" />
+          <Typography component="h1" variant="h4" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center', color: 'primary.main' }}>
+            Welcome Back!
+          </Typography>
         </div>
-        <Button type="submit" fullWidth variant="contained" className="!mt-6 !py-3">
-          Login
-        </Button>
-        <div className="flex justify-between items-center !mt-4">
-            <Link component="button" variant="body2" onClick={() => setResetModalOpen(true)}>
-                Forgot Password?
-            </Link>
-            <Typography variant="body2" color="text.secondary">
-                Don't have an account?{" "}
-                <Button onClick={() => navigate("/signup")} size="small">Sign Up</Button>
-            </Typography>
-        </div>
-      </form>
+        <ToggleButtonGroup
+          value={loginMethod}
+          exclusive
+          onChange={handleLoginMethodChange}
+          fullWidth
+          sx={{ mt: 3 }}
+        >
+          <ToggleButton value="password" aria-label="login with password">
+            <Lock sx={{ mr: 1 }} />
+            Password
+          </ToggleButton>
+          <ToggleButton value="otp" aria-label="login with otp">
+            <VpnKey sx={{ mr: 1 }} />
+            OTP
+          </ToggleButton>
+        </ToggleButtonGroup>
+        <form onSubmit={handleSubmit} className="mt-4">
+          <div className="space-y-4">
+            {error && <Alert severity="error" className="w-full">{error}</Alert>}
+            <TextField required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+            {loginMethod === 'password' ? (
+              <PasswordInput required fullWidth label="Password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+            ) : (
+              <PasswordInput required fullWidth label="Authenticator OTP or Recovery Code" value={otp} onChange={(e) => setOtp(e.target.value)} />
+            )}
+          </div>
+          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, py: 1.5 }}>
+            Login
+          </Button>
+          <div className="flex justify-between items-center !mt-4">
+              <Link component="button" variant="body2" onClick={() => setResetModalOpen(true)}>
+                  Forgot Password?
+              </Link>
+              <Typography variant="body2" color="text.secondary">
+                  Don't have an account?{" "}
+                  <Button onClick={() => navigate("/signup")} size="small">Sign Up</Button>
+              </Typography>
+          </div>
+        </form>
+      </Paper>
       {/* Password Reset Modal */}
       <PasswordResetModal open={resetModalOpen} onClose={() => setResetModalOpen(false)} />
     </AuthLayout>
