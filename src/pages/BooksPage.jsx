@@ -25,6 +25,7 @@ import {
   ListItemIcon,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { keyframes } from "@mui/system";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -50,6 +51,17 @@ import BookFormFields from "../components/BookFormFields";
 import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import ActionMenu from "../components/ActionMenu";
 import { extractApiErrorMessage } from "../utils/apiUtils";
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 export default function BooksPage() {
   const { token } = useAuth();
@@ -214,13 +226,15 @@ export default function BooksPage() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <PageLayout>
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Box sx={{ textAlign: 'center', mb: 4, animation: `${fadeIn} 0.5s ease-out` }}>
             <Typography
               variant="h3"
               sx={{
                 fontWeight: "bold",
-                color: "primary.main",
-                textShadow: (theme) => `1px 1px 2px ${alpha(theme.palette.primary.light, 0.2)}`,
+                background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textShadow: (theme) => `1px 1px 2px ${alpha(theme.palette.primary.light, 0.1)}`,
               }}
             >
               Manage Your Books
@@ -231,6 +245,7 @@ export default function BooksPage() {
           </Box>
 
           <SearchAndSummaryBox
+            sx={{ animation: `${fadeIn} 0.5s ease-out 0.1s`, animationFillMode: 'backwards' }}
             searchLabel="Search Books"
             searchText={searchText}
             onSearchChange={(e) => setSearchText(e.target.value)}
@@ -240,7 +255,13 @@ export default function BooksPage() {
               { label: 'Inactive', value: bookSummary.inactive, color: 'error.main' },
             ]}
           >
-            <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
+            <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)} sx={{
+                transition: (theme) => theme.transitions.create(['transform', 'box-shadow'], { duration: theme.transitions.duration.short }),
+                '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: (theme) => theme.shadows[4],
+                }
+            }}>
               Add Book
             </Button>
           </SearchAndSummaryBox>
@@ -260,18 +281,16 @@ export default function BooksPage() {
                     : "super-app-theme--inactive"
                 }
                 sx={{
+                  animation: `${fadeIn} 0.5s ease-out 0.2s`,
+                  animationFillMode: 'backwards',
                   '& .MuiDataGrid-row': { cursor: 'pointer' },
                   '& .MuiDataGrid-row:hover': {
                     transform: 'scale(1.01)',
-                    transition: 'transform 0.2s ease-in-out',
+                    transition: 'transform 0.2s ease-in-out, background-color 0.2s ease-in-out',
                     boxShadow: (theme) => `0 4px 12px ${alpha(theme.palette.common.black, 0.08)}`,
                   },
-                  "& .super-app-theme--active": {
-                    "&:hover": { backgroundColor: "rgba(46, 125, 50, 0.2)" },
-                  },
-                  "& .super-app-theme--inactive": {
-                    "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.2)" },
-                  },
+                  "& .super-app-theme--active:hover": { backgroundColor: (theme) => alpha(theme.palette.success.main, 0.2) },
+                  "& .super-app-theme--inactive:hover": { backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2) },
                 }}
               />
 
