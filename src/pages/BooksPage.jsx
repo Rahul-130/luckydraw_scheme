@@ -170,7 +170,7 @@ export default function BooksPage() {
       {
         field: "actions",
         headerName: "Actions",
-        width: 350,
+        width: 180,
         sortable: false,
         renderCell: (params) => {
           const { row } = params;
