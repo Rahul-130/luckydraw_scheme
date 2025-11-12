@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Book, Groups, CalendarMonth } from '@mui/icons-material';
-import ClipboardButton from './ClipboardButton';
+import PreviewCopy from './PreviewCopyComponent';
 
 const BookFormFields = ({ formState, onFormChange }) => {
   const IconBubble = ({ children }) => (
@@ -214,24 +214,15 @@ const BookFormFields = ({ formState, onFormChange }) => {
         </Box>
 
         {/* Compact preview chips for quick visual feedback */}
-        <Box mt={0.5} display="flex" gap={1} flexWrap="wrap" alignItems="center" justifyContent="space-between">
-          <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
-            <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
-              Preview:
-            </Typography>
+        <PreviewCopy
+          formState={formState}
+          fields={[
+            { key: 'name', fallback: '— name' },
+            { key: 'maxCustomers', fallback: '— capacity', formatter: (v) => `${v} customers` },
+            { key: 'startMonthIso', fallback: '— start month' },
+          ]}
+        />
 
-            <PreviewChip label={formState.name} fallback="— name" color={formState.name ? 'primary' : 'default'} />
-
-            <PreviewChip
-              label={formState.maxCustomers ? `${formState.maxCustomers} customers` : ''}
-              fallback="— capacity"
-            />
-
-            <PreviewChip label={formState.startMonthIso} fallback="— start month" />
-          </Box>
-
-          <ClipboardButton getText={() => JSON.stringify(formState, null, 2)} tooltip="Copy preview JSON" ariaLabel="Copy preview JSON" />
-        </Box>
       </Stack>
     </Paper>
   );

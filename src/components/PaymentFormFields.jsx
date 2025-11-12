@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { CurrencyRupee, ReceiptLong, CalendarMonth } from '@mui/icons-material';
-import ClipboardButton from './ClipboardButton'; // optional
+import PreviewCopy from './PreviewCopyComponent';
 
 
 const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false }) => {
@@ -217,7 +217,7 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
         </Box>
 
         {/* Preview + copy */}
-        <Box display="flex" gap={1} alignItems="center" flexWrap="wrap" justifyContent="space-between" mt={0.25}>
+        {/* <Box display="flex" gap={1} alignItems="center" flexWrap="wrap" justifyContent="space-between" mt={0.25}>
           <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
             <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
               Preview:
@@ -233,7 +233,17 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
           </Box>
 
           <ClipboardButton getText={() => JSON.stringify(formState, null, 2)} tooltip="Copy payment JSON" ariaLabel="Copy payment JSON" />
-        </Box>
+        </Box> */}
+        <PreviewCopy
+          formState={formState}
+          fields={[
+            { key: 'amount', fallback: '— amount', formatter: (v) => `₹ ${v}` },
+            { key: 'paymentType', fallback: '— type' },
+            { key: 'monthIso', fallback: '— month' },
+            { key: 'receiptNo', fallback: '— receipt' },
+          ]}
+        />
+
       </Stack>
     </Paper>
   );

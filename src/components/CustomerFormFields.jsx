@@ -15,13 +15,8 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Person, SupervisorAccount, Phone, Home } from '@mui/icons-material';
-import ClipboardButton from './ClipboardButton';
+import PreviewCopy from './PreviewCopyComponent';
 
-/**
- * Visual-only enhancement of CustomerFormFields with copy-to-clipboard button.
- * - No logic changes (formState, onFormChange remain identical)
- * - ClipboardButton copies JSON.stringify(formState, null, 2)
- */
 const CustomerFormFields = ({ formState, onFormChange }) => {
   // keep your phone handling logic untouched
   const handlePhoneChange = (e) => {
@@ -199,21 +194,15 @@ const CustomerFormFields = ({ formState, onFormChange }) => {
         </Box>
 
         {/* Preview chips + copy button */}
-        <Box display="flex" gap={1} alignItems="center" flexWrap="wrap" justifyContent="space-between" mt={0.25}>
-          <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
-            <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
-              Preview:
-            </Typography>
+        <PreviewCopy
+          formState={formState}
+          fields={[
+            { key: 'name', fallback: '— name' },
+            { key: 'phone', fallback: '— phone' },
+            { key: 'address', fallback: '— address' },
+          ]}
+        />
 
-            <PreviewChip label={formState.name} fallback="— name" />
-
-            <PreviewChip label={formState.phone ? `${formState.phone}` : ''} fallback="— phone" />
-
-            <PreviewChip label={formState.address} fallback="— address" />
-          </Box>
-
-          <ClipboardButton getText={() => JSON.stringify(formState, null, 2)} tooltip="Copy preview JSON" ariaLabel="Copy preview JSON" />
-        </Box>
       </Stack>
     </Paper>
   );
