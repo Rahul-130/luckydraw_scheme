@@ -9,10 +9,17 @@ let pool;
 async function getPool() {
   if (pool) return pool;
   pool = await oracledb.createPool({
-    user: process.env.ORACLE_USER,
-    password: process.env.ORACLE_PASSWORD,
-    connectString: `${process.env.ORACLE_HOST}:${process.env.ORACLE_PORT}/${process.env.ORACLE_SERVICE_NAME}`,
-    poolMin: 1, poolMax: 4, poolIncrement: 1
+    user: process.env.ORACLE_USER || process.env.ORACLE_CLOUD_USER,
+    password: process.env.ORACLE_PASSWORD || process.env.ORACLE_CLOUD_PASSWORD,
+    connectString: (process.env.ORACLE_HOST && process.env.ORACLE_PORT && process.env.ORACLE_SERVICE_NAME)
+      ? `${process.env.ORACLE_HOST}:${process.env.ORACLE_PORT}/${process.env.ORACLE_SERVICE_NAME}`
+      : process.env.ORACLE_CLOUD_STRING,
+    // For Oracle Cloud Wallet
+    configDir: process.env.ORACLE_CLOUD_WALLET_PATH,
+    externalAuth: false,
+    walletLocation: process.env.ORACLE_CLOUD_WALLET_PATH,
+    walletPassword: process.env.ORACLE_CLOUD_WALLET_PASSWORD,
+    poolMin: 1, poolMax: 30, poolIncrement: 1
   });
   return pool;
 }

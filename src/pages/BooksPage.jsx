@@ -274,6 +274,7 @@ export default function BooksPage() {
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
                 onRowClick={(params) => navigate(`/books/${params.row.id}/customers`)}
+                pageSizeOptions={[5, 10, 20, 100]}
                 paginationMode="server"
                 getRowClassName={(params) =>
                   params.row.isActive
