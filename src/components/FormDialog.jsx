@@ -5,21 +5,26 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Stack,
 } from '@mui/material';
 
-const FormDialog = ({ open, onClose, title, onSubmit, submitText = 'Save', children, isSubmitDisabled = false }) => {
+const FormDialog = ({ open, onClose, title, onSubmit, children, submitText = 'Submit', isSubmitDisabled = false }) => {
+  const handleSubmit = (event) => {
+    event.preventDefault(); // Prevent default form submission (page reload)
+    if (!isSubmitDisabled) {
+      onSubmit();
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} PaperProps={{ component: 'form', onSubmit: handleSubmit }}>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          {children}
-        </Stack>
+        {children}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSubmit} variant="contained" disabled={isSubmitDisabled}>
+        {/* The `type="submit"` is crucial here. It triggers the form's onSubmit event. */}
+        <Button type="submit" variant="contained" disabled={isSubmitDisabled}>
           {submitText}
         </Button>
       </DialogActions>
