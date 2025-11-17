@@ -47,8 +47,7 @@ export default function CustomersPage() {
   const debouncedSearch = useDebounce(searchText, 500);
 
   const { customers, loading: customersLoading, error: customersError, refetch: refetchCustomers } = useCustomers(bookId, debouncedSearch);
-  const { books } = useBooks(); // Assuming useBooks fetches all books and is available in context or similar
-  const book = useMemo(() => books.find((b) => String(b.id) === bookId), [books, bookId]);
+  const { book, error: bookError } = useBooks({ bookId }); // Reliably fetch the current book's details
 
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -170,7 +169,7 @@ export default function CustomersPage() {
     <PageLayout>
         {!token && <Navigate to="/login" replace />}
         {!bookId && <Navigate to="/books" replace />}
-        {bookId && !book && <Alert severity="error">Book not found or you do not have access to it.</Alert>}
+        {bookError && <Alert severity="error">Book not found or you do not have access to it.</Alert>}
 
         <PageHeader backTo="/books" title="Customers">
           <Typography variant="h5" sx={{ color: "text.secondary" }} >

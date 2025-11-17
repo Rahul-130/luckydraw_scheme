@@ -77,7 +77,7 @@ export default function BooksPage() {
     paginationModel,
     setPaginationModel,
     refetch: refetchBooks,
-  } = useBooks(debouncedSearch);
+  } = useBooks({ searchText: debouncedSearch });
 
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
