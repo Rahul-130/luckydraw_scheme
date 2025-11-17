@@ -112,6 +112,16 @@ router.post('/', requireAuth, async (req, res) => {
   if (!name || !maxCustomers || !startMonthIso) return res.status(400).json({ error: 'name, maxCustomers, startMonthIso required' });
   const conn = await getConnection();
   try {
+    // Check if a book with the same details already exists for this user
+    const existingBook = await conn.execute(
+      `SELECT id FROM books WHERE owner_id = :owner_id AND name = :name`,
+      { owner_id: Number(req.user.id), name: String(name) }
+    );
+
+    if (existingBook.rows.length > 0) {
+      return res.status(409).json({ error: 'A book with this name already exists.' });
+    }
+
     const result = await conn.execute(
       `INSERT INTO books (owner_id, name, max_customers, is_active, start_month_iso)
        VALUES (:owner_id, :name, :max_customers, 1, :start_month_iso)

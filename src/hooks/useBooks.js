@@ -11,7 +11,7 @@ export const useBooks = (searchText) => {
 
   const [paginationModel, setPaginationModel] = useState({
     page: 0,      // DataGrid page (0-indexed)
-    pageSize: 10, // rows per page
+    pageSize: 100, // rows per page
   });
 
   const fetchBooks = useCallback(async () => {

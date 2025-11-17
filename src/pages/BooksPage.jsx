@@ -51,6 +51,7 @@ import BookFormFields from "../components/BookFormFields";
 import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import ActionMenu from "../components/ActionMenu";
 import { extractApiErrorMessage } from "../utils/apiUtils";
+import { useSnackbar } from "../context/SnackbarContext";
 
 const fadeIn = keyframes`
   from {
@@ -92,6 +93,7 @@ export default function BooksPage() {
     startMonthIso: "",
   });
   const { dialogConfig, showConfirmation, handleClose: handleConfirmClose, handleConfirm } = useConfirmationDialog();
+  const { showSnackbar } = useSnackbar();
 
   const navigate = useNavigate();
 
@@ -100,9 +102,10 @@ export default function BooksPage() {
     try {
       await createBook(form, token);
       setOpen(false);
+      showSnackbar("Book created successfully!", "success");
       refetchBooks();
     } catch (err) {
-      console.error(extractApiErrorMessage(err, "Failed to create book"));
+      showSnackbar(extractApiErrorMessage(err, "Failed to create book"), "error");
     }
   };
 
@@ -110,10 +113,11 @@ export default function BooksPage() {
   const handleEdit = async () => {
     try {
       await editBook(editForm.id, editForm, token);
+      showSnackbar("Book updated successfully!", "success");
       setEditOpen(false);
       refetchBooks();
     } catch (err) {
-      console.error(extractApiErrorMessage(err, "Failed to edit book"));
+      showSnackbar(extractApiErrorMessage(err, "Failed to edit book"), "error");
     }
   };
 
@@ -125,9 +129,10 @@ export default function BooksPage() {
         onConfirm: async () => {
             try {
                 await deleteBook(bookId, token);
+                showSnackbar(`Book "${bookName}" deleted successfully.`, "success");
                 refetchBooks();
             } catch (err) {
-                console.error(extractApiErrorMessage(err, "Failed to delete book"));
+                showSnackbar(extractApiErrorMessage(err, "Failed to delete book"), "error");
             }
         },
         confirmColor: 'error',
@@ -145,9 +150,10 @@ export default function BooksPage() {
       onConfirm: async () => {
         try {
           await toggleBookActive(bookId, token);
+          showSnackbar(`Book "${bookName}" has been ${action}d.`, "success");
           refetchBooks();
         } catch (err) {
-          console.error(extractApiErrorMessage(err, "Failed to toggle book"));
+          showSnackbar(extractApiErrorMessage(err, `Failed to ${action} book`), "error");
         }
       },
       confirmColor: isActive ? 'warning' : 'success',
