@@ -24,6 +24,7 @@ import {
   IconButton,
   MenuItem,
   ListItemIcon,
+  Tooltip,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { keyframes } from "@mui/system";
@@ -265,15 +266,17 @@ export default function BooksPage() {
               { label: 'Inactive', value: bookSummary.inactive, color: 'error.main' },
             ]}
           >
-            <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)} sx={{
-                transition: (theme) => theme.transitions.create(['transform', 'box-shadow'], { duration: theme.transitions.duration.short }),
-                '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: (theme) => theme.shadows[4],
-                }
-            }}>
-              Add Book
-            </Button>
+            <Tooltip title="Add Book (Ctrl + /)">
+              <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)} sx={{
+                  transition: (theme) => theme.transitions.create(['transform', 'box-shadow'], { duration: theme.transitions.duration.short }),
+                  '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: (theme) => theme.shadows[4],
+                  }
+              }}>
+                Add Book
+              </Button>
+            </Tooltip>
           </SearchAndSummaryBox>
 
           <StyledDataGrid

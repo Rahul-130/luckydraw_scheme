@@ -23,6 +23,7 @@ import {
   MenuItem,
   ListItemIcon,
   DialogActions,
+  Tooltip,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
@@ -200,9 +201,11 @@ export default function CustomersPage() {
             { label: 'Not Eligible', value: customerSummary.notEligible, color: 'error.main' },
           ]}
         >
-          <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
-            Add Customer
-          </Button>
+          <Tooltip title="Add Customer (Ctrl + /)">
+            <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
+              Add Customer
+            </Button>
+          </Tooltip>
         </SearchAndSummaryBox>
 
         <StyledDataGrid

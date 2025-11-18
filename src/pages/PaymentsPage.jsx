@@ -30,6 +30,7 @@ import {
   Radio,
   ButtonGroup,
   ListItemIcon,
+  Tooltip,
 } from '@mui/material';
 import { alpha } from "@mui/material/styles";
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
@@ -232,15 +233,19 @@ export default function PaymentsPage() {
             justifyContent="space-between"
             sx={{ mb: 2 }}
           >
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              color="primary"
-              onClick={handleOpenAddDialog}
-              disabled={customer?.isFrozen}
-            >
-              Add Payment
-            </Button>
+            <Tooltip title="Add Payment (Ctrl + /)">
+              <span> {/* Tooltip needs a span wrapper for disabled buttons */}
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  color="primary"
+                  onClick={handleOpenAddDialog}
+                  disabled={customer?.isFrozen}
+                >
+                  Add Payment
+                </Button>
+              </span>
+            </Tooltip>
             <ButtonGroup variant="outlined" aria-label="outlined button group">
               <Button
                 startIcon={<Print />}
