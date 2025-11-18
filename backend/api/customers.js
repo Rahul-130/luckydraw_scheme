@@ -89,11 +89,11 @@ router.post('/:bookId', requireAuth, async (req, res) => {
 
     // 3. Check if customer already exists
     const custCheck = await conn.execute(
-      `SELECT id FROM customers WHERE book_id=:bid AND name=:name AND phone=:phone AND address=:address`,
+      `SELECT id FROM customers WHERE book_id=:bid AND LOWER(name)=LOWER(:name) AND phone=:phone AND LOWER(address)=LOWER(:address)`,
       { bid: Number(req.params.bookId), name: String(name), phone: String(phone), address: String(address) }
     );
     if (custCheck.rows.length)
-      return res.status(400).json({ error: 'customer already exists' });
+      return res.status(409).json({ error: 'A customer with the same name, phone, and address already exists.' });
 
     // 4. Insert new customer
     const result = await conn.execute(
@@ -151,6 +151,28 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     );
     if (!custR.rows.length)
       return res.status(404).json({ error: 'customer not found' });
+
+    // 3. Check for duplicates if name, phone, or address are being changed
+    if (name || phone || address) {
+      const currentCustomer = await conn.execute(`SELECT name, phone, address FROM customers WHERE id = :cid`, { cid: Number(req.params.customerId) });
+      const newName = name || currentCustomer.rows[0].NAME;
+      const newPhone = phone || currentCustomer.rows[0].PHONE;
+      const newAddress = address || currentCustomer.rows[0].ADDRESS;
+
+      const duplicateCheck = await conn.execute(
+        `SELECT id FROM customers 
+         WHERE book_id = :bid 
+         AND LOWER(name) = LOWER(:name) 
+         AND phone = :phone 
+         AND LOWER(address) = LOWER(:address)
+         AND id != :cid`, // Exclude the current customer from the check
+        { bid: Number(req.params.bookId), name: newName, phone: newPhone, address: newAddress, cid: Number(req.params.customerId) }
+      );
+
+      if (duplicateCheck.rows.length > 0) {
+        return res.status(409).json({ error: 'Another customer with these details already exists.' });
+      }
+    }
     // 3. Update customer
     const fields = [];
     const binds = { cid: Number(req.params.customerId), bid: Number(req.params.bookId) };

@@ -78,9 +78,14 @@ export default function CustomersPage() {
     }, []);
 
     const handleEditSave = async () => {
-        await editCustomer(bookId, editForm.id, editForm, token);
-        setEditOpen(false);
-        refetchCustomers();
+        try {
+            await editCustomer(bookId, editForm.id, editForm, token);
+            setEditOpen(false);
+            refetchCustomers();
+            showSnackbar('Customer updated successfully.', 'success');
+        } catch (error) {
+            showSnackbar(extractApiErrorMessage(error, "Failed to update customer"), 'error');
+        }
     };
 
     const handleDelete = useCallback((customerId, customerName) => {
