@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { addPayment, getPayments, getCustomers, editPayment, deletePayment, getBook } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
 import { usePayments } from '../hooks/usePayments';
+import { useKeyShortcut } from '../hooks/useKeyShortcut';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../context/SnackbarContext';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -59,7 +60,7 @@ export default function PaymentsPage() {
     const navigate = useNavigate();
     const [selectionModel, setSelectionModel] = useState([]);
 
-    const getNextPaymentDetails = () => {
+    const getNextPaymentDetails = useCallback(() => {
         if (!book || payments.length === 0) {
             // If no payments, default to book start month and no amount
             return { month: book?.startMonthIso || '', amount: '' };
@@ -76,7 +77,24 @@ export default function PaymentsPage() {
         const nextMonth = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
 
         return { month: `${nextYear}-${nextMonth}`, amount: lastPayment.amount };
-    };
+    }, [book, payments]);
+
+    const handleOpenAddDialog = useCallback(() => {
+        const { month, amount } = getNextPaymentDetails();
+        // Auto-generate a unique receipt number
+        const uniqueReceiptNo = `R-${customerId}-${Date.now()}`;
+        setForm({
+            amount,
+            monthIso: month,
+            receiptNo: uniqueReceiptNo,
+            paymentType: 'cash' // Default to cash
+        });
+        setOpen(true);
+    }, [customerId, getNextPaymentDetails]);
+
+    // Add keyboard shortcut for "Add Payment" (Ctrl + / or Cmd + /)
+    useKeyShortcut(handleOpenAddDialog, { key: '/', ctrl: true, meta: true, disabled: customer?.isFrozen });
+
 
     const handleCreate = async () => {
       try {
@@ -114,19 +132,6 @@ export default function PaymentsPage() {
             confirmColor: 'error',
             confirmText: 'Delete'
         });
-    };
-
-    const handleOpenAddDialog = () => {
-        const { month, amount } = getNextPaymentDetails();
-        // Auto-generate a unique receipt number
-        const uniqueReceiptNo = `R-${customerId}-${Date.now()}`;
-        setForm({
-            amount: amount,
-            monthIso: month,
-            receiptNo: uniqueReceiptNo,
-            paymentType: 'cash' // Default to cash
-        });
-        setOpen(true);
     };
 
     const handlePrint = (payment) => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   createBook,
   editBook,
@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import { useBooks } from "../hooks/useBooks";
 import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
+import { useKeyShortcut } from "../hooks/useKeyShortcut";
 import {
   TextField,
   Button,
@@ -96,6 +97,9 @@ export default function BooksPage() {
   const { showSnackbar } = useSnackbar();
 
   const navigate = useNavigate();
+
+  // Add keyboard shortcut for "Add Book" (Ctrl + / or Cmd + /)
+  useKeyShortcut(() => setOpen(true), { key: '/', ctrl: true, meta: true });
 
   // create book
   const handleCreate = async () => {

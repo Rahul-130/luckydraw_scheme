@@ -6,6 +6,7 @@ import { useCustomers } from "../hooks/useCustomers";
 import { useBooks } from "../hooks/useBooks";
 import { useDebounce } from "../hooks/useDebounce";
 import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
+import { useKeyShortcut } from "../hooks/useKeyShortcut";
 import {
   TextField,
   Button,
@@ -61,6 +62,9 @@ export default function CustomersPage() {
     const { showSnackbar } = useSnackbar();
     const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
     const navigate = useNavigate();
+
+    // Add keyboard shortcut for "Add Customer" (Ctrl + / or Cmd + /)
+    useKeyShortcut(() => setOpen(true), { key: '/', ctrl: true, meta: true });
 
     const handleCreate = async () => {
       try {
