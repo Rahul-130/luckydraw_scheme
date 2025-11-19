@@ -103,6 +103,7 @@ export default function PaymentsPage() {
         await addPayment(bookId, customerId, form, token);
         setOpen(false);
         refetch();
+        showSnackbar('Payment successfully completed.', 'success');
       } catch (error) {
         showSnackbar(error.response?.data?.error || "Failed to add payment", 'error');
       }
@@ -117,6 +118,7 @@ export default function PaymentsPage() {
         await editPayment(bookId, customerId, editForm.id, editForm, token);
         setEditOpen(false);
         refetch();
+        showSnackbar('Payment edit successfully.', 'success');
     };
 
     const handleDelete = (paymentId) => {

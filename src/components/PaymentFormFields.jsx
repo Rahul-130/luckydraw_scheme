@@ -217,23 +217,6 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
         </Box>
 
         {/* Preview + copy */}
-        {/* <Box display="flex" gap={1} alignItems="center" flexWrap="wrap" justifyContent="space-between" mt={0.25}>
-          <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
-            <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
-              Preview:
-            </Typography>
-
-            <PreviewChip label={formState.amount ? `₹ ${formState.amount}` : ''} fallback="— amount" />
-
-            <PreviewChip label={formState.paymentType ? formState.paymentType : ''} fallback="— type" />
-
-            <PreviewChip label={formState.monthIso ? formState.monthIso : ''} fallback="— month" />
-
-            <PreviewChip label={formState.receiptNo ? formState.receiptNo : ''} fallback="— receipt" />
-          </Box>
-
-          <ClipboardButton getText={() => JSON.stringify(formState, null, 2)} tooltip="Copy payment JSON" ariaLabel="Copy payment JSON" />
-        </Box> */}
         <PreviewCopy
           formState={formState}
           fields={[

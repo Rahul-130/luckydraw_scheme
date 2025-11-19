@@ -53,7 +53,13 @@ const CustomToolbar = () => (
 
 const StyledDataGrid = ({ onRowClick, ...props }) => {
   const handleCellClick = (params, event) => {
-    if (onRowClick && params.field !== 'actions') {
+
+    if (params.field === 'actions') {
+      // Stop the event from propagating to the row click handler
+      // This prevents row selection when clicking on action buttons.
+      event.stopPropagation();
+    } else if (onRowClick) {
+      // If it's not the actions column, and an onRowClick handler is provided, call it.
       onRowClick(params, event);
     }
     props.onCellClick?.(params, event);
