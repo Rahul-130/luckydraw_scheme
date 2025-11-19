@@ -8,12 +8,22 @@ oracledb.fetchAsString = [oracledb.CLOB]; // Automatically fetch CLOBs as string
 let pool;
 async function getPool() {
   if (pool) return pool;
+
+  const isLocalConnection = process.env.ORACLE_HOST && process.env.ORACLE_PORT && process.env.ORACLE_SERVICE_NAME;
+  const connectString = isLocalConnection
+    ? `${process.env.ORACLE_HOST}:${process.env.ORACLE_PORT}/${process.env.ORACLE_SERVICE_NAME}`
+    : process.env.ORACLE_CLOUD_STRING;
+
+  if (isLocalConnection) {
+    console.log(`[DB] Attempting to connect to local/docker Oracle DB...`);
+  } else {
+    console.log(`[DB] Attempting to connect to Oracle Cloud DB....`);
+  }
+
   pool = await oracledb.createPool({
     user: process.env.ORACLE_USER || process.env.ORACLE_CLOUD_USER,
     password: process.env.ORACLE_PASSWORD || process.env.ORACLE_CLOUD_PASSWORD,
-    connectString: (process.env.ORACLE_HOST && process.env.ORACLE_PORT && process.env.ORACLE_SERVICE_NAME)
-      ? `${process.env.ORACLE_HOST}:${process.env.ORACLE_PORT}/${process.env.ORACLE_SERVICE_NAME}`
-      : process.env.ORACLE_CLOUD_STRING,
+    connectString: connectString,
     // For Oracle Cloud Wallet
     configDir: process.env.ORACLE_CLOUD_WALLET_PATH,
     externalAuth: false,

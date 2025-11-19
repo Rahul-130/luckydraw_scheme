@@ -13,9 +13,12 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
     },
     server: {
+      // Use a fixed port for the dev server
       port: 5173,
       proxy: {
-        '/api': env.VITE_BACKEND_URL, // forward /api requests to Express backend
+        // In development, all /api requests will be forwarded to the backend on port 4000
+        // This does not affect the production build, as the proxy is only for the dev server.
+        '/api': 'http://localhost:4000',
       },
     },
   };

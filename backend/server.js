@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const dotenv = require('dotenv');
-dotenv.config();
+// const dotenv = require('dotenv');
+// dotenv.config();
 
 const { initSchema, getConnection, oracledb } = require('./db');
 const authRoutes = require('./api/auth');
@@ -63,4 +63,7 @@ app.use((req, res) => {
 
 
 const PORT = Number(process.env.PORT || 4000);
-app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`[ENV] Running in ${process.env.NODE_ENV || 'development....'} mode.`);
+  console.log(`[SERVER] Listening on http://localhost:${process.env.PORT}`);
+});

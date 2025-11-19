@@ -26,7 +26,11 @@ dist-ssr
 .sh
 
 .env
+.env.development
+.env.production
 env
+# env.development
+env.production
 sh
 
 Wallet_BILLINGDB
