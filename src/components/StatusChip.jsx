@@ -8,7 +8,7 @@ const StatusChip = ({ customer }) => {
   if (customer.isFrozen) {
     color = 'success';
     label = 'Winner';
-  } else if (customer.missedPayments > 1) {
+  } else if (customer.missedPayments > 2) {
     color = 'error';
     label = 'Not Eligible';
   }

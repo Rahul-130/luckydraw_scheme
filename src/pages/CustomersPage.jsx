@@ -115,8 +115,8 @@ export default function CustomersPage() {
     const customerSummary = useMemo(() => {
         const total = customers.length;
         const winners = customers.filter(c => c.isFrozen).length;
-        const eligible = customers.filter(c => !c.isFrozen && c.missedPayments <= 1).length;
-        const notEligible = customers.filter(c => !c.isFrozen && c.missedPayments > 1).length;
+        const eligible = customers.filter(c => !c.isFrozen && c.missedPayments <= 2).length;
+        const notEligible = customers.filter(c => !c.isFrozen && c.missedPayments > 2).length;
 
         return {
             total,

@@ -71,7 +71,7 @@ router.post('/', requireAuth, async (req, res) => {
         );
         const paidCount = Number(payR.rows[0].CNT);
 
-        if (totalMonths - paidCount <= 1) {
+        if (totalMonths - paidCount <= 2) {
             eligibleCustomers.push(cust);
         }
       }

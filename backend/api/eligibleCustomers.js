@@ -66,7 +66,7 @@ router.get('/', requireAuth, async (req, res) => {
         const paidCount = Number(payR.rows[0].CNT);
 
         //A customer is eligible if they have missed at most 1 payment
-        if (totalMonths - paidCount <= 1) {
+        if (totalMonths - paidCount <= 2) {
           eligibleCustomersList.push({
             id: `${book.ID}-${cust.ID}`, //Create a unique ID
             bookName: book.NAME,
