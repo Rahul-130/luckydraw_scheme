@@ -15,7 +15,8 @@ router.get('/:bookId', requireAuth, async (req, res) => {
     const searchClause = `AND (
       LOWER(c.name) LIKE LOWER(:search) OR 
       LOWER(c.phone) LIKE LOWER(:search) OR
-      LOWER(c.address) LIKE LOWER(:search)
+      LOWER(c.address) LIKE LOWER(:search) OR
+      TO_CHAR(c.id) LIKE :search
     )`;
 
     // This complex query calculates eligibility for each customer.

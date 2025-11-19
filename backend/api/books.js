@@ -15,7 +15,7 @@ router.get('/', requireAuth, async (req, res) => {
     const result = await conn.execute(
       `SELECT * FROM books 
        WHERE owner_id = :owner_id 
-       AND LOWER(name) LIKE LOWER(:search)
+       AND (LOWER(name) LIKE LOWER(:search) OR TO_CHAR(id) LIKE :search)
        ORDER BY id
        OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`,
       { owner_id: req.user.id, search: `%${search}%`, offset: Number(offset), pageSize: Number(pageSize) }
@@ -25,7 +25,7 @@ router.get('/', requireAuth, async (req, res) => {
     const countResult = await conn.execute(
       `SELECT COUNT(*) AS CNT FROM books 
        WHERE owner_id = :owner_id 
-       AND LOWER(name) LIKE LOWER(:search)`,
+       AND (LOWER(name) LIKE LOWER(:search) OR TO_CHAR(id) LIKE :search)`,
       { owner_id: req.user.id, search: `%${search}%` }
     );
 
