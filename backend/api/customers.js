@@ -12,31 +12,52 @@ router.get('/:bookId', requireAuth, async (req, res) => {
     const book = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
     if (!book.rows.length) return res.status(404).json({ error: 'book not found' });
 
-    const searchClause = `AND (
-      LOWER(c.name) LIKE LOWER(:search) OR 
-      LOWER(c.phone) LIKE LOWER(:search) OR
-      LOWER(c.address) LIKE LOWER(:search) OR
-      TO_CHAR(c.id) LIKE :search
-    )`;
+    let query;
+    const binds = { bid: Number(req.params.bookId) };
 
-    // This complex query calculates eligibility for each customer.
-    // It counts the number of payments a customer has made and compares it to the
-    // number of months that have passed since the book started.
-    const r = await conn.execute(`
+    if (search) {
+      query = `
+        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
+               COUNT(p.id) as payment_count,
+               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
+        FROM customers c
+        JOIN books b ON c.book_id = b.id
+        LEFT JOIN payments p ON p.customer_id = c.id
+        WHERE c.book_id = :bid
+          AND (
+            LOWER(c.name) LIKE LOWER(:search) OR
+            LOWER(c.phone) LIKE LOWER(:search) OR
+            LOWER(c.address) LIKE LOWER(:search)
+          )
+        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO
+        UNION ALL
+        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
+               COUNT(p.id) as payment_count,
+               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
+        FROM customers c
+        JOIN books b ON c.book_id = b.id
+        LEFT JOIN payments p ON p.customer_id = c.id
+        WHERE c.book_id = :bid AND TO_CHAR(c.id) LIKE :search
+        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO
+        ORDER BY id
+      `;
+      binds.search = `%${search}%`;
+    } else {
+      query = `
       SELECT 
-        c.id,
-        c.name,
-        c.relation_info,
-        c.phone,
-        c.address,
-        c.is_frozen,
-        (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id) as payment_count,
+        c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
+        COUNT(p.id) as payment_count,
         FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
       FROM customers c
       JOIN books b ON c.book_id = b.id
+      LEFT JOIN payments p ON p.customer_id = c.id
       WHERE c.book_id = :bid
-      ${search ? searchClause : ''}
-      ORDER BY c.id`, { bid: Number(req.params.bookId), ...(search && { search: `%${search}%` }) });
+      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO
+      ORDER BY c.id
+      `;
+    }
+
+    const r = await conn.execute(query, binds);
 
     // console.log(r.rows);
     

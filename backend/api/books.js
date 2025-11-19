@@ -9,25 +9,24 @@ router.get('/', requireAuth, async (req, res) => {
   const { page = 1, pageSize = 10, search = '' } = req.query;
   const conn = await getConnection();
   try {
-    const offset = (page - 1) * pageSize;
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const binds = { owner_id: req.user.id };
+    let resultQuery, countQuery;
+    let searchClause = '';
 
-    // Filter by search if provided
-    const result = await conn.execute(
-      `SELECT * FROM books 
-       WHERE owner_id = :owner_id 
-       AND (LOWER(name) LIKE LOWER(:search) OR TO_CHAR(id) LIKE :search)
-       ORDER BY id
-       OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`,
-      { owner_id: req.user.id, search: `%${search}%`, offset: Number(offset), pageSize: Number(pageSize) }
-    );
+    if (search) {
+      searchClause = `AND (LOWER(name) LIKE LOWER(:search) OR TO_CHAR(id) LIKE :search)`;
+      binds.search = `%${search}%`;
+    }
 
-    // Total count for pagination
-    const countResult = await conn.execute(
-      `SELECT COUNT(*) AS CNT FROM books 
-       WHERE owner_id = :owner_id 
-       AND (LOWER(name) LIKE LOWER(:search) OR TO_CHAR(id) LIKE :search)`,
-      { owner_id: req.user.id, search: `%${search}%` }
-    );
+    resultQuery = `SELECT * FROM books WHERE owner_id = :owner_id ${searchClause} ORDER BY id OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`;
+    countQuery = `SELECT COUNT(*) AS CNT FROM books WHERE owner_id = :owner_id ${searchClause}`;
+
+    binds.offset = offset;
+    binds.pageSize = Number(pageSize);
+
+    const result = await conn.execute(resultQuery, binds);
+    const countResult = await conn.execute(countQuery, { owner_id: req.user.id, ...(search && { search: binds.search }) });
 
     const books = result.rows.map(row => ({
       id: row.ID,
