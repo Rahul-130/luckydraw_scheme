@@ -58,8 +58,6 @@ router.get('/:bookId', requireAuth, async (req, res) => {
     }
 
     const r = await conn.execute(query, binds);
-
-    // console.log(r.rows);
     
     const rows = r.rows.map(row => ({
       id: String(row.ID),

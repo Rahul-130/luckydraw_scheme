@@ -327,8 +327,8 @@ router.get('/stats', requireAuth, async (req, res) => {
 });
 
 router.get('/activity', requireAuth, async (req, res) => {
-  const page = parseInt(req.query.page, 10) || 1;
-  const pageSize = parseInt(req.query.pageSize, 10) || 10;
+  const page = Number.parseInt(req.query.page, 10) || 1;
+  const pageSize = Number.parseInt(req.query.pageSize, 10) || 10;
   const offset = (page - 1) * pageSize;
   const ownerId = req.user.id;
 
