@@ -215,18 +215,18 @@ export default function CustomersPage() {
             renderCell: (params) => {
                 const { row } = params;
                 const actionItems = [
-                  {
+                  ...((!row.isFrozen || (row.isWinner && !row.settledDate)) ? [{
                     label: 'Edit',
                     icon: <Edit fontSize="small" />,
                     onClick: () => handleEdit(row),
-                  },
+                  }] : []),
                   ...((!row.isFrozen || (row.isWinner && !row.settledDate)) ? [{
                     label: row.isWinner ? 'Settle Winner' : 'Settle & Close',
                     icon: <CheckCircle fontSize="small" />,
                     onClick: () => handleSettle(row),
                     color: 'warning.main'
                   }] : []),
-                  ...(!row.isFrozen && !row.isWinner ? [{
+                  ...(!row.isFrozen && !row.isWinner && row.missedPayments <= 2 ? [{
                     label: 'Make Winner',
                     icon: <EmojiEvents fontSize="small" />,
                     onClick: () => handleMakeWinner(row),
