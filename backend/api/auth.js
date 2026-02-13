@@ -104,15 +104,16 @@ router.post('/verify-password', requireAuth, async (req, res) => {
     const result = await conn.execute(`SELECT * FROM users WHERE id = :id`, { id: req.user.id });
     const userRow = result.rows[0];
 
-    let isAuthorized = false;
     if (password) {
-      isAuthorized = await bcrypt.compare(String(password), userRow.PASSWORD_HASH);
-    } else if (otp) {
-      const { userRow: verifiedUser } = await verifyUserOtp(conn, userRow.EMAIL, otp);
-      if (verifiedUser) isAuthorized = true;
+      const isPasswordValid = await bcrypt.compare(String(password), userRow.PASSWORD_HASH);
+      if (!isPasswordValid) return res.status(401).json({ message: 'Invalid password.' });
     }
 
-    if (!isAuthorized) return res.status(401).json({ message: 'Invalid credentials provided.' });
+    if (otp) {
+      const { error } = await verifyUserOtp(conn, userRow.EMAIL, otp);
+      if (error) return res.status(401).json({ message: error || 'Invalid OTP.' });
+    }
+
     res.json({ message: 'Verification successful.' });
   } catch (e) { console.error('Verification error:', e); res.status(500).json({ message: 'Internal server error' }); }
   finally { await conn.close(); }

@@ -28,7 +28,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { Add, Edit, Delete, Payment, Search, ArrowBack, CheckCircle, EmojiEvents } from "@mui/icons-material";
-import { addCustomer, editCustomer, deleteCustomer, markCustomerAsWinner } from "../services/api";
+import { addCustomer, editCustomer, deleteCustomer, markCustomerAsWinner, verifyPassword } from "../services/api";
 import StyledDataGrid from "../components/StyledDataGrid";
 import StyledSearchBar from "../components/StyledSearchBar";
 import ConfirmationDialog from "../components/ConfirmationDialog";
@@ -41,9 +41,10 @@ import PageHeader from "../components/PageHeader";
 import ActionMenu from "../components/ActionMenu";
 import StatusChip from "../components/StatusChip";
 import { extractApiErrorMessage } from "../utils/apiUtils";
+import PasswordOTPConfirmationDialog from "../components/PasswordOTPConfirmationDialog";
 
 export default function CustomersPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { bookId } = useParams();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
@@ -65,6 +66,10 @@ export default function CustomersPage() {
     const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
     const navigate = useNavigate();
 
+    const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+
     // Add keyboard shortcut for "Add Customer" (Ctrl + / or Cmd + /)
     useKeyShortcut(() => setOpen(true), { key: '/', ctrl: true, meta: true });
 
@@ -83,15 +88,9 @@ export default function CustomersPage() {
         setEditOpen(true);
     }, []);
 
-    const handleEditSave = async () => {
-        try {
-            await editCustomer(bookId, editForm.id, editForm, token);
-            setEditOpen(false);
-            refetchCustomers();
-            showSnackbar('Customer updated successfully.', 'success');
-        } catch (error) {
-            showSnackbar(extractApiErrorMessage(error, "Failed to update customer"), 'error');
-        }
+    const handleEditSave = () => {
+        setPendingAction({ type: 'edit', id: editForm.id, data: editForm });
+        setOtpDialogOpen(true);
     };
 
     const handleSettle = useCallback((customer) => {
@@ -143,23 +142,33 @@ export default function CustomersPage() {
     }, [bookId, book, token, refetchCustomers, showSnackbar, showConfirmation]);
 
     const handleDelete = useCallback((customerId, customerName) => {
-        showConfirmation({
-            open: true,
-            title: `Delete Customer "${customerName}"?`,
-            message: 'Are you sure you want to delete this customer and all their associated payments? This action cannot be undone.',
-            onConfirm: async () => {
-                try {
-                    await deleteCustomer(bookId, customerId, token);
-                    refetchCustomers();
-                    showSnackbar('Customer deleted successfully.', 'success');
-                } catch (error) {
-                    showSnackbar(extractApiErrorMessage(error, "Failed to delete customer"), 'error');
-                }
-            },
-            confirmColor: 'error',
-            confirmText: 'Delete'
-        });
-    }, [bookId, token, refetchCustomers, showSnackbar]);
+        setPendingAction({ type: 'delete', id: customerId, name: customerName });
+        setOtpDialogOpen(true);
+    }, []);
+
+    const handleConfirmOtp = async (password, otp) => {
+        setOtpLoading(true);
+        try {
+            // Verify credentials first
+            await verifyPassword(token, password, otp);
+
+            if (pendingAction.type === 'delete') {
+                await deleteCustomer(bookId, pendingAction.id, token);
+                showSnackbar('Customer deleted successfully.', 'success');
+            } else if (pendingAction.type === 'edit') {
+                await editCustomer(bookId, pendingAction.id, pendingAction.data, token);
+                setEditOpen(false);
+                showSnackbar('Customer updated successfully.', 'success');
+            }
+            refetchCustomers();
+            setOtpDialogOpen(false);
+        } catch (error) {
+             showSnackbar(extractApiErrorMessage(error, "Action failed"), 'error');
+        } finally {
+            setOtpLoading(false);
+            setPendingAction(null);
+        }
+    };
 
     const customerSummary = useMemo(() => {
         const total = customers.length;
@@ -330,6 +339,16 @@ export default function CustomersPage() {
             onConfirm={handleConfirm}
             confirmColor={dialogConfig.confirmColor || "error"}
             confirmText={dialogConfig.confirmText || "Delete"}
+        />
+
+        <PasswordOTPConfirmationDialog
+            open={otpDialogOpen}
+            onClose={() => { setOtpDialogOpen(false); setPendingAction(null); }}
+            onConfirm={handleConfirmOtp}
+            loading={otpLoading}
+            title={pendingAction?.type === 'delete' ? `Delete ${pendingAction.name}?` : 'Confirm Edit'}
+            message={pendingAction?.type === 'delete' ? `Are you sure you want to delete ${pendingAction.name}? This action cannot be undone. Please enter your credentials to confirm.` : `Please enter your credentials to confirm changes for ${pendingAction?.data?.name}.`}
+            is2FAEnabled={user?.is2FAEnabled}
         />
     </PageLayout>
   )

@@ -17,7 +17,7 @@ import PasswordOTPConfirmationDialog from '../components/PasswordOTPConfirmation
 
 
 export default function LuckyDrawPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { showSnackbar } = useSnackbar();
   const [winners, setWinners] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -114,6 +114,12 @@ export default function LuckyDrawPage() {
           onClose={() => setDialogOpen(false)}
           onConfirm={handleConfirmRun}
           loading={loading}
+          title="Confirm Lucky Draw"
+          message={user?.is2FAEnabled 
+            ? "To ensure security, please enter your password and a one-time password (OTP) from your authenticator app to proceed."
+            : "To ensure security, please enter your password to proceed."
+          }
+          is2FAEnabled={user?.is2FAEnabled}
         />
     </PageLayout>
   );
