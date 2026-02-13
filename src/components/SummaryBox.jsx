@@ -19,6 +19,8 @@ const fadeInSlideUp = {
  * @param {object} sx - Custom styles to be applied to the Paper component.
  */
 const SummaryBox = ({ items, sx }) => {
+    if (!items) return null;
+
     return (
         <Paper
             elevation={3}
@@ -33,16 +35,19 @@ const SummaryBox = ({ items, sx }) => {
             }}
         >
             <Grid container spacing={2} textAlign="center" alignItems="center" sx={{ flexWrap: 'nowrap', justifyContent: 'space-around' }}>
-                {items.map((item, index) => (
-                    <Grid key={index} sx={{
-                        // Stagger the animation for each item
-                        opacity: 0, // Start transparent
-                        animation: 'fadeInSlideUp 0.4s ease-out forwards',
-                        animationDelay: `${index * 100}ms`, // Stagger delay
-                        '@keyframes fadeInSlideUp': fadeInSlideUp,
-                    }}>
-                        <Typography variant="caption" sx={{ color: item.color || 'text.secondary', textTransform: 'uppercase', fontWeight: 'medium' }}>{item.label}</Typography>
-                        <Typography variant="h6" fontWeight="bold" sx={{ color: item.color || 'text.primary' }}>{item.value}</Typography>
+                {items.map((summaryItem, index) => (
+                    <Grid key={index} item>
+                        <Box
+                            sx={{
+                                opacity: 0,
+                                animation: 'fadeInSlideUp 0.4s ease-out forwards',
+                                animationDelay: `${index * 100}ms`,
+                                '@keyframes fadeInSlideUp': fadeInSlideUp,
+                            }}
+                        >
+                            <Typography variant="caption" sx={{ color: summaryItem.color || 'text.secondary', textTransform: 'uppercase', fontWeight: 'medium' }}>{summaryItem.label}</Typography>
+                            <Typography variant="h6" fontWeight="bold" sx={{ color: summaryItem.color || 'text.primary' }}>{summaryItem.value}</Typography>
+                        </Box>
                     </Grid>
                 ))}
             </Grid>

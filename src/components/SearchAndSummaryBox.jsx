@@ -18,13 +18,13 @@ const SearchAndSummaryBox = ({
       sx={{ mb: 2 }}
     >
       {/* Left side: Search and Action Buttons */}
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '70%' } }}>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: '50%' } }}>
         <StyledSearchBar label={searchLabel} value={searchText} onChange={onSearchChange} />
         {children}
       </Box>
 
       {/* Right side: Summary Box */}
-      <SummaryBox sx={{ width: { xs: '100%', sm: '30%' }, boxSizing: 'border-box' }} items={summaryItems} />
+      <SummaryBox sx={{ width: { xs: '100%', sm: '50%' }, boxSizing: 'border-box' }} items={summaryItems} />
     </Stack>
   );
 };

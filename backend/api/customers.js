@@ -19,7 +19,8 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       query = `
         SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
                COUNT(p.id) as payment_count,
-               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
+               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
+               (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
         FROM customers c
         JOIN books b ON c.book_id = b.id
         LEFT JOIN payments p ON p.customer_id = c.id
@@ -29,16 +30,17 @@ router.get('/:bookId', requireAuth, async (req, res) => {
             LOWER(c.phone) LIKE LOWER(:search) OR
             LOWER(c.address) LIKE LOWER(:search)
           )
-        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO
+        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO, c.book_id
         UNION ALL
         SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
                COUNT(p.id) as payment_count,
-               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
+               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
+               (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
         FROM customers c
         JOIN books b ON c.book_id = b.id
         LEFT JOIN payments p ON p.customer_id = c.id
         WHERE c.book_id = :bid AND TO_CHAR(c.id) LIKE :search
-        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO
+        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO, c.book_id
         ORDER BY id
       `;
       binds.search = `%${search}%`;
@@ -47,12 +49,13 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       SELECT 
         c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
         COUNT(p.id) as payment_count,
-        FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months
+        FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
+        (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
       FROM customers c
       JOIN books b ON c.book_id = b.id
       LEFT JOIN payments p ON p.customer_id = c.id
       WHERE c.book_id = :bid
-      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO
+      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO, c.book_id
       ORDER BY c.id
       `;
     }
@@ -68,6 +71,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       address: row.ADDRESS,
       isFrozen: row.IS_FROZEN === 1,
       TOTAL_MONTHS: row.TOTAL_MONTHS,
+      isWinner: row.IS_WINNER > 0,
       PAYMENT_COUNT: row.PAYMENT_COUNT,
       missedPayments: Math.max(0, (row.TOTAL_MONTHS || 0) - row.PAYMENT_COUNT)
     }));
@@ -152,7 +156,7 @@ router.post('/:bookId', requireAuth, async (req, res) => {
 
 // Edit customer - only name, phone, address can be updated
 router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => {
-  const { name, relationInfo, phone, address } = req.body || {};
+  const { name, relationInfo, phone, address, isFrozen } = req.body || {};
   const conn = await getConnection();
   try {
     // 1. Check book ownership
@@ -162,7 +166,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     );
     if (!bookR.rows.length)
       return res.status(404).json({ error: 'book not found' });
-    if (!name && !phone && !address && relationInfo === undefined)
+    if (!name && !phone && !address && relationInfo === undefined && isFrozen === undefined)
       return res.status(400).json({ error: 'at least one field is required' });
     // 2. Check customer exists
     const custR = await conn.execute(
@@ -200,6 +204,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     if (relationInfo !== undefined) { fields.push('relation_info=:relationInfo'); binds.relationInfo = String(relationInfo); }
     if (phone) { fields.push('phone=:phone'); binds.phone = String(phone); }
     if (address) { fields.push('address=:address'); binds.address = String(address); }
+    if (isFrozen !== undefined) { fields.push('is_frozen=:isFrozen'); binds.isFrozen = isFrozen ? 1 : 0; }
     const sql = `UPDATE customers SET ${fields.join(', ')} WHERE id=:cid AND book_id=:bid`;
     await conn.execute(sql, binds);
     await conn.commit();

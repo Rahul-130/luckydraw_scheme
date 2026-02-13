@@ -27,8 +27,8 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
-import { Add, Edit, Delete, Payment, Search, ArrowBack } from "@mui/icons-material";
-import { addCustomer, editCustomer, deleteCustomer } from "../services/api";
+import { Add, Edit, Delete, Payment, Search, ArrowBack, CheckCircle, EmojiEvents } from "@mui/icons-material";
+import { addCustomer, editCustomer, deleteCustomer, markCustomerAsWinner } from "../services/api";
 import StyledDataGrid from "../components/StyledDataGrid";
 import StyledSearchBar from "../components/StyledSearchBar";
 import ConfirmationDialog from "../components/ConfirmationDialog";
@@ -46,6 +46,7 @@ export default function CustomersPage() {
   const { token } = useAuth();
   const { bookId } = useParams();
   const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState(null);
   const debouncedSearch = useDebounce(searchText, 500);
 
   const { customers, loading: customersLoading, error: customersError, refetch: refetchCustomers } = useCustomers(bookId, debouncedSearch);
@@ -93,6 +94,53 @@ export default function CustomersPage() {
         }
     };
 
+    const handleSettle = useCallback((customer) => {
+        showConfirmation({
+            open: true,
+            title: `Settle & Close Account?`,
+            message: `Are you sure you want to settle and close ${customer.name}'s account? This will freeze the account.`,
+            onConfirm: async () => {
+                try {
+                    // Use editCustomer to set isFrozen to true
+                    await editCustomer(bookId, customer.id, { ...customer, isFrozen: true }, token);
+                    refetchCustomers();
+                    showSnackbar('Account settled and closed.', 'success');
+                } catch (error) {
+                    showSnackbar(extractApiErrorMessage(error, "Failed to close account"), 'error');
+                }
+            },
+            confirmColor: 'warning',
+            confirmText: 'Settle & Close'
+        });
+    }, [bookId, token, refetchCustomers, showSnackbar, showConfirmation]);
+
+    const handleMakeWinner = useCallback((customer) => {
+         showConfirmation({
+            open: true,
+            title: `Mark as Winner?`,
+            message: `Are you sure you want to mark ${customer.name} as a winner?`,
+            onConfirm: async () => {
+                try {
+                    await markCustomerAsWinner(token, {
+                        bookId,
+                        customerId: customer.id,
+                        bookName: book?.name,
+                        customerName: customer.name,
+                        relationInfo: customer.relationInfo,
+                        address: customer.address,
+                        phone: customer.phone
+                    });
+                    refetchCustomers();
+                    showSnackbar('Customer marked as winner.', 'success');
+                } catch (error) {
+                    showSnackbar(extractApiErrorMessage(error, "Failed to mark as winner"), 'error');
+                }
+            },
+            confirmColor: 'success',
+            confirmText: 'Make Winner'
+        });
+    }, [bookId, book, token, refetchCustomers, showSnackbar, showConfirmation]);
+
     const handleDelete = useCallback((customerId, customerName) => {
         showConfirmation({
             open: true,
@@ -114,17 +162,33 @@ export default function CustomersPage() {
 
     const customerSummary = useMemo(() => {
         const total = customers.length;
-        const winners = customers.filter(c => c.isFrozen).length;
-        const eligible = customers.filter(c => !c.isFrozen && c.missedPayments <= 2).length;
-        const notEligible = customers.filter(c => !c.isFrozen && c.missedPayments > 2).length;
+        const winners = customers.filter(c => c.isWinner).length;
+        const closed = customers.filter(c => c.isFrozen && !c.isWinner).length;
+        const completed = customers.filter(c => !c.isFrozen && (c.paymentCount || 0) >= 20).length;
+        const eligible = customers.filter(c => !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments <= 2).length;
+        const notEligible = customers.filter(c => !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments > 2).length;
 
         return {
             total,
             winners,
+            closed,
+            completed,
             eligible,
             notEligible
         };
     }, [customers]);
+
+    const filteredCustomers = useMemo(() => {
+        if (!statusFilter) return customers;
+        return customers.filter(c => {
+            if (statusFilter === 'Winner') return c.isWinner;
+            if (statusFilter === 'Closed') return c.isFrozen && !c.isWinner;
+            if (statusFilter === 'Completed') return !c.isFrozen && (c.paymentCount || 0) >= 20;
+            if (statusFilter === 'Eligible') return !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments <= 2;
+            if (statusFilter === 'Not Eligible') return !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments > 2;
+            return true;
+        });
+    }, [customers, statusFilter]);
 
     const columns = useMemo(() => [
         { field: 'id', headerName: 'ID', width: 90 },
@@ -135,8 +199,11 @@ export default function CustomersPage() {
         {
             field: 'status',
             headerName: 'Status',
-            width: 150,
-            renderCell: (params) => <StatusChip customer={params.row} />
+            flex: 0.5,
+            minWidth: 150,
+            renderCell: (params) => (
+                <StatusChip customer={params.row} onClick={(status) => setStatusFilter(prev => prev === status ? null : status)} />
+            )
         },
 
         {
@@ -150,6 +217,18 @@ export default function CustomersPage() {
                     label: 'Edit',
                     icon: <Edit fontSize="small" />,
                     onClick: () => handleEdit(row),
+                  },
+                  !row.isFrozen && {
+                    label: 'Settle & Close',
+                    icon: <CheckCircle fontSize="small" />,
+                    onClick: () => handleSettle(row),
+                    color: 'warning.main'
+                  },
+                  !row.isFrozen && !row.isWinner && {
+                    label: 'Make Winner',
+                    icon: <EmojiEvents fontSize="small" />,
+                    onClick: () => handleMakeWinner(row),
+                    color: 'success.main'
                   },
                   {
                     label: 'Delete',
@@ -173,7 +252,7 @@ export default function CustomersPage() {
                 );
             }
         }
-    ], [bookId, navigate, handleEdit, handleDelete]);
+    ], [bookId, navigate, handleEdit, handleDelete, handleSettle, handleMakeWinner]);
 
   return (
     <PageLayout>
@@ -197,10 +276,20 @@ export default function CustomersPage() {
           summaryItems={[
             { label: 'Total', value: customerSummary.total },
             { label: 'Winners', value: customerSummary.winners, color: 'success.main' },
+            { label: 'Closed', value: customerSummary.closed, color: 'text.secondary' },
+            { label: 'Completed', value: customerSummary.completed, color: 'info.main' },
             { label: 'Eligible', value: customerSummary.eligible, color: 'primary.main' },
             { label: 'Not Eligible', value: customerSummary.notEligible, color: 'error.main' },
           ]}
         >
+          {statusFilter && (
+            <Chip 
+                label={`Filter: ${statusFilter}`} 
+                onDelete={() => setStatusFilter(null)} 
+                color="secondary" 
+                sx={{ mr: 1 }} 
+            />
+          )}
           <Tooltip title="Add Customer (Ctrl + /)">
             <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
               Add Customer
@@ -209,7 +298,7 @@ export default function CustomersPage() {
         </SearchAndSummaryBox>
 
         <StyledDataGrid
-                rows={customers}
+                rows={filteredCustomers}
                 columns={columns}
                 loading={customersLoading}
                 onRowClick={(params) => navigate(`/books/${bookId}/customers/${params.row.id}/payments`)}
