@@ -74,158 +74,162 @@ router.get('/stats', requireAuth, async (req, res) => {
     // 5. Payment Stats
     const paymentStatsResult = await conn.execute(
       `SELECT
-         p.payment_type,
-         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN 1 ELSE 0 END) as current_month_count,
-         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount ELSE 0 END) as current_month_amount,
-         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN 1 ELSE 0 END) as previous_month_count,
-         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount ELSE 0 END) as previous_month_amount
+         -- Current Month
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN 1 ELSE 0 END) as cm_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount ELSE 0 END) as cm_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') AND p.amount_online > 0 THEN 1 ELSE 0 END) as cm_online_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount_online ELSE 0 END) as cm_online_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') AND p.amount_cash > 0 THEN 1 ELSE 0 END) as cm_cash_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount_cash ELSE 0 END) as cm_cash_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') AND p.amount_instore > 0 THEN 1 ELSE 0 END) as cm_instore_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount_instore ELSE 0 END) as cm_instore_amount,
+
+         -- Previous Month
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN 1 ELSE 0 END) as pm_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount ELSE 0 END) as pm_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') AND p.amount_online > 0 THEN 1 ELSE 0 END) as pm_online_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount_online ELSE 0 END) as pm_online_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') AND p.amount_cash > 0 THEN 1 ELSE 0 END) as pm_cash_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount_cash ELSE 0 END) as pm_cash_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') AND p.amount_instore > 0 THEN 1 ELSE 0 END) as pm_instore_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'MM') THEN p.amount_instore ELSE 0 END) as pm_instore_amount
        FROM payments p
        JOIN books b ON p.book_id = b.id 
-       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) ${dateFilterClause}
-       GROUP BY p.payment_type`,
+       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -1) ${dateFilterClause}`,
       { ownerId, ...dateBinds }
     );
 
+    const psRow = paymentStatsResult.rows[0] || {};
     const paymentStats = {
-        all: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
-        online: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
-        cash: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
-        instore: { currentMonth: { count: 0, amount: 0 }, previousMonth: { count: 0, amount: 0 } },
+        all: { currentMonth: { count: psRow.CM_COUNT || 0, amount: psRow.CM_AMOUNT || 0 }, previousMonth: { count: psRow.PM_COUNT || 0, amount: psRow.PM_AMOUNT || 0 } },
+        online: { currentMonth: { count: psRow.CM_ONLINE_COUNT || 0, amount: psRow.CM_ONLINE_AMOUNT || 0 }, previousMonth: { count: psRow.PM_ONLINE_COUNT || 0, amount: psRow.PM_ONLINE_AMOUNT || 0 } },
+        cash: { currentMonth: { count: psRow.CM_CASH_COUNT || 0, amount: psRow.CM_CASH_AMOUNT || 0 }, previousMonth: { count: psRow.PM_CASH_COUNT || 0, amount: psRow.PM_CASH_AMOUNT || 0 } },
+        instore: { currentMonth: { count: psRow.CM_INSTORE_COUNT || 0, amount: psRow.CM_INSTORE_AMOUNT || 0 }, previousMonth: { count: psRow.PM_INSTORE_COUNT || 0, amount: psRow.PM_INSTORE_AMOUNT || 0 } },
     };
-
-    paymentStatsResult.rows.forEach(row => {
-        const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
-        if (!paymentStats[type]) return; // Skip unknown payment types
-        paymentStats[type].currentMonth.count = row.CURRENT_MONTH_COUNT || 0;
-        paymentStats[type].currentMonth.amount = row.CURRENT_MONTH_AMOUNT || 0;
-        paymentStats[type].previousMonth.count = row.PREVIOUS_MONTH_COUNT || 0;
-        paymentStats[type].previousMonth.amount = row.PREVIOUS_MONTH_AMOUNT || 0;
-
-        // Aggregate into 'all'
-        paymentStats.all.currentMonth.count += row.CURRENT_MONTH_COUNT || 0;
-        paymentStats.all.currentMonth.amount += row.CURRENT_MONTH_AMOUNT || 0;
-        paymentStats.all.previousMonth.count += row.PREVIOUS_MONTH_COUNT || 0;
-        paymentStats.all.previousMonth.amount += row.PREVIOUS_MONTH_AMOUNT || 0;
-    });
 
     // 6. Daily Payment Stats (Today vs Yesterday)
     const dailyPaymentStatsResult = await conn.execute(
       `SELECT
-         p.payment_type,
+         -- Today
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN 1 ELSE 0 END) as today_count,
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN p.amount ELSE 0 END) as today_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) AND p.amount_online > 0 THEN 1 ELSE 0 END) as today_online_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN p.amount_online ELSE 0 END) as today_online_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) AND p.amount_cash > 0 THEN 1 ELSE 0 END) as today_cash_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN p.amount_cash ELSE 0 END) as today_cash_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) AND p.amount_instore > 0 THEN 1 ELSE 0 END) as today_instore_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) THEN p.amount_instore ELSE 0 END) as today_instore_amount,
+
+         -- Yesterday
          SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN 1 ELSE 0 END) as yesterday_count,
-         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN p.amount ELSE 0 END) as yesterday_amount
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN p.amount ELSE 0 END) as yesterday_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 AND p.amount_online > 0 THEN 1 ELSE 0 END) as yesterday_online_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN p.amount_online ELSE 0 END) as yesterday_online_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 AND p.amount_cash > 0 THEN 1 ELSE 0 END) as yesterday_cash_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN p.amount_cash ELSE 0 END) as yesterday_cash_amount,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 AND p.amount_instore > 0 THEN 1 ELSE 0 END) as yesterday_instore_count,
+         SUM(CASE WHEN TRUNC(p.payment_date) = TRUNC(CURRENT_TIMESTAMP) - 1 THEN p.amount_instore ELSE 0 END) as yesterday_instore_amount
        FROM payments p 
        JOIN books b ON p.book_id = b.id 
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 1 ${dateFilterClause}
-       GROUP BY p.payment_type`,
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 1 ${dateFilterClause}`,
       { ownerId, ...dateBinds }
     );
 
+    const dpsRow = dailyPaymentStatsResult.rows[0] || {};
     const dailyPaymentStats = {
-      all: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
-      online: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
-      cash: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
-      instore: { today: { count: 0, amount: 0 }, yesterday: { count: 0, amount: 0 } },
+      all: { today: { count: dpsRow.TODAY_COUNT || 0, amount: dpsRow.TODAY_AMOUNT || 0 }, yesterday: { count: dpsRow.YESTERDAY_COUNT || 0, amount: dpsRow.YESTERDAY_AMOUNT || 0 } },
+      online: { today: { count: dpsRow.TODAY_ONLINE_COUNT || 0, amount: dpsRow.TODAY_ONLINE_AMOUNT || 0 }, yesterday: { count: dpsRow.YESTERDAY_ONLINE_COUNT || 0, amount: dpsRow.YESTERDAY_ONLINE_AMOUNT || 0 } },
+      cash: { today: { count: dpsRow.TODAY_CASH_COUNT || 0, amount: dpsRow.TODAY_CASH_AMOUNT || 0 }, yesterday: { count: dpsRow.YESTERDAY_CASH_COUNT || 0, amount: dpsRow.YESTERDAY_CASH_AMOUNT || 0 } },
+      instore: { today: { count: dpsRow.TODAY_INSTORE_COUNT || 0, amount: dpsRow.TODAY_INSTORE_AMOUNT || 0 }, yesterday: { count: dpsRow.YESTERDAY_INSTORE_COUNT || 0, amount: dpsRow.YESTERDAY_INSTORE_AMOUNT || 0 } },
     };
-    dailyPaymentStatsResult.rows.forEach(row => {
-      const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
-      if (!dailyPaymentStats[type]) return; // Skip unknown payment types
-      dailyPaymentStats[type].today.count = row.TODAY_COUNT || 0;
-      dailyPaymentStats[type].today.amount = row.TODAY_AMOUNT || 0;
-      dailyPaymentStats[type].yesterday.count = row.YESTERDAY_COUNT || 0;
-      dailyPaymentStats[type].yesterday.amount = row.YESTERDAY_AMOUNT || 0;
-
-      dailyPaymentStats.all.today.count += row.TODAY_COUNT || 0;
-      dailyPaymentStats.all.today.amount += row.TODAY_AMOUNT || 0;
-      dailyPaymentStats.all.yesterday.count += row.YESTERDAY_COUNT || 0;
-      dailyPaymentStats.all.yesterday.amount += row.YESTERDAY_AMOUNT || 0;
-    });
 
 
     // 7. Weekly Payment Stats (This week vs last week, starting Monday)
     const weeklyPaymentStatsResult = await conn.execute(
       `SELECT
-         p.payment_type,
+         -- Current Week
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN 1 ELSE 0 END) as current_week_count,
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount ELSE 0 END) as current_week_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') AND p.amount_online > 0 THEN 1 ELSE 0 END) as cw_online_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount_online ELSE 0 END) as cw_online_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') AND p.amount_cash > 0 THEN 1 ELSE 0 END) as cw_cash_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount_cash ELSE 0 END) as cw_cash_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') AND p.amount_instore > 0 THEN 1 ELSE 0 END) as cw_instore_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount_instore ELSE 0 END) as cw_instore_amount,
+
+         -- Previous Week
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN 1 ELSE 0 END) as previous_week_count,
-         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount ELSE 0 END) as previous_week_amount
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount ELSE 0 END) as previous_week_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') AND p.amount_online > 0 THEN 1 ELSE 0 END) as pw_online_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount_online ELSE 0 END) as pw_online_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') AND p.amount_cash > 0 THEN 1 ELSE 0 END) as pw_cash_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount_cash ELSE 0 END) as pw_cash_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') AND p.amount_instore > 0 THEN 1 ELSE 0 END) as pw_instore_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'IW') THEN p.amount_instore ELSE 0 END) as pw_instore_amount
        FROM payments p 
        JOIN books b ON p.book_id = b.id 
-       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 ${dateFilterClause}
-       GROUP BY p.payment_type`,
+       WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'IW') - 7 ${dateFilterClause}`,
       { ownerId, ...dateBinds }
     );
 
+    const wpsRow = weeklyPaymentStatsResult.rows[0] || {};
     const weeklyPaymentStats = {
-      all: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
-      online: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
-      cash: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
-      instore: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      all: { current: { count: wpsRow.CURRENT_WEEK_COUNT || 0, amount: wpsRow.CURRENT_WEEK_AMOUNT || 0 }, previous: { count: wpsRow.PREVIOUS_WEEK_COUNT || 0, amount: wpsRow.PREVIOUS_WEEK_AMOUNT || 0 } },
+      online: { current: { count: wpsRow.CW_ONLINE_COUNT || 0, amount: wpsRow.CW_ONLINE_AMOUNT || 0 }, previous: { count: wpsRow.PW_ONLINE_COUNT || 0, amount: wpsRow.PW_ONLINE_AMOUNT || 0 } },
+      cash: { current: { count: wpsRow.CW_CASH_COUNT || 0, amount: wpsRow.CW_CASH_AMOUNT || 0 }, previous: { count: wpsRow.PW_CASH_COUNT || 0, amount: wpsRow.PW_CASH_AMOUNT || 0 } },
+      instore: { current: { count: wpsRow.CW_INSTORE_COUNT || 0, amount: wpsRow.CW_INSTORE_AMOUNT || 0 }, previous: { count: wpsRow.PW_INSTORE_COUNT || 0, amount: wpsRow.PW_INSTORE_AMOUNT || 0 } },
     };
-    weeklyPaymentStatsResult.rows.forEach(row => {
-      const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
-      if (!weeklyPaymentStats[type]) return; // Skip unknown payment types
-      weeklyPaymentStats[type].current.count = row.CURRENT_WEEK_COUNT || 0;
-      weeklyPaymentStats[type].current.amount = row.CURRENT_WEEK_AMOUNT || 0;
-      weeklyPaymentStats[type].previous.count = row.PREVIOUS_WEEK_COUNT || 0;
-      weeklyPaymentStats[type].previous.amount = row.PREVIOUS_WEEK_AMOUNT || 0;
-
-      weeklyPaymentStats.all.current.count += row.CURRENT_WEEK_COUNT || 0;
-      weeklyPaymentStats.all.current.amount += row.CURRENT_WEEK_AMOUNT || 0;
-      weeklyPaymentStats.all.previous.count += row.PREVIOUS_WEEK_COUNT || 0;
-      weeklyPaymentStats.all.previous.amount += row.PREVIOUS_WEEK_AMOUNT || 0;
-    });
 
     // 8. Yearly Overview Stats (This year vs last year)
     const yearlyOverviewStatsResult = await conn.execute(
       `SELECT
-         p.payment_type,
+         -- Current Year
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN 1 ELSE 0 END) as current_year_count,
          SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount ELSE 0 END) as current_year_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') AND p.amount_online > 0 THEN 1 ELSE 0 END) as cy_online_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount_online ELSE 0 END) as cy_online_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') AND p.amount_cash > 0 THEN 1 ELSE 0 END) as cy_cash_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount_cash ELSE 0 END) as cy_cash_amount,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') AND p.amount_instore > 0 THEN 1 ELSE 0 END) as cy_instore_count,
+         SUM(CASE WHEN p.payment_date >= TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount_instore ELSE 0 END) as cy_instore_amount,
+
+         -- Previous Year
          SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN 1 ELSE 0 END) as previous_year_count,
-         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount ELSE 0 END) as previous_year_amount
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount ELSE 0 END) as previous_year_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') AND p.amount_online > 0 THEN 1 ELSE 0 END) as py_online_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount_online ELSE 0 END) as py_online_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') AND p.amount_cash > 0 THEN 1 ELSE 0 END) as py_cash_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount_cash ELSE 0 END) as py_cash_amount,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') AND p.amount_instore > 0 THEN 1 ELSE 0 END) as py_instore_count,
+         SUM(CASE WHEN p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) AND p.payment_date < TRUNC(CURRENT_TIMESTAMP, 'YYYY') THEN p.amount_instore ELSE 0 END) as py_instore_amount
        FROM payments p 
        JOIN books b ON p.book_id = b.id 
-       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) ${dateFilterClause}
-       GROUP BY p.payment_type`,
+       WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'YYYY'), -12) ${dateFilterClause}`,
       { ownerId, ...dateBinds }
     );
 
+    const yosRow = yearlyOverviewStatsResult.rows[0] || {};
     const yearlyOverviewStats = {
-      all: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
-      online: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
-      cash: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
-      instore: { current: { count: 0, amount: 0 }, previous: { count: 0, amount: 0 } },
+      all: { current: { count: yosRow.CURRENT_YEAR_COUNT || 0, amount: yosRow.CURRENT_YEAR_AMOUNT || 0 }, previous: { count: yosRow.PREVIOUS_YEAR_COUNT || 0, amount: yosRow.PREVIOUS_YEAR_AMOUNT || 0 } },
+      online: { current: { count: yosRow.CY_ONLINE_COUNT || 0, amount: yosRow.CY_ONLINE_AMOUNT || 0 }, previous: { count: yosRow.PY_ONLINE_COUNT || 0, amount: yosRow.PY_ONLINE_AMOUNT || 0 } },
+      cash: { current: { count: yosRow.CY_CASH_COUNT || 0, amount: yosRow.CY_CASH_AMOUNT || 0 }, previous: { count: yosRow.PY_CASH_COUNT || 0, amount: yosRow.PY_CASH_AMOUNT || 0 } },
+      instore: { current: { count: yosRow.CY_INSTORE_COUNT || 0, amount: yosRow.CY_INSTORE_AMOUNT || 0 }, previous: { count: yosRow.PY_INSTORE_COUNT || 0, amount: yosRow.PY_INSTORE_AMOUNT || 0 } },
     };
-    yearlyOverviewStatsResult.rows.forEach(row => {
-      const type = row.PAYMENT_TYPE?.toLowerCase() || 'cash';
-      if (!yearlyOverviewStats[type]) return; // Skip unknown payment types
-      yearlyOverviewStats[type].current.count = row.CURRENT_YEAR_COUNT || 0;
-      yearlyOverviewStats[type].current.amount = row.CURRENT_YEAR_AMOUNT || 0;
-      yearlyOverviewStats[type].previous.count = row.PREVIOUS_YEAR_COUNT || 0;
-      yearlyOverviewStats[type].previous.amount = row.PREVIOUS_YEAR_AMOUNT || 0;
-
-      yearlyOverviewStats.all.current.count += row.CURRENT_YEAR_COUNT || 0;
-      yearlyOverviewStats.all.current.amount += row.CURRENT_YEAR_AMOUNT || 0;
-      yearlyOverviewStats.all.previous.count += row.PREVIOUS_YEAR_COUNT || 0;
-      yearlyOverviewStats.all.previous.amount += row.PREVIOUS_YEAR_AMOUNT || 0;
-    });
 
 
     // 7. Monthly payment stats for the last 12 months
     const monthlyPaymentsResult = await conn.execute(
       `SELECT 
          TO_CHAR(TRUNC(p.payment_date, 'MM'), 'YYYY-MM') as payment_month,
-         p.payment_type,
          SUM(p.amount) as total_amount,
+         SUM(p.amount_cash) as amount_cash,
+         SUM(p.amount_online) as amount_online,
+         SUM(p.amount_instore) as amount_instore,
          COUNT(*) as payment_count
        FROM payments p
        JOIN books b ON p.book_id = b.id 
        WHERE b.owner_id = :ownerId AND p.payment_date >= ADD_MONTHS(TRUNC(CURRENT_TIMESTAMP, 'MM'), -11) ${dateFilterClause}
-       GROUP BY TRUNC(p.payment_date, 'MM'), p.payment_type, b.owner_id
+       GROUP BY TRUNC(p.payment_date, 'MM'), b.owner_id
        ORDER BY payment_month ASC`,
       { ownerId, ...dateBinds }
     );
@@ -235,13 +239,15 @@ router.get('/stats', requireAuth, async (req, res) => {
     const yearlyPaymentsResult = await conn.execute(
       `SELECT 
          TO_CHAR(TRUNC(p.payment_date, 'YYYY'), 'YYYY') as payment_year,
-         p.payment_type,
          SUM(p.amount) as total_amount,
+         SUM(p.amount_cash) as amount_cash,
+         SUM(p.amount_online) as amount_online,
+         SUM(p.amount_instore) as amount_instore,
          COUNT(*) as payment_count
        FROM payments p
        JOIN books b ON p.book_id = b.id 
        WHERE b.owner_id = :ownerId ${dateFilterClause}
-       GROUP BY TRUNC(p.payment_date, 'YYYY'), p.payment_type, b.owner_id
+       GROUP BY TRUNC(p.payment_date, 'YYYY'), b.owner_id
        ORDER BY payment_year ASC`,
       { ownerId, ...dateBinds }
     );
@@ -251,13 +257,15 @@ router.get('/stats', requireAuth, async (req, res) => {
     const dailyPaymentsResult = await conn.execute(
       `SELECT
          TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD') as payment_day,
-         p.payment_type,
          SUM(p.amount) as total_amount,
+         SUM(p.amount_cash) as amount_cash,
+         SUM(p.amount_online) as amount_online,
+         SUM(p.amount_instore) as amount_instore,
          COUNT(*) as payment_count
        FROM payments p
        JOIN books b ON p.book_id = b.id 
        WHERE b.owner_id = :ownerId AND p.payment_date >= TRUNC(CURRENT_TIMESTAMP) - 6 ${dateFilterClause}
-       GROUP BY TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD'), p.payment_type, b.owner_id
+       GROUP BY TO_CHAR(TRUNC(p.payment_date), 'YYYY-MM-DD'), b.owner_id
        ORDER BY payment_day ASC`,
       { ownerId, ...dateBinds }
     );

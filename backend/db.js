@@ -60,6 +60,7 @@ async function initSchema() {
       owner_id NUMBER NOT NULL,
       name VARCHAR2(255) NOT NULL,
       max_customers NUMBER NOT NULL,
+      total_amount NUMBER DEFAULT 0,
       is_active NUMBER(1) DEFAULT 1 NOT NULL,
       start_month_iso VARCHAR2(7) NOT NULL,
       CONSTRAINT fk_books_owner FOREIGN KEY (owner_id) REFERENCES users(id)
@@ -85,6 +86,9 @@ async function initSchema() {
       book_id NUMBER NOT NULL,
       month_iso VARCHAR2(7) NOT NULL,
       amount NUMBER NOT NULL,
+      amount_cash NUMBER DEFAULT 0,
+      amount_online NUMBER DEFAULT 0,
+      amount_instore NUMBER DEFAULT 0,
       payment_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
       receipt_no VARCHAR2(255),
       payment_type VARCHAR2(50) NOT NULL,

@@ -29,6 +29,9 @@ const BulkPaymentReceipt = ({ payments, customer, book, user }) => {
             <th className="py-2 pr-2">Receipt No.</th>
             <th className="py-2 pr-2">Payment Date</th>
             <th className="py-2 pr-2">For Month</th>
+            <th className="py-2 pr-2 text-right">Cash</th>
+            <th className="py-2 pr-2 text-right">Online</th>
+            <th className="py-2 pr-2 text-right">In-Store</th>
             <th className="py-2 pr-2 text-right">Amount</th>
           </tr>
         </thead>
@@ -38,13 +41,16 @@ const BulkPaymentReceipt = ({ payments, customer, book, user }) => {
               <td className="py-2 pr-2">{payment.receiptNo}</td>
               <td className="py-2 pr-2">{new Date(payment.paymentDate).toLocaleDateString('en-IN')}</td>
               <td className="py-2 pr-2">{payment.monthIso}</td>
+              <td className="py-2 pr-2 text-right">{Number(payment.amountCash) > 0 ? `₹${Number(payment.amountCash).toLocaleString('en-IN')}` : '-'}</td>
+              <td className="py-2 pr-2 text-right">{Number(payment.amountOnline) > 0 ? `₹${Number(payment.amountOnline).toLocaleString('en-IN')}` : '-'}</td>
+              <td className="py-2 pr-2 text-right">{Number(payment.amountInstore) > 0 ? `₹${Number(payment.amountInstore).toLocaleString('en-IN')}` : '-'}</td>
               <td className="py-2 pr-2 text-right">₹ {Number(payment.amount).toLocaleString('en-IN')}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-black font-bold">
-            <td colSpan="3" className="py-2 text-right">Total Amount:</td>
+            <td colSpan="6" className="py-2 text-right">Total Amount:</td>
             <td className="py-2 text-right">₹ {totalAmount.toLocaleString('en-IN')}</td>
           </tr>
         </tfoot>

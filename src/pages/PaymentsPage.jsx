@@ -37,9 +37,10 @@ export default function PaymentsPage() {
     const [selectionModel, setSelectionModel] = useState([]);
 
     const getNextPaymentDetails = useCallback(() => {
+        const fixedAmount = book?.totalAmount || '';
         if (!book || payments.length === 0) {
             // If no payments, default to book start month and no amount
-            return { month: book?.startMonthIso || '', amount: '' };
+            return { month: book?.startMonthIso || '', amount: fixedAmount };
         }
 
         // Find the most recent payment
@@ -52,7 +53,7 @@ export default function PaymentsPage() {
         const nextYear = nextMonthDate.getFullYear();
         const nextMonth = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
 
-        return { month: `${nextYear}-${nextMonth}`, amount: lastPayment.amount };
+        return { month: `${nextYear}-${nextMonth}`, amount: fixedAmount || lastPayment.amount };
     }, [book, payments]);
 
     const handleOpenAddDialog = useCallback(() => {
@@ -63,7 +64,7 @@ export default function PaymentsPage() {
             amount,
             monthIso: month,
             receiptNo: uniqueReceiptNo,
-            paymentType: 'cash' // Default to cash
+            splits: [{ amount: amount, paymentType: 'cash' }] // Initialize with splits
         });
         setOpen(true);
     }, [customerId, getNextPaymentDetails]);
@@ -74,8 +75,41 @@ export default function PaymentsPage() {
 
     const handleCreate = async () => {
       try {
-        
-        await addPayment(bookId, customerId, form, token);
+        let payload = { ...form };
+
+        // Calculate amounts based on splits or fallback to single amount/type
+        let cash = 0, online = 0, instore = 0;
+
+        if (form.splits && form.splits.length > 0) {
+            cash = form.splits.filter(s => s.paymentType === 'cash').reduce((sum, s) => sum + Number(s.amount || 0), 0);
+            online = form.splits.filter(s => s.paymentType === 'online').reduce((sum, s) => sum + Number(s.amount || 0), 0);
+            instore = form.splits.filter(s => s.paymentType === 'instore').reduce((sum, s) => sum + Number(s.amount || 0), 0);
+        } else {
+            // Fallback if splits are missing (Single mode)
+            const amt = Number(form.amount || 0);
+            const type = form.paymentType || 'cash';
+            if (type === 'cash') cash = amt;
+            else if (type === 'online') online = amt;
+            else if (type === 'instore') instore = amt;
+        }
+
+        payload.amountCash = cash;
+        payload.amountOnline = online;
+        payload.amountInstore = instore;
+        payload.amount = cash + online + instore;
+        delete payload.splits;
+
+        // Validate against book total_amount
+        const requiredAmount = Number(book?.totalAmount || 0);
+        if (requiredAmount > 0 && payload.amount !== requiredAmount) {
+            showSnackbar(`Total amount must be ₹${requiredAmount} for this book.`, 'error');
+            return;
+        }
+
+        // paymentType will be derived by backend or we can omit it, but let's clean it up
+        delete payload.paymentType; 
+
+        await addPayment(bookId, customerId, payload, token);
         setOpen(false);
         refetch();
         showSnackbar('Payment successfully completed.', 'success');
@@ -85,12 +119,54 @@ export default function PaymentsPage() {
     };
 
     const handleEdit = useCallback((payment) => {
-        setEditForm(payment);
+        // Reconstruct splits from separate columns for the UI
+        let splits = [];
+        if (Number(payment.amountCash) > 0) splits.push({ paymentType: 'cash', amount: payment.amountCash });
+        if (Number(payment.amountOnline) > 0) splits.push({ paymentType: 'online', amount: payment.amountOnline });
+        if (Number(payment.amountInstore) > 0) splits.push({ paymentType: 'instore', amount: payment.amountInstore });
+
+        // Fallback for legacy data that might not have separate columns yet
+        if (splits.length === 0) {
+             splits.push({ paymentType: payment.paymentType || 'cash', amount: payment.amount });
+        }
+
+        setEditForm({ ...payment, splits });
         setEditOpen(true);
     }, []);
 
     const handleEditSave = async () => {
-        await editPayment(bookId, customerId, editForm.id, editForm, token);
+        let payload = { ...editForm };
+
+        let cash = 0, online = 0, instore = 0;
+
+        if (payload.splits && payload.splits.length > 0) {
+             cash = payload.splits.filter(s => s.paymentType === 'cash').reduce((sum, s) => sum + Number(s.amount || 0), 0);
+             online = payload.splits.filter(s => s.paymentType === 'online').reduce((sum, s) => sum + Number(s.amount || 0), 0);
+             instore = payload.splits.filter(s => s.paymentType === 'instore').reduce((sum, s) => sum + Number(s.amount || 0), 0);
+        } else {
+             const amt = Number(payload.amount || 0);
+             const type = payload.paymentType || 'cash';
+             if (type === 'cash') cash = amt;
+             else if (type === 'online') online = amt;
+             else if (type === 'instore') instore = amt;
+        }
+
+        payload.amountCash = cash;
+        payload.amountOnline = online;
+        payload.amountInstore = instore;
+        payload.amount = cash + online + instore;
+        delete payload.splits;
+
+        // Validate against book total_amount
+        const requiredAmount = Number(book?.totalAmount || 0);
+        if (requiredAmount > 0 && payload.amount !== requiredAmount) {
+            showSnackbar(`Total amount must be ₹${requiredAmount} for this book.`, 'error');
+            return;
+        }
+
+        delete payload.paymentType;
+
+        await editPayment(bookId, customerId, editForm.id, payload, token);
         setEditOpen(false);
         refetch();
         showSnackbar('Payment edit successfully.', 'success');
@@ -138,9 +214,33 @@ export default function PaymentsPage() {
     };
 
     const paymentSummary = useMemo(() => {
-        const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-        const paymentCount = payments.length;
-        return { totalAmount, paymentCount };
+        const totals = {
+            totalAmount: 0,
+            paymentCount: payments.length,
+            cash: 0,
+            online: 0,
+            instore: 0,
+        };
+
+        payments.forEach(payment => {
+            totals.totalAmount += Number(payment.amount);
+
+            // Use specific columns if available
+            if (payment.amountCash || payment.amountOnline || payment.amountInstore) {
+                totals.cash += Number(payment.amountCash || 0);
+                totals.online += Number(payment.amountOnline || 0);
+                totals.instore += Number(payment.amountInstore || 0);
+            } else {
+                // Legacy fallback for old records
+                const type = String(payment.paymentType).toLowerCase();
+                // Check if the type matches one of our keys (cash, online, instore)
+                if (totals[type] !== undefined) {
+                    totals[type] += Number(payment.amount);
+                }
+            }
+        });
+
+        return totals;
     }, [payments]);
 
     const columns = useMemo(() => [
@@ -244,8 +344,11 @@ export default function PaymentsPage() {
           <SummaryBox
             sx={{ mb: 1 }}
             items={[
-              { label: 'Total Payments', value: paymentSummary.paymentCount, color: 'primary.main' },
               { label: 'Total Amount Paid', value: `₹ ${paymentSummary.totalAmount.toLocaleString('en-IN')}`, color: 'primary.main' },
+              { label: 'Total Payments', value: paymentSummary.paymentCount, color: 'text.secondary' },
+              { label: 'Cash Paid', value: `₹ ${paymentSummary.cash.toLocaleString('en-IN')}`, color: 'success.main' },
+              { label: 'Online Paid', value: `₹ ${paymentSummary.online.toLocaleString('en-IN')}`, color: 'info.main' },
+              { label: 'In-Store Paid', value: `₹ ${paymentSummary.instore.toLocaleString('en-IN')}`, color: 'warning.main' },
             ]}
           />
 

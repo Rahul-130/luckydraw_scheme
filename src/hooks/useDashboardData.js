@@ -1,6 +1,17 @@
 import { useMemo } from 'react';
 import { processTrendData, processYearlyPaymentData, processCustomerGrowthData } from '../utils/chartUtils';
 
+const transformTrendData = (data, dateKey) => {
+  if (!data) return [];
+  const result = [];
+  data.forEach(row => {
+    result.push({ [dateKey]: row[dateKey], PAYMENT_TYPE: 'cash', TOTAL_AMOUNT: row.AMOUNT_CASH || 0 });
+    result.push({ [dateKey]: row[dateKey], PAYMENT_TYPE: 'online', TOTAL_AMOUNT: row.AMOUNT_ONLINE || 0 });
+    result.push({ [dateKey]: row[dateKey], PAYMENT_TYPE: 'instore', TOTAL_AMOUNT: row.AMOUNT_INSTORE || 0 });
+  });
+  return result;
+};
+
 export const useDashboardData = (stats) => {
   return useMemo(() => {
     if (!stats) {
@@ -30,11 +41,11 @@ export const useDashboardData = (stats) => {
       { name: 'Eligible', value: stats.eligibilityCounts.eligible }, { name: 'Not Eligible', value: stats.eligibilityCounts.notEligible },
     ];
 
-    const monthlyPaymentData = processTrendData(stats.monthlyPayments, 'PAYMENT_MONTH', { month: 'short', year: '2-digit' }, 12, (d, i) => d.setMonth(d.getMonth() - i));
+    const monthlyPaymentData = processTrendData(transformTrendData(stats.monthlyPayments, 'PAYMENT_MONTH'), 'PAYMENT_MONTH', { month: 'short', year: '2-digit' }, 12, (d, i) => d.setMonth(d.getMonth() - i));
 
-    const last7DaysData = processTrendData(stats.dailyPayments, 'PAYMENT_DAY', { weekday: 'short', day: 'numeric' }, 7, (d, i) => d.setDate(d.getDate() - i));
+    const last7DaysData = processTrendData(transformTrendData(stats.dailyPayments, 'PAYMENT_DAY'), 'PAYMENT_DAY', { weekday: 'short', day: 'numeric' }, 7, (d, i) => d.setDate(d.getDate() - i));
 
-    const yearlyPaymentData = processYearlyPaymentData(stats.yearlyPayments);
+    const yearlyPaymentData = processYearlyPaymentData(transformTrendData(stats.yearlyPayments, 'PAYMENT_YEAR'));
 
     const paymentMethodMixData = [
       { name: 'Online', value: stats.paymentStats.online?.currentMonth?.amount || 0 },

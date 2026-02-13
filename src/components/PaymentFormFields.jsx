@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   TextField,
-  MenuItem,
   Stack,
   InputAdornment,
   alpha,
@@ -13,15 +12,39 @@ import {
   SvgIcon,
   ToggleButtonGroup,
   ToggleButton,
+  Button,
+  IconButton,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { CurrencyRupee, ReceiptLong, CalendarMonth } from '@mui/icons-material';
+import { CurrencyRupee, ReceiptLong, CalendarMonth, Add, Delete } from '@mui/icons-material';
 import PreviewCopy from './PreviewCopyComponent';
 
 
 const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false }) => {
+  const isSplitMode = Array.isArray(formState.splits);
+
   const handleFieldChange = (field, value) => {
     onFormChange({ ...formState, [field]: value });
+  };
+
+  const handleSplitChange = (index, field, value) => {
+    const newSplits = [...formState.splits];
+    newSplits[index] = { ...newSplits[index], [field]: value };
+    onFormChange({ ...formState, splits: newSplits });
+  };
+
+  const addSplit = () => {
+    onFormChange({
+      ...formState,
+      splits: [...formState.splits, { amount: '', paymentType: 'cash' }]
+    });
+  };
+
+  const removeSplit = (index) => {
+    if (formState.splits.length > 1) {
+      const newSplits = formState.splits.filter((_, i) => i !== index);
+      onFormChange({ ...formState, splits: newSplits });
+    }
   };
 
   const IconBubble = ({ children }) => (
@@ -66,6 +89,72 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
     </Tooltip>
   );
 
+  const renderAmountField = (amount, onChange, label = "Amount") => (
+    <TextField
+      label={label}
+      type="number"
+      fullWidth
+      variant="outlined"
+      value={amount}
+      onChange={(e) => onChange(e.target.value)}
+      sx={commonSx}
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start" sx={{ mr: 1 }}>
+            <CurrencyRupee color="primary" />
+          </InputAdornment>
+        ),
+      }}
+      placeholder="Enter amount"
+      required
+    />
+  );
+
+  const renderPaymentType = (paymentType, onChange) => (
+    <ToggleButtonGroup
+      value={paymentType}
+      exclusive
+      onChange={(e, newVal) => {
+        if (newVal !== null) onChange(newVal);
+      }}
+      aria-label="Payment Type"
+      fullWidth
+      sx={{
+        '& .MuiToggleButton-root': {
+          textTransform: 'none',
+          borderRadius: 1.5,
+          padding: '8px 12px',
+          fontWeight: 600,
+        },
+        '& .MuiToggleButton-root.Mui-selected': {
+          boxShadow: (theme) => `0 8px 24px ${alpha(theme.palette.primary.main, 0.08)}`,
+        },
+      }}
+    >
+      <ToggleButton value="cash" aria-label="Cash payment">
+        Cash
+      </ToggleButton>
+      <ToggleButton value="online" aria-label="Online payment">
+        Online
+      </ToggleButton>
+      <ToggleButton value="instore" aria-label="In-Store payment">
+        In-Store
+      </ToggleButton>
+    </ToggleButtonGroup>
+  );
+
+  // Calculate derived values for preview
+  const totalAmount = isSplitMode
+    ? formState.splits.reduce((sum, s) => sum + Number(s.amount || 0), 0)
+    : formState.amount;
+
+  const activeSplits = isSplitMode ? formState.splits.filter(s => s.amount && Number(s.amount) > 0) : [];
+  const displayPaymentType = isSplitMode
+    ? (activeSplits.length > 1 
+        ? activeSplits.map(s => `${s.paymentType} (${s.amount})`).join(' + ')
+        : (activeSplits[0]?.paymentType || formState.paymentType))
+    : formState.paymentType;
+
   return (
     <Paper
       elevation={3}
@@ -88,79 +177,57 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
       </Box>
 
       <Stack spacing={3}>
-        {/* Amount (select) */}
-        <Box>
-          <TextField
-            select
-            label="Amount"
-            fullWidth
-            variant="outlined"
-            value={formState.amount}
-            helperText="Select the payment amount for the month."
-            onChange={(e) => handleFieldChange('amount', e.target.value)}
-            sx={commonSx}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start" sx={{ mr: 1 }}>
-                  <CurrencyRupee color="primary" />
-                </InputAdornment>
-              ),
-            }}
-            placeholder="Enter or select amount"
-            required
-          >
-            {[500, 1000, 1500, 2000, 2500].map((amt) => (
-              <MenuItem key={amt} value={amt}>
-                ₹ {amt}
-              </MenuItem>
-            ))}
-            <MenuItem
-              value={formState.amount}
-              sx={{
-                display:
-                  formState.amount && ![500, 1000, 1500, 2000, 2500].includes(Number(formState.amount))
-                    ? 'block'
-                    : 'none',
-              }}
+        {isSplitMode ? (
+          <Box>
+            <Stack spacing={2}>
+              {formState.splits.map((split, index) => (
+                <Paper key={index} variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                  <Stack spacing={2}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="subtitle2" color="text.secondary">Split {index + 1}</Typography>
+                      {formState.splits.length > 1 && (
+                        <IconButton size="small" onClick={() => removeSplit(index)} color="error">
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      )}
+                    </Stack>
+                    {renderAmountField(split.amount, (val) => handleSplitChange(index, 'amount', val))}
+                    {renderPaymentType(split.paymentType, (val) => handleSplitChange(index, 'paymentType', val))}
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+            <Button
+              startIcon={<Add />}
+              onClick={addSplit}
+              sx={{ mt: 2 }}
+              variant="outlined"
+              fullWidth
+              size="small"
             >
-              Custom: ₹ {formState.amount}
-            </MenuItem>
-          </TextField>
-        </Box>
+              Add Payment Split
+            </Button>
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'primary.main', color: 'primary.contrastText', borderRadius: 2, display: 'flex', justifyContent: 'space-between' }}>
+              <Typography fontWeight="bold">Total Amount</Typography>
+              <Typography fontWeight="bold">₹ {totalAmount}</Typography>
+            </Box>
+          </Box>
+        ) : (
+          <>
+            {/* Amount (select) */}
+            <Box>
+              {renderAmountField(formState.amount, (val) => handleFieldChange('amount', val))}
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Enter the payment amount for the month.
+              </Typography>
+            </Box>
 
-        {/* Payment Type — ToggleButtonGroup (single-column structure like previous) */}
-        <Box>
-          <ToggleButtonGroup
-            value={formState.paymentType}
-            exclusive
-            onChange={(e, newVal) => {
-              if (newVal !== null) handleFieldChange('paymentType', newVal);
-            }}
-            aria-label="Payment Type"
-            fullWidth
-            sx={{
-              '& .MuiToggleButton-root': {
-                textTransform: 'none',
-                borderRadius: 1.5,
-                padding: '8px 12px',
-                fontWeight: 600,
-              },
-              '& .MuiToggleButton-root.Mui-selected': {
-                boxShadow: (theme) => `0 8px 24px ${alpha(theme.palette.primary.main, 0.08)}`,
-              },
-            }}
-          >
-            <ToggleButton value="cash" aria-label="Cash payment">
-              Cash
-            </ToggleButton>
-            <ToggleButton value="online" aria-label="Online payment">
-              Online
-            </ToggleButton>
-            <ToggleButton value="instore" aria-label="In-Store payment">
-              In-Store
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+            {/* Payment Type */}
+            <Box>
+              {renderPaymentType(formState.paymentType, (val) => handleFieldChange('paymentType', val))}
+            </Box>
+          </>
+        )}
 
         {/* Receipt No */}
         <Box>
@@ -218,7 +285,7 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
 
         {/* Preview + copy */}
         <PreviewCopy
-          formState={formState}
+          formState={{ ...formState, amount: totalAmount, paymentType: displayPaymentType }}
           fields={[
             { key: 'amount', fallback: '— amount', formatter: (v) => `₹ ${v}` },
             { key: 'paymentType', fallback: '— type' },
