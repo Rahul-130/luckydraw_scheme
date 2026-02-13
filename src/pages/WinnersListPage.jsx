@@ -69,6 +69,7 @@ export default function WinnersListPage() {
             headerName: 'Actions',
             width: 100,
             renderCell: (params) => {
+                if (params.row.settledDate) return null;
                 return (
                     <Button
                         onClick={() => handleUnmarkAsWinner(params.row)}

@@ -182,8 +182,8 @@ export default function CustomersPage() {
     const filteredCustomers = useMemo(() => {
         if (!statusFilter) return customers;
         return customers.filter(c => {
-            if (statusFilter === 'Winner') return c.isWinner;
-            if (statusFilter === 'Winner Closed') return c.isWinner && c.isFrozen;
+            if (statusFilter === 'Winner') return c.isWinner && !c.settledDate;
+            if (statusFilter === 'Winner Closed') return c.isWinner && c.settledDate;
             if (statusFilter === 'Closed') return c.isFrozen && !c.isWinner;
             if (statusFilter === 'Completed') return !c.isFrozen && (c.paymentCount || 0) >= 20;
             if (statusFilter === 'Eligible') return !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments <= 2;

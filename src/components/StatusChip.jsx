@@ -8,7 +8,7 @@ const StatusChip = ({ customer, onClick }) => {
   let props = { label: '', color: 'default', icon: null };
 
   if (customer.isWinner) {
-    if (customer.isFrozen) {
+    if (customer.settledDate) {
       props = { label: "Winner Closed", color: "success", icon: <EmojiEvents fontSize="small" /> };
     } else {
       props = { label: "Winner", color: "success", icon: <EmojiEvents fontSize="small" /> };
