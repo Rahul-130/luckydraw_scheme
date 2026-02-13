@@ -95,10 +95,11 @@ export default function CustomersPage() {
     };
 
     const handleSettle = useCallback((customer) => {
+        const isWinner = customer.isWinner;
         showConfirmation({
             open: true,
-            title: `Settle & Close Account?`,
-            message: `Are you sure you want to settle and close ${customer.name}'s account? This will freeze the account.`,
+            title: isWinner ? 'Settle Winner Account?' : `Settle & Close Account?`,
+            message: isWinner ? `Has ${customer.name} collected the prize? This will settle and close the account.` : `Are you sure you want to settle and close ${customer.name}'s account? This will freeze the account.`,
             onConfirm: async () => {
                 try {
                     // Use editCustomer to set isFrozen to true
@@ -182,6 +183,7 @@ export default function CustomersPage() {
         if (!statusFilter) return customers;
         return customers.filter(c => {
             if (statusFilter === 'Winner') return c.isWinner;
+            if (statusFilter === 'Winner Closed') return c.isWinner && c.isFrozen;
             if (statusFilter === 'Closed') return c.isFrozen && !c.isWinner;
             if (statusFilter === 'Completed') return !c.isFrozen && (c.paymentCount || 0) >= 20;
             if (statusFilter === 'Eligible') return !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments <= 2;
@@ -218,18 +220,18 @@ export default function CustomersPage() {
                     icon: <Edit fontSize="small" />,
                     onClick: () => handleEdit(row),
                   },
-                  !row.isFrozen && {
-                    label: 'Settle & Close',
+                  ...((!row.isFrozen || (row.isWinner && !row.settledDate)) ? [{
+                    label: row.isWinner ? 'Settle Winner' : 'Settle & Close',
                     icon: <CheckCircle fontSize="small" />,
                     onClick: () => handleSettle(row),
                     color: 'warning.main'
-                  },
-                  !row.isFrozen && !row.isWinner && {
+                  }] : []),
+                  ...(!row.isFrozen && !row.isWinner ? [{
                     label: 'Make Winner',
                     icon: <EmojiEvents fontSize="small" />,
                     onClick: () => handleMakeWinner(row),
                     color: 'success.main'
-                  },
+                  }] : []),
                   {
                     label: 'Delete',
                     icon: <Delete fontSize="small" />,

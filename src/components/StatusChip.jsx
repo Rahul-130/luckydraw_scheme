@@ -1,5 +1,5 @@
 import React from 'react';
-import { Chip } from '@mui/material';
+import { Chip, Tooltip } from '@mui/material';
 import { EmojiEvents, Block, CheckCircle, Warning } from '@mui/icons-material';
 
 const StatusChip = ({ customer, onClick }) => {
@@ -8,7 +8,11 @@ const StatusChip = ({ customer, onClick }) => {
   let props = { label: '', color: 'default', icon: null };
 
   if (customer.isWinner) {
-    props = { label: "Winner", color: "success", icon: <EmojiEvents fontSize="small" /> };
+    if (customer.isFrozen) {
+      props = { label: "Winner Closed", color: "success", icon: <EmojiEvents fontSize="small" /> };
+    } else {
+      props = { label: "Winner", color: "success", icon: <EmojiEvents fontSize="small" /> };
+    }
   } else if (customer.isFrozen) {
     props = { label: "Closed", color: "default", icon: <Block fontSize="small" /> };
   } else if ((customer.paymentCount || 0) >= 20) {
@@ -24,7 +28,16 @@ const StatusChip = ({ customer, onClick }) => {
     if (onClick) onClick(props.label);
   };
 
-  return <Chip {...props} size="small" sx={chipSx} onClick={onClick ? handleClick : undefined} />;
+  const chip = <Chip {...props} size="small" sx={chipSx} onClick={onClick ? handleClick : undefined} />;
+
+  if (customer.isFrozen && customer.settledDate) {
+    return (
+      <Tooltip title={`Settled: ${new Date(customer.settledDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })}`} arrow>
+        {chip}
+      </Tooltip>
+    );
+  }
+  return chip;
 };
 
 export default StatusChip;

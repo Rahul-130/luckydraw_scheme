@@ -75,6 +75,7 @@ async function initSchema() {
       phone varchar2(255) NOT NULL,
       address VARCHAR2(255) NOT NULL,
       is_frozen NUMBER(1) DEFAULT 0 NOT NULL,
+      settled_date TIMESTAMP WITH TIME ZONE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
       CONSTRAINT fk_customers_book FOREIGN KEY (book_id) REFERENCES books(id)
     )'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;`);

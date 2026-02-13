@@ -17,7 +17,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
 
     if (search) {
       query = `
-        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
+        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date,
                COUNT(p.id) as payment_count,
                FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
                (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
@@ -30,9 +30,9 @@ router.get('/:bookId', requireAuth, async (req, res) => {
             LOWER(c.phone) LIKE LOWER(:search) OR
             LOWER(c.address) LIKE LOWER(:search)
           )
-        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO, c.book_id
+        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, b.START_MONTH_ISO, c.book_id
         UNION ALL
-        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
+        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date,
                COUNT(p.id) as payment_count,
                FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
                (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
@@ -40,14 +40,14 @@ router.get('/:bookId', requireAuth, async (req, res) => {
         JOIN books b ON c.book_id = b.id
         LEFT JOIN payments p ON p.customer_id = c.id
         WHERE c.book_id = :bid AND TO_CHAR(c.id) LIKE :search
-        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO, c.book_id
+        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, b.START_MONTH_ISO, c.book_id
         ORDER BY id
       `;
       binds.search = `%${search}%`;
     } else {
       query = `
       SELECT 
-        c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen,
+        c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date,
         COUNT(p.id) as payment_count,
         FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
         (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
@@ -55,7 +55,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       JOIN books b ON c.book_id = b.id
       LEFT JOIN payments p ON p.customer_id = c.id
       WHERE c.book_id = :bid
-      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, b.START_MONTH_ISO, c.book_id
+      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, b.START_MONTH_ISO, c.book_id
       ORDER BY c.id
       `;
     }
@@ -70,6 +70,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       phone: row.PHONE,
       address: row.ADDRESS,
       isFrozen: row.IS_FROZEN === 1,
+      settledDate: row.SETTLED_DATE,
       TOTAL_MONTHS: row.TOTAL_MONTHS,
       isWinner: row.IS_WINNER > 0,
       PAYMENT_COUNT: row.PAYMENT_COUNT,
@@ -204,7 +205,16 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     if (relationInfo !== undefined) { fields.push('relation_info=:relationInfo'); binds.relationInfo = String(relationInfo); }
     if (phone) { fields.push('phone=:phone'); binds.phone = String(phone); }
     if (address) { fields.push('address=:address'); binds.address = String(address); }
-    if (isFrozen !== undefined) { fields.push('is_frozen=:isFrozen'); binds.isFrozen = isFrozen ? 1 : 0; }
+    if (isFrozen !== undefined) { 
+      fields.push('is_frozen=:isFrozen'); 
+      binds.isFrozen = isFrozen ? 1 : 0; 
+      // Automatically set or clear settled_date when freezing/unfreezing
+      if (isFrozen) {
+        fields.push('settled_date=CURRENT_TIMESTAMP');
+      } else {
+        fields.push('settled_date=NULL');
+      }
+    }
     const sql = `UPDATE customers SET ${fields.join(', ')} WHERE id=:cid AND book_id=:bid`;
     await conn.execute(sql, binds);
     await conn.commit();
