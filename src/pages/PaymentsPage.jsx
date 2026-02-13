@@ -28,13 +28,30 @@ export default function PaymentsPage() {
     const {bookId, customerId} = useParams();
     const [open, setOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
-    const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'cash' });
-    const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '', paymentType: 'cash'});
+    const [form, setForm] = useState({ amount: '', monthIso: '', receiptNo: '', paymentType: 'cash', agentName: '' });
+    const [editForm, setEditForm] = useState({ id: '', amount: '', monthIso: '', receiptNo: '', paymentType: 'cash', agentName: ''});
     const { showSnackbar } = useSnackbar();
     const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
     const { payments, customer, book, loading, error, refetch } = usePayments(bookId, customerId);
     const navigate = useNavigate();
     const [selectionModel, setSelectionModel] = useState([]);
+
+    const agentOptions = useMemo(() => {
+        const optionsMap = new Map();
+        if (payments) {
+            payments.forEach(p => {
+                if (p.agentName) {
+                    const lower = p.agentName.toLowerCase();
+                    const current = p.agentName;
+                    // Deduplicate case-insensitively, preferring capitalized names (e.g. "Rahul" over "rahul")
+                    if (!optionsMap.has(lower) || (optionsMap.get(lower)[0] === optionsMap.get(lower)[0].toLowerCase() && current[0] === current[0].toUpperCase())) {
+                        optionsMap.set(lower, current);
+                    }
+                }
+            });
+        }
+        return Array.from(optionsMap.values()).sort();
+    }, [payments]);
 
     const getNextPaymentDetails = useCallback(() => {
         const fixedAmount = book?.totalAmount || '';
@@ -64,10 +81,11 @@ export default function PaymentsPage() {
             amount,
             monthIso: month,
             receiptNo: uniqueReceiptNo,
-            splits: [{ amount: amount, paymentType: 'cash' }] // Initialize with splits
+            splits: [{ amount: amount, paymentType: 'cash' }], // Initialize with splits
+            agentName: user?.name
         });
         setOpen(true);
-    }, [customerId, getNextPaymentDetails]);
+    }, [customerId, getNextPaymentDetails, user]);
 
     // Add keyboard shortcut for "Add Payment" (Ctrl + / or Cmd + /)
     useKeyShortcut(handleOpenAddDialog, { key: '/', ctrl: true, meta: true, disabled: customer?.isFrozen });
@@ -76,6 +94,11 @@ export default function PaymentsPage() {
     const handleCreate = async () => {
       try {
         let payload = { ...form };
+
+        if (!payload.agentName || payload.agentName.trim() === '') {
+            showSnackbar('Agent name is required.', 'error');
+            return;
+        }
 
         // Calculate amounts based on splits or fallback to single amount/type
         let cash = 0, online = 0, instore = 0;
@@ -136,6 +159,11 @@ export default function PaymentsPage() {
 
     const handleEditSave = async () => {
         let payload = { ...editForm };
+
+        if (!payload.agentName || payload.agentName.trim() === '') {
+            showSnackbar('Agent name is required.', 'error');
+            return;
+        }
 
         let cash = 0, online = 0, instore = 0;
 
@@ -220,6 +248,7 @@ export default function PaymentsPage() {
             cash: 0,
             online: 0,
             instore: 0,
+            agentTotals: {},
         };
 
         payments.forEach(payment => {
@@ -238,6 +267,18 @@ export default function PaymentsPage() {
                     totals[type] += Number(payment.amount);
                 }
             }
+
+            // Agent Totals
+            const agentName = payment.agentName || 'Unknown';
+            const key = agentName.toLowerCase();
+            if (!totals.agentTotals[key]) {
+                totals.agentTotals[key] = { name: agentName, amount: 0 };
+            }
+            // Prefer capitalized name for display if encountered (e.g. "Rahul" over "rahul")
+            if (agentName && agentName[0] === agentName[0].toUpperCase() && totals.agentTotals[key].name[0] !== totals.agentTotals[key].name[0].toUpperCase()) {
+                totals.agentTotals[key].name = agentName;
+            }
+            totals.agentTotals[key].amount += Number(payment.amount);
         });
 
         return totals;
@@ -253,6 +294,7 @@ export default function PaymentsPage() {
         width: 200, 
         valueFormatter: (value) => value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''
       },                  { field: 'receiptNo', headerName: 'Receipt No.', flex: 1, minWidth: 120 },
+      { field: 'agentName', headerName: 'Agent', width: 120 },
       { field: 'paymentType', headerName: 'Type', width: 120 },
       {
           field: 'actions',
@@ -349,6 +391,11 @@ export default function PaymentsPage() {
               { label: 'Cash Paid', value: `₹ ${paymentSummary.cash.toLocaleString('en-IN')}`, color: 'success.main' },
               { label: 'Online Paid', value: `₹ ${paymentSummary.online.toLocaleString('en-IN')}`, color: 'info.main' },
               { label: 'In-Store Paid', value: `₹ ${paymentSummary.instore.toLocaleString('en-IN')}`, color: 'warning.main' },
+              ...Object.values(paymentSummary.agentTotals).sort((a, b) => b.amount - a.amount).map(agent => ({
+                label: `By ${agent.name}`,
+                value: `₹ ${agent.amount.toLocaleString('en-IN')}`,
+                color: 'secondary.main'
+              })),
             ]}
           />
 
@@ -362,11 +409,11 @@ export default function PaymentsPage() {
               />
       {/* Dialogs */}
         <FormDialog open={open} onClose={() => setOpen(false)} title="Add Payment" onSubmit={handleCreate} submitText="Create">
-          <PaymentFormFields formState={form} onFormChange={setForm} />
+          <PaymentFormFields formState={form} onFormChange={setForm} agentOptions={agentOptions} />
         </FormDialog>
 
         <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Payment" onSubmit={handleEditSave}>
-          <PaymentFormFields formState={editForm} onFormChange={setEditForm} isMonthDisabled={true} />
+          <PaymentFormFields formState={editForm} onFormChange={setEditForm} isMonthDisabled={true} agentOptions={agentOptions} />
         </FormDialog>
 
         <ConfirmationDialog

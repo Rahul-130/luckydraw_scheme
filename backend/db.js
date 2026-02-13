@@ -92,6 +92,7 @@ async function initSchema() {
       payment_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
       receipt_no VARCHAR2(255),
       payment_type VARCHAR2(50) NOT NULL,
+      agent_name VARCHAR2(255),
       is_luckydraw_winner NUMBER(1) DEFAULT 0 NOT NULL,
       CONSTRAINT fk_payments_book FOREIGN KEY (book_id) REFERENCES books(id),
       CONSTRAINT fk_payments_customer FOREIGN KEY (customer_id) REFERENCES customers(id),

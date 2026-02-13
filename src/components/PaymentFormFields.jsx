@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TextField,
   Stack,
@@ -14,13 +14,27 @@ import {
   ToggleButton,
   Button,
   IconButton,
+  Autocomplete,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { CurrencyRupee, ReceiptLong, CalendarMonth, Add, Delete } from '@mui/icons-material';
+import { CurrencyRupee, ReceiptLong, CalendarMonth, Add, Delete, Person, Close } from '@mui/icons-material';
 import PreviewCopy from './PreviewCopyComponent';
 
 
-const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false }) => {
+const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, agentOptions = [] }) => {
+  const [isCustomAgent, setIsCustomAgent] = useState(false);
+
+  // Initialize mode based on whether the current agent name is in the options list
+  useEffect(() => {
+    const currentName = formState.agentName || '';
+    const match = agentOptions.some(opt => opt.toLowerCase() === currentName.toLowerCase());
+    if (currentName && agentOptions.length > 0 && !match) {
+      setIsCustomAgent(true);
+    } else {
+      setIsCustomAgent(false);
+    }
+  }, [formState.receiptNo, formState.id, agentOptions]); // Re-run when form subject changes (new receipt or different ID)
+
   const isSplitMode = Array.isArray(formState.splits);
 
   const handleFieldChange = (field, value) => {
@@ -251,6 +265,70 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
           />
         </Box>
 
+        {/* Agent Name */}
+        <Box>
+          {isCustomAgent ? (
+            <TextField
+              label="Agent Name (Custom)"
+              value={formState.agentName || ''}
+              onChange={(e) => handleFieldChange('agentName', e.target.value)}
+              fullWidth
+              variant="outlined"
+              sx={commonSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start" sx={{ mr: 1 }}>
+                    <Person color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => {
+                      setIsCustomAgent(false);
+                      handleFieldChange('agentName', ''); // Clear value when switching back to list
+                    }}>
+                      <Close />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+          ) : (
+            <Autocomplete
+              options={[...agentOptions, 'Custom']}
+              value={agentOptions.find(opt => opt.toLowerCase() === (formState.agentName || '').toLowerCase()) || null}
+              onChange={(event, newValue) => {
+                if (newValue === 'Custom') {
+                  setIsCustomAgent(true);
+                  handleFieldChange('agentName', '');
+                } else {
+                  handleFieldChange('agentName', newValue);
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Agent Name"
+                  variant="outlined"
+                  placeholder="Select agent"
+                  sx={commonSx}
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <>
+                        <InputAdornment position="start" sx={{ mr: 1 }}>
+                          <Person color="primary" />
+                        </InputAdornment>
+                        {params.InputProps.startAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+            />
+          )}
+        </Box>
+
         {/* Month picker */}
         <Box>
           <DatePicker
@@ -291,6 +369,7 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false })
             { key: 'paymentType', fallback: '— type' },
             { key: 'monthIso', fallback: '— month' },
             { key: 'receiptNo', fallback: '— receipt' },
+            { key: 'agentName', fallback: '— agent' },
           ]}
         />
 

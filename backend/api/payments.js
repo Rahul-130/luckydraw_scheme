@@ -5,7 +5,7 @@ const router = express.Router();
 
 // Payments - to create a payment for a customer in a book
 router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, res) => {
-  let { amount, monthIso, receiptNo, paymentType, amountCash, amountOnline, amountInstore } = req.body || {};
+  let { amount, monthIso, receiptNo, paymentType, amountCash, amountOnline, amountInstore, agentName } = req.body || {};
   
   // Auto-calculate total amount from splits if provided to ensure data consistency
   amountCash = Number(amountCash || 0);
@@ -71,7 +71,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
 
     // Insert payment
     const result = await conn.execute(
-      `INSERT INTO payments (customer_id, book_id, month_iso, amount, receipt_no, payment_type, amount_cash, amount_online, amount_instore) VALUES (:cid, :bid, :monthIso, :amount, :receiptNo, :paymentType, :amountCash, :amountOnline, :amountInstore) RETURNING id, payment_date INTO :id, :payment_date`,
+      `INSERT INTO payments (customer_id, book_id, month_iso, amount, receipt_no, payment_type, amount_cash, amount_online, amount_instore, agent_name) VALUES (:cid, :bid, :monthIso, :amount, :receiptNo, :paymentType, :amountCash, :amountOnline, :amountInstore, :agentName) RETURNING id, payment_date INTO :id, :payment_date`,
       {
         cid: Number(req.params.customerId),
         bid: Number(req.params.bookId),
@@ -82,6 +82,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
         amountCash: amountCash,
         amountOnline: amountOnline,
         amountInstore: amountInstore,
+        agentName: agentName || null,
         id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
         payment_date: { dir: oracledb.BIND_OUT, type: oracledb.DATE }
       }
@@ -99,6 +100,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
       amountCash: amountCash,
       amountOnline: amountOnline,
       amountInstore: amountInstore,
+      agentName,
       paymentDate: paymentDate.toISOString() // Return full ISO string
     });
   } catch (e) {
@@ -125,7 +127,7 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
     if (!custR.rows.length) return res.status(404).json({ error: 'customer not found' });
     // Get payments
     const payR = await conn.execute(
-      `SELECT id, month_iso, amount, payment_date, receipt_no, payment_type, is_luckydraw_winner, amount_cash, amount_online, amount_instore
+      `SELECT id, month_iso, amount, payment_date, receipt_no, payment_type, is_luckydraw_winner, amount_cash, amount_online, amount_instore, agent_name
         FROM payments
         WHERE customer_id=:cid AND book_id=:bid
         ORDER BY payment_date DESC`,
@@ -144,7 +146,8 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
         isLuckyDrawWinner: row.IS_LUCKYDRAW_WINNER === 1,
         amountCash: Number(row.AMOUNT_CASH || 0),
         amountOnline: Number(row.AMOUNT_ONLINE || 0),
-        amountInstore: Number(row.AMOUNT_INSTORE || 0)
+        amountInstore: Number(row.AMOUNT_INSTORE || 0),
+        agentName: row.AGENT_NAME
       };
     });
     res.json(rows);
@@ -156,8 +159,8 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
 
 // Edit payment - amount and receipt number can be updated
 router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, async (req, res) => {
-  const { amount, paymentType, receiptNo, amountCash, amountOnline, amountInstore } = req.body || {};
-  if (!amount && paymentType === undefined && receiptNo === undefined && amountCash === undefined && amountOnline === undefined && amountInstore === undefined) return res.status(400).json({ error: 'no fields to update' });
+  const { amount, paymentType, receiptNo, amountCash, amountOnline, amountInstore, agentName } = req.body || {};
+  if (!amount && paymentType === undefined && receiptNo === undefined && amountCash === undefined && amountOnline === undefined && amountInstore === undefined && agentName === undefined) return res.status(400).json({ error: 'no fields to update' });
   const conn = await getConnection();
   try {
     // Check book ownership
@@ -193,6 +196,7 @@ router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, 
     if (amountCash !== undefined) { fields.push('amount_cash=:amountCash'); binds.amountCash = Number(amountCash); }
     if (amountOnline !== undefined) { fields.push('amount_online=:amountOnline'); binds.amountOnline = Number(amountOnline); }
     if (amountInstore !== undefined) { fields.push('amount_instore=:amountInstore'); binds.amountInstore = Number(amountInstore); }
+    if (agentName !== undefined) { fields.push('agent_name=:agentName'); binds.agentName = agentName; }
 
     // Recalculate paymentType if amounts are being updated
     if (amountCash !== undefined || amountOnline !== undefined || amountInstore !== undefined) {

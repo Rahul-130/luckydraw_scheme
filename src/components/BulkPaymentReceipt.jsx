@@ -27,6 +27,7 @@ const BulkPaymentReceipt = ({ payments, customer, book, user }) => {
         <thead>
           <tr className="border-b-2 border-black">
             <th className="py-2 pr-2">Receipt No.</th>
+            <th className="py-2 pr-2">Agent</th>
             <th className="py-2 pr-2">Payment Date</th>
             <th className="py-2 pr-2">For Month</th>
             <th className="py-2 pr-2 text-right">Cash</th>
@@ -39,6 +40,7 @@ const BulkPaymentReceipt = ({ payments, customer, book, user }) => {
           {payments.map(payment => (
             <tr key={payment.id} className="border-b border-gray-200">
               <td className="py-2 pr-2">{payment.receiptNo}</td>
+              <td className="py-2 pr-2">{payment.agentName}</td>
               <td className="py-2 pr-2">{new Date(payment.paymentDate).toLocaleDateString('en-IN')}</td>
               <td className="py-2 pr-2">{payment.monthIso}</td>
               <td className="py-2 pr-2 text-right">{Number(payment.amountCash) > 0 ? `₹${Number(payment.amountCash).toLocaleString('en-IN')}` : '-'}</td>
