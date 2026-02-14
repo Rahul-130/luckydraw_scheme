@@ -21,7 +21,7 @@ import { CurrencyRupee, ReceiptLong, CalendarMonth, Add, Delete, Person, Close }
 import PreviewCopy from './PreviewCopyComponent';
 
 
-const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, agentOptions = [] }) => {
+const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, agentOptions = [], bookTotalAmount }) => {
   const [isCustomAgent, setIsCustomAgent] = useState(false);
 
   // Initialize mode based on whether the current agent name is in the options list
@@ -103,26 +103,37 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, a
     </Tooltip>
   );
 
-  const renderAmountField = (amount, onChange, label = "Amount") => (
-    <TextField
-      label={label}
-      type="number"
-      fullWidth
-      variant="outlined"
-      value={amount}
-      onChange={(e) => onChange(e.target.value)}
-      sx={commonSx}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start" sx={{ mr: 1 }}>
-            <CurrencyRupee color="primary" />
-          </InputAdornment>
-        ),
-      }}
-      placeholder="Enter amount"
-      required
-    />
-  );
+  const renderAmountField = (amount, onChange, label = "Amount", showValidation = false) => {
+    const isMatch = showValidation && bookTotalAmount > 0 && Number(amount) === Number(bookTotalAmount);
+    const isError = showValidation && bookTotalAmount > 0 && Number(amount) !== Number(bookTotalAmount) && Number(amount) > 0;
+
+    return (
+      <TextField
+        label={label}
+        type="number"
+        fullWidth
+        variant="outlined"
+        value={amount}
+        onChange={(e) => onChange(e.target.value)}
+        sx={commonSx}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start" sx={{ mr: 1 }}>
+              <CurrencyRupee color={isMatch ? "success" : "primary"} />
+            </InputAdornment>
+          ),
+        }}
+        placeholder="Enter amount"
+        required
+        error={isError}
+        helperText={
+          showValidation && bookTotalAmount > 0
+            ? (isMatch ? "Matches book amount" : `Expected: ₹${bookTotalAmount}`)
+            : null
+        }
+      />
+    );
+  };
 
   const renderPaymentType = (paymentType, onChange) => (
     <ToggleButtonGroup
@@ -160,7 +171,7 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, a
   // Calculate derived values for preview
   const totalAmount = isSplitMode
     ? formState.splits.reduce((sum, s) => sum + Number(s.amount || 0), 0)
-    : formState.amount;
+    : Number(formState.amount || 0);
 
   const activeSplits = isSplitMode ? formState.splits.filter(s => s.amount && Number(s.amount) > 0) : [];
   const displayPaymentType = isSplitMode
@@ -205,7 +216,7 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, a
                         </IconButton>
                       )}
                     </Stack>
-                    {renderAmountField(split.amount, (val) => handleSplitChange(index, 'amount', val))}
+                    {renderAmountField(split.amount, (val) => handleSplitChange(index, 'amount', val), "Amount", false)}
                     {renderPaymentType(split.paymentType, (val) => handleSplitChange(index, 'paymentType', val))}
                   </Stack>
                 </Paper>
@@ -221,8 +232,15 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, a
             >
               Add Payment Split
             </Button>
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'primary.main', color: 'primary.contrastText', borderRadius: 2, display: 'flex', justifyContent: 'space-between' }}>
-              <Typography fontWeight="bold">Total Amount</Typography>
+            <Box sx={{ mt: 2, p: 2, bgcolor: (bookTotalAmount > 0 && totalAmount !== Number(bookTotalAmount)) ? 'warning.main' : 'primary.main', color: 'primary.contrastText', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography fontWeight="bold">Total Amount</Typography>
+                {bookTotalAmount > 0 && (
+                  <Typography variant="caption" sx={{ opacity: 0.9, display: 'block' }}>
+                    {totalAmount === Number(bookTotalAmount) ? 'Matches book amount' : `Expected: ₹${bookTotalAmount}`}
+                  </Typography>
+                )}
+              </Box>
               <Typography fontWeight="bold">₹ {totalAmount}</Typography>
             </Box>
           </Box>
@@ -230,10 +248,7 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, a
           <>
             {/* Amount (select) */}
             <Box>
-              {renderAmountField(formState.amount, (val) => handleFieldChange('amount', val))}
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                Enter the payment amount for the month.
-              </Typography>
+              {renderAmountField(formState.amount, (val) => handleFieldChange('amount', val), "Amount", true)}
             </Box>
 
             {/* Payment Type */}

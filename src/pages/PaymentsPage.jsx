@@ -409,11 +409,11 @@ export default function PaymentsPage() {
               />
       {/* Dialogs */}
         <FormDialog open={open} onClose={() => setOpen(false)} title="Add Payment" onSubmit={handleCreate} submitText="Create">
-          <PaymentFormFields formState={form} onFormChange={setForm} agentOptions={agentOptions} />
+          <PaymentFormFields formState={form} onFormChange={setForm} agentOptions={agentOptions} bookTotalAmount={book?.totalAmount} />
         </FormDialog>
 
         <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Payment" onSubmit={handleEditSave}>
-          <PaymentFormFields formState={editForm} onFormChange={setEditForm} isMonthDisabled={true} agentOptions={agentOptions} />
+          <PaymentFormFields formState={editForm} onFormChange={setEditForm} isMonthDisabled={true} agentOptions={agentOptions} bookTotalAmount={book?.totalAmount} />
         </FormDialog>
 
         <ConfirmationDialog
