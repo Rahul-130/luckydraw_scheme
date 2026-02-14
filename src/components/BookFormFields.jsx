@@ -13,7 +13,7 @@ import {
   SvgIcon,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Book, Groups, CalendarMonth } from '@mui/icons-material';
+import { Book, Groups, CalendarMonth, CurrencyRupee } from '@mui/icons-material';
 import PreviewCopy from './PreviewCopyComponent';
 
 const BookFormFields = ({ formState, onFormChange }) => {
@@ -169,6 +169,33 @@ const BookFormFields = ({ formState, onFormChange }) => {
           />
         </Box>
 
+        {/* Total Amount */}
+        <Box>
+          <TextField
+            label="Total Amount"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={formState.totalAmount}
+            helperText="Fixed monthly payment amount (optional)."
+            onChange={(e) => onFormChange({ ...formState, totalAmount: e.target.value })}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start" sx={{ mr: 1 }}>
+                  <CurrencyRupee color="primary" />
+                </InputAdornment>
+              ),
+            }}
+            inputProps={{ min: 0, 'aria-label': 'Total amount' }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&.Mui-focused': { backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.03) },
+              },
+            }}
+          />
+        </Box>
+
         {/* Start Month Picker */}
         <Box>
           <DatePicker
@@ -220,6 +247,7 @@ const BookFormFields = ({ formState, onFormChange }) => {
             { key: 'name', fallback: '— name' },
             { key: 'maxCustomers', fallback: '— capacity', formatter: (v) => `${v} customers` },
             { key: 'startMonthIso', fallback: '— start month' },
+            { key: 'totalAmount', fallback: '— amount', formatter: (v) => `₹ ${v}` },
           ]}
         />
 

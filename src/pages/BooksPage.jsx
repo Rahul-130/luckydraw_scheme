@@ -87,12 +87,14 @@ export default function BooksPage() {
     name: "",
     maxCustomers: "",
     startMonthIso: "",
+    totalAmount: "",
   });
   const [editForm, setEditForm] = useState({
     id: "",
     name: "",
     maxCustomers: "",
     startMonthIso: "",
+    totalAmount: "",
   });
   const { dialogConfig, showConfirmation, handleClose: handleConfirmClose, handleConfirm } = useConfirmationDialog();
   const { showSnackbar } = useSnackbar();
@@ -176,6 +178,7 @@ export default function BooksPage() {
       { field: "id", headerName: "ID", width: 80 },
       { field: "name", headerName: "Name", flex: 1, minWidth: 150 },
       { field: "maxCustomers", headerName: "Max Customers", width: 150 },
+      { field: "totalAmount", headerName: "Amount", width: 120, valueFormatter: (value) => value ? `₹ ${value}` : '-' },
       { field: "isActive", headerName: "Active", width: 100, type: "boolean" },
       { field: "startMonthIso", headerName: "Start Month", width: 150 },
       {

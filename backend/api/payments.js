@@ -235,7 +235,7 @@ router.delete('/:bookId/customers/:customerId/payments/:paymentId', requireAuth,
   try {
     // Check book ownership
     const bookR = await conn.execute(
-      `SELECT id FROM books WHERE id=:id AND owner_id=:oid`,
+      `SELECT id, total_amount FROM books WHERE id=:id AND owner_id=:oid`,
       { id: Number(req.params.bookId), oid: Number(req.user.id) }
     );
     if (!bookR.rows.length) return res.status(404).json({ error: 'book not found' });

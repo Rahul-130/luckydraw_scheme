@@ -34,6 +34,7 @@ router.get('/', requireAuth, async (req, res) => {
       maxCustomers: row.MAX_CUSTOMERS,
       isActive: row.IS_ACTIVE === 1,
       startMonthIso: row.START_MONTH_ISO,
+      totalAmount: row.TOTAL_AMOUNT,
     }));
 
     res.json({ data: books, total: Number(countResult.rows[0].CNT) });
@@ -89,14 +90,14 @@ router.get('/:bookId', requireAuth, async (req, res) => {
   const conn = await getConnection();
   try {
     const r = await conn.execute(
-      `SELECT id, owner_id, name, max_customers, is_active, start_month_iso 
+      `SELECT id, owner_id, name, max_customers, is_active, start_month_iso, total_amount 
        FROM books 
        WHERE id = :id AND owner_id = :oid`,
       { id: Number(req.params.bookId), oid: Number(req.user.id) }
     );
     if (!r.rows.length) return res.status(404).json({ error: 'book not found' });
     const book = r.rows[0];
-    res.json({ id: String(book.ID), ownerId: String(book.OWNER_ID), name: book.NAME, maxCustomers: book.MAX_CUSTOMERS, isActive: book.IS_ACTIVE === 1, startMonthIso: book.START_MONTH_ISO });
+    res.json({ id: String(book.ID), ownerId: String(book.OWNER_ID), name: book.NAME, maxCustomers: book.MAX_CUSTOMERS, isActive: book.IS_ACTIVE === 1, startMonthIso: book.START_MONTH_ISO, totalAmount: book.TOTAL_AMOUNT });
   } catch (e) {
     console.error('Get book error:', e);
     res.status(500).json({ error: 'internal error' });
@@ -107,7 +108,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
 
 // Books - create a new book for the authenticated user
 router.post('/', requireAuth, async (req, res) => {
-  const { name, maxCustomers, startMonthIso } = req.body || {};
+  const { name, maxCustomers, startMonthIso, totalAmount } = req.body || {};
   if (!name || !maxCustomers || !startMonthIso) return res.status(400).json({ error: 'name, maxCustomers, startMonthIso required' });
   const conn = await getConnection();
   try {
@@ -122,20 +123,21 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     const result = await conn.execute(
-      `INSERT INTO books (owner_id, name, max_customers, is_active, start_month_iso)
-       VALUES (:owner_id, :name, :max_customers, 1, :start_month_iso)
+      `INSERT INTO books (owner_id, name, max_customers, is_active, start_month_iso, total_amount)
+       VALUES (:owner_id, :name, :max_customers, 1, :start_month_iso, :total_amount)
        RETURNING id INTO :id`,
       {
         owner_id: Number(req.user.id),
         name: String(name),
         max_customers: Number(maxCustomers),
         start_month_iso: String(startMonthIso),
+        total_amount: Number(totalAmount || 0),
         id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
       }
     );
     await conn.commit();
     const id = String(result.outBinds.id[0]);
-    res.status(201).json({ id, ownerId: req.user.id, name, maxCustomers: Number(maxCustomers), isActive: true, startMonthIso });
+    res.status(201).json({ id, ownerId: req.user.id, name, maxCustomers: Number(maxCustomers), isActive: true, startMonthIso, totalAmount: Number(totalAmount || 0) });
   } catch (e) { console.error('Create book error:', e); res.status(500).json({ error: 'internal error' }); }
   finally { await conn.close(); }
 });
@@ -241,8 +243,8 @@ router.post('/:bookId/customers', requireAuth, async (req, res) => {
 
 // Edit book - to change name, maxCustomers, startMonthIso
 router.patch('/:bookId', requireAuth, async (req, res) => {
-  const { name, maxCustomers, startMonthIso } = req.body || {};
-  if (!name && !maxCustomers && !startMonthIso) return res.status(400).json({ error: 'at least one of name, maxCustomers, startMonthIso required' });
+  const { name, maxCustomers, startMonthIso, totalAmount } = req.body || {};
+  if (!name && !maxCustomers && !startMonthIso && totalAmount === undefined) return res.status(400).json({ error: 'at least one field required' });
   const conn = await getConnection();
   try {
     const r = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
@@ -252,10 +254,11 @@ router.patch('/:bookId', requireAuth, async (req, res) => {
     if (name) { updates.push('name=:name'); params.name = String(name); }
     if (maxCustomers) { updates.push('max_customers=:max_customers'); params.max_customers = Number(maxCustomers); }
     if (startMonthIso) { updates.push('start_month_iso=:start_month_iso'); params.start_month_iso = String(startMonthIso); }
+    if (totalAmount !== undefined) { updates.push('total_amount=:total_amount'); params.total_amount = Number(totalAmount); }
     const sql = `UPDATE books SET ${updates.join(', ')} WHERE id=:id`;
     await conn.execute(sql, params);
     await conn.commit();
-    res.json({ id: String(req.params.bookId), name, maxCustomers: maxCustomers ? Number(maxCustomers) : undefined, startMonthIso });
+    res.json({ id: String(req.params.bookId), name, maxCustomers: maxCustomers ? Number(maxCustomers) : undefined, startMonthIso, totalAmount: totalAmount ? Number(totalAmount) : undefined });
   } catch (e) { console.error('Edit book error:', e); res.status(500).json({ error: 'internal error' }); }
   finally { await conn.close(); }
 });
