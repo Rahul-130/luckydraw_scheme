@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { addPayment, getPayments, getCustomers, editPayment, deletePayment, getBook } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
@@ -35,15 +35,39 @@ export default function PaymentsPage() {
     const { payments, customer, book, loading, error, refetch } = usePayments(bookId, customerId);
     const navigate = useNavigate();
     const [selectionModel, setSelectionModel] = useState([]);
+    const [allAgents, setAllAgents] = useState([]);
+
+    // Fetch all agents for the user to populate autocomplete
+    useEffect(() => {
+        const fetchAgents = async () => {
+            if (!token) return;
+            try {
+                const response = await fetch('/api/books/agents', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const agents = await response.json();
+                    setAllAgents(agents);
+                }
+            } catch (err) {
+                console.error("Failed to fetch agents list", err);
+            }
+        };
+        fetchAgents();
+    }, [token]);
 
     const agentOptions = useMemo(() => {
         const optionsMap = new Map();
+        // Add agents from backend
+        allAgents.forEach(name => {
+             if (name) optionsMap.set(name.toLowerCase(), name);
+        });
+        // Add agents from current view (fallback/realtime)
         if (payments) {
             payments.forEach(p => {
                 if (p.agentName) {
                     const lower = p.agentName.toLowerCase();
                     const current = p.agentName;
-                    // Deduplicate case-insensitively, preferring capitalized names (e.g. "Rahul" over "rahul")
                     if (!optionsMap.has(lower) || (optionsMap.get(lower)[0] === optionsMap.get(lower)[0].toLowerCase() && current[0] === current[0].toUpperCase())) {
                         optionsMap.set(lower, current);
                     }
@@ -51,7 +75,7 @@ export default function PaymentsPage() {
             });
         }
         return Array.from(optionsMap.values()).sort();
-    }, [payments]);
+    }, [payments, allAgents]);
 
     const getNextPaymentDetails = useCallback(() => {
         const fixedAmount = book?.totalAmount || '';
@@ -82,10 +106,10 @@ export default function PaymentsPage() {
             monthIso: month,
             receiptNo: uniqueReceiptNo,
             splits: [{ amount: amount, paymentType: 'cash' }], // Initialize with splits
-            agentName: user?.name
+            agentName: ''
         });
         setOpen(true);
-    }, [customerId, getNextPaymentDetails, user]);
+    }, [customerId, getNextPaymentDetails]);
 
     // Add keyboard shortcut for "Add Payment" (Ctrl + / or Cmd + /)
     useKeyShortcut(handleOpenAddDialog, { key: '/', ctrl: true, meta: true, disabled: customer?.isFrozen });
