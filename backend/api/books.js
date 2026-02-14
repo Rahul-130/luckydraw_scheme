@@ -19,7 +19,11 @@ router.get('/', requireAuth, async (req, res) => {
       binds.search = `%${search}%`;
     }
 
-    resultQuery = `SELECT * FROM books WHERE owner_id = :owner_id ${searchClause} ORDER BY id OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`;
+    resultQuery = `SELECT b.id, b.name, b.max_customers, b.is_active, b.start_month_iso, b.total_amount,
+                   (SELECT COUNT(*) FROM customers c WHERE c.book_id = b.id) as customer_count
+                   FROM books b
+                   WHERE b.owner_id = :owner_id ${searchClause}
+                   ORDER BY b.id OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`;
     countQuery = `SELECT COUNT(*) AS CNT FROM books WHERE owner_id = :owner_id ${searchClause}`;
 
     binds.offset = offset;
@@ -32,6 +36,7 @@ router.get('/', requireAuth, async (req, res) => {
       id: row.ID,
       name: row.NAME,
       maxCustomers: row.MAX_CUSTOMERS,
+      customerCount: row.CUSTOMER_COUNT,
       isActive: row.IS_ACTIVE === 1,
       startMonthIso: row.START_MONTH_ISO,
       totalAmount: row.TOTAL_AMOUNT,
