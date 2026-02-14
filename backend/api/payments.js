@@ -61,6 +61,15 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
     if (custR.rows[0].IS_FROZEN === 1)
       return res.status(403).json({ error: 'customer is frozen for this book' });
 
+    // Check total payment count limit (Max 20)
+    const countR = await conn.execute(
+      `SELECT COUNT(*) AS CNT FROM payments WHERE customer_id=:cid AND book_id=:bid`,
+      { cid: Number(req.params.customerId), bid: Number(req.params.bookId) }
+    );
+    if (countR.rows[0].CNT >= 20) {
+      return res.status(400).json({ error: 'Maximum limit of 20 payments reached for this customer.' });
+    }
+
     // Check if payment already exists for this monthIso
     const payCheck = await conn.execute(
       `SELECT id FROM payments WHERE customer_id=:cid AND book_id=:bid AND month_iso=:monthIso`,

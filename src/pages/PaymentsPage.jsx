@@ -112,7 +112,7 @@ export default function PaymentsPage() {
     }, [customerId, getNextPaymentDetails]);
 
     // Add keyboard shortcut for "Add Payment" (Ctrl + / or Cmd + /)
-    useKeyShortcut(handleOpenAddDialog, { key: '/', ctrl: true, meta: true, disabled: customer?.isFrozen });
+    useKeyShortcut(handleOpenAddDialog, { key: '/', ctrl: true, meta: true, disabled: customer?.isFrozen || payments.length >= 20 });
 
 
     const handleCreate = async () => {
@@ -376,14 +376,14 @@ export default function PaymentsPage() {
             justifyContent="space-between"
             sx={{ mb: 2 }}
           >
-            <Tooltip title="Add Payment (Ctrl + /)">
+            <Tooltip title={customer?.isFrozen ? "Customer is frozen" : (payments.length >= 20 ? "Maximum 20 payments reached" : "Add Payment (Ctrl + /)")}>
               <span> {/* Tooltip needs a span wrapper for disabled buttons */}
                 <Button
                   variant="contained"
                   startIcon={<Add />}
                   color="primary"
                   onClick={handleOpenAddDialog}
-                  disabled={customer?.isFrozen}
+                  disabled={customer?.isFrozen || payments.length >= 20}
                 >
                   Add Payment
                 </Button>
