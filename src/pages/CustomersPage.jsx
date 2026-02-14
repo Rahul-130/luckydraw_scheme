@@ -47,7 +47,6 @@ export default function CustomersPage() {
   const { token, user } = useAuth();
   const { bookId } = useParams();
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState(null);
   const debouncedSearch = useDebounce(searchText, 500);
 
   const { customers, loading: customersLoading, error: customersError, refetch: refetchCustomers } = useCustomers(bookId, debouncedSearch);
@@ -188,19 +187,6 @@ export default function CustomersPage() {
         };
     }, [customers]);
 
-    const filteredCustomers = useMemo(() => {
-        if (!statusFilter) return customers;
-        return customers.filter(c => {
-            if (statusFilter === 'Winner') return c.isWinner && !c.settledDate;
-            if (statusFilter === 'Winner Closed') return c.isWinner && c.settledDate;
-            if (statusFilter === 'Closed') return c.isFrozen && !c.isWinner;
-            if (statusFilter === 'Completed') return !c.isFrozen && (c.paymentCount || 0) >= 20;
-            if (statusFilter === 'Eligible') return !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments <= 2;
-            if (statusFilter === 'Not Eligible') return !c.isFrozen && (c.paymentCount || 0) < 20 && c.missedPayments > 2;
-            return true;
-        });
-    }, [customers, statusFilter]);
-
     const columns = useMemo(() => [
         { field: 'id', headerName: 'ID', width: 90 },
         { field: 'name', headerName: 'Name', width: 200 },
@@ -213,7 +199,7 @@ export default function CustomersPage() {
             flex: 0.5,
             minWidth: 150,
             renderCell: (params) => (
-                <StatusChip customer={params.row} onClick={(status) => setStatusFilter(prev => prev === status ? null : status)} />
+                <StatusChip customer={params.row} />
             )
         },
 
@@ -293,14 +279,6 @@ export default function CustomersPage() {
             { label: 'Not Eligible', value: customerSummary.notEligible, color: 'error.main' },
           ]}
         >
-          {statusFilter && (
-            <Chip 
-                label={`Filter: ${statusFilter}`} 
-                onDelete={() => setStatusFilter(null)} 
-                color="secondary" 
-                sx={{ mr: 1 }} 
-            />
-          )}
           <Tooltip title="Add Customer (Ctrl + /)">
             <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)}>
               Add Customer
@@ -309,7 +287,7 @@ export default function CustomersPage() {
         </SearchAndSummaryBox>
 
         <StyledDataGrid
-                rows={filteredCustomers}
+                rows={customers}
                 columns={columns}
                 loading={customersLoading}
                 onRowClick={(params) => navigate(`/books/${bookId}/customers/${params.row.id}/payments`)}
