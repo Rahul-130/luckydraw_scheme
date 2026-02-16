@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { addPayment, getPayments, getCustomers, editPayment, deletePayment, getBook } from '../services/api';
+import { addPayment, getPayments, getCustomers, editPayment, deletePayment, getBook, verifyPassword } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
 import { usePayments } from '../hooks/usePayments';
@@ -21,6 +21,8 @@ import PaymentFormFields from '../components/PaymentFormFields';
 import PageHeader from '../components/PageHeader';
 import ActionMenu from '../components/ActionMenu';
 import { renderComponentInNewWindow } from '../utils/printing';
+import PasswordOTPConfirmationDialog from '../components/PasswordOTPConfirmationDialog';
+import { extractApiErrorMessage } from '../utils/apiUtils';
 
 
 export default function PaymentsPage() {
@@ -36,6 +38,10 @@ export default function PaymentsPage() {
     const navigate = useNavigate();
     const [selectionModel, setSelectionModel] = useState([]);
     const [allAgents, setAllAgents] = useState([]);
+
+    const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
 
     // Fetch all agents for the user to populate autocomplete
     useEffect(() => {
@@ -218,26 +224,36 @@ export default function PaymentsPage() {
 
         delete payload.paymentType;
 
-        await editPayment(bookId, customerId, editForm.id, payload, token);
-        setEditOpen(false);
-        refetch();
-        showSnackbar('Payment edit successfully.', 'success');
+        setPendingAction({ type: 'edit', id: editForm.id, data: payload });
+        setOtpDialogOpen(true);
     };
 
     const handleDelete = (paymentId) => {
-        showConfirmation({
-            title: 'Confirm Payment Deletion',
-            message: 'Are you sure you want to delete this payment? This action cannot be undone.',
-            onConfirm: async () => {
-                try {
-                    await deletePayment(bookId, customerId, paymentId, token);
-                    refetch();
-                    showSnackbar('Payment deleted successfully.', 'success');
-                } catch (err) { showSnackbar(err.response?.data?.error || 'Failed to delete payment.', 'error'); }
-            },
-            confirmColor: 'error',
-            confirmText: 'Delete'
-        });
+        setPendingAction({ type: 'delete', id: paymentId });
+        setOtpDialogOpen(true);
+    };
+
+    const handleConfirmOtp = async (password, otp) => {
+        setOtpLoading(true);
+        try {
+            await verifyPassword(token, password, otp);
+
+            if (pendingAction.type === 'edit') {
+                await editPayment(bookId, customerId, pendingAction.id, pendingAction.data, token);
+                setEditOpen(false);
+                showSnackbar('Payment edit successfully.', 'success');
+            } else if (pendingAction.type === 'delete') {
+                await deletePayment(bookId, customerId, pendingAction.id, token);
+                showSnackbar('Payment deleted successfully.', 'success');
+            }
+            refetch();
+            setOtpDialogOpen(false);
+        } catch (err) {
+            showSnackbar(extractApiErrorMessage(err, "Action failed"), 'error');
+        } finally {
+            setOtpLoading(false);
+            setPendingAction(null);
+        }
     };
 
     const handlePrint = (payment) => {
@@ -448,6 +464,18 @@ export default function PaymentsPage() {
             onConfirm={handleConfirm}
             confirmColor={dialogConfig.confirmColor}
             confirmText={dialogConfig.confirmText}
+        />
+
+        <PasswordOTPConfirmationDialog
+            open={otpDialogOpen}
+            onClose={() => { setOtpDialogOpen(false); setPendingAction(null); }}
+            onConfirm={handleConfirmOtp}
+            loading={otpLoading}
+            title={pendingAction?.type === 'delete' ? 'Delete Payment?' : 'Confirm Edit Payment'}
+            message={pendingAction?.type === 'delete' 
+                ? 'Are you sure you want to delete this payment? This action cannot be undone. Please enter your credentials to confirm.' 
+                : 'Please enter your credentials to confirm changes to this payment.'}
+            is2FAEnabled={user?.is2FAEnabled}
         />
       </PageLayout>
     </LocalizationProvider>
