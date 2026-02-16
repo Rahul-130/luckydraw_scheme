@@ -4,11 +4,11 @@ import {
   editBook,
   deleteBook,
   toggleBookActive,
+  verifyPassword,
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import { useBooks } from "../hooks/useBooks";
-import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
 import { useKeyShortcut } from "../hooks/useKeyShortcut";
 import {
   TextField,
@@ -42,7 +42,6 @@ import {
   ToggleOff,
   Search,
 } from "@mui/icons-material";
-import ConfirmationDialog from "../components/ConfirmationDialog";
 import StyledDataGrid from "../components/StyledDataGrid";
 import StyledSearchBar from "../components/StyledSearchBar";
 import SummaryBox from "../components/SummaryBox";
@@ -54,6 +53,7 @@ import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import ActionMenu from "../components/ActionMenu";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 import { useSnackbar } from "../context/SnackbarContext";
+import PasswordOTPConfirmationDialog from "../components/PasswordOTPConfirmationDialog";
 
 const fadeIn = keyframes`
   from {
@@ -67,7 +67,7 @@ const fadeIn = keyframes`
 `;
 
 export default function BooksPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [searchText, setSearchText] = useState("");
   const debouncedSearch = useDebounce(searchText, 500);
 
@@ -96,7 +96,10 @@ export default function BooksPage() {
     startMonthIso: "",
     totalAmount: "",
   });
-  const { dialogConfig, showConfirmation, handleClose: handleConfirmClose, handleConfirm } = useConfirmationDialog();
+
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
   const { showSnackbar } = useSnackbar();
 
   const navigate = useNavigate();
@@ -117,56 +120,48 @@ export default function BooksPage() {
   };
 
   // edit book
-  const handleEdit = async () => {
-    try {
-      await editBook(editForm.id, editForm, token);
-      showSnackbar("Book updated successfully!", "success");
-      setEditOpen(false);
-      refetchBooks();
-    } catch (err) {
-      showSnackbar(extractApiErrorMessage(err, "Failed to edit book"), "error");
-    }
+  const handleEdit = () => {
+    setPendingAction({ type: 'edit', data: editForm });
+    setOtpDialogOpen(true);
   };
 
   const handleDelete = useCallback((bookId, bookName) => {
-    showConfirmation({
-        open: true,
-        title: `Delete Book "${bookName}"?`,
-        message: 'Are you sure you want to delete this book and all its related data? This action cannot be undone.',
-        onConfirm: async () => {
-            try {
-                await deleteBook(bookId, token);
-                showSnackbar(`Book "${bookName}" deleted successfully.`, "success");
-                refetchBooks();
-            } catch (err) {
-                showSnackbar(extractApiErrorMessage(err, "Failed to delete book"), "error");
-            }
-        },
-        confirmColor: 'error',
-        confirmText: 'Delete'
-    });
-  }, [token, refetchBooks, showConfirmation]);
+    setPendingAction({ type: 'delete', id: bookId, name: bookName });
+    setOtpDialogOpen(true);
+  }, []);
 
   // toggle book active status
   const handleToggle = useCallback((bookId, bookName, isActive) => {
-    const action = isActive ? "deactivate" : "activate";
-    showConfirmation({
-      open: true,
-      title: `${action.charAt(0).toUpperCase() + action.slice(1)} "${bookName}"?`,
-      message: `Are you sure you want to ${action} this book?`,
-      onConfirm: async () => {
-        try {
-          await toggleBookActive(bookId, token);
-          showSnackbar(`Book "${bookName}" has been ${action}d.`, "success");
-          refetchBooks();
-        } catch (err) {
-          showSnackbar(extractApiErrorMessage(err, `Failed to ${action} book`), "error");
-        }
-      },
-      confirmColor: isActive ? 'warning' : 'success',
-      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
-    });
-  }, [token, refetchBooks, showConfirmation]);
+    setPendingAction({ type: 'toggle', id: bookId, name: bookName, isActive });
+    setOtpDialogOpen(true);
+  }, []);
+
+  const handleConfirmOtp = async (password, otp) => {
+    setOtpLoading(true);
+    try {
+      await verifyPassword(token, password, otp);
+
+      if (pendingAction.type === 'edit') {
+        await editBook(pendingAction.data.id, pendingAction.data, token);
+        showSnackbar("Book updated successfully!", "success");
+        setEditOpen(false);
+      } else if (pendingAction.type === 'delete') {
+        await deleteBook(pendingAction.id, token);
+        showSnackbar(`Book "${pendingAction.name}" deleted successfully.`, "success");
+      } else if (pendingAction.type === 'toggle') {
+        await toggleBookActive(pendingAction.id, token);
+        const action = pendingAction.isActive ? "deactivate" : "activate";
+        showSnackbar(`Book "${pendingAction.name}" has been ${action}d.`, "success");
+      }
+      refetchBooks();
+      setOtpDialogOpen(false);
+    } catch (err) {
+      showSnackbar(extractApiErrorMessage(err, "Action failed"), "error");
+    } finally {
+      setOtpLoading(false);
+      setPendingAction(null);
+    }
+  };
 
 
   const handleBackup = () => {
@@ -334,14 +329,22 @@ export default function BooksPage() {
             <BookFormFields formState={editForm} onFormChange={setEditForm} />
           </FormDialog>
 
-          <ConfirmationDialog
-              open={dialogConfig.open}
-              title={dialogConfig.title}
-              message={dialogConfig.message}
-              onClose={handleConfirmClose}
-              onConfirm={handleConfirm}
-              confirmColor={dialogConfig.confirmColor}
-              confirmText={dialogConfig.confirmText}
+          <PasswordOTPConfirmationDialog
+            open={otpDialogOpen}
+            onClose={() => { setOtpDialogOpen(false); setPendingAction(null); }}
+            onConfirm={handleConfirmOtp}
+            loading={otpLoading}
+            title={
+                pendingAction?.type === 'delete' ? `Delete Book "${pendingAction.name}"?` :
+                pendingAction?.type === 'toggle' ? `${pendingAction.isActive ? "Deactivate" : "Activate"} "${pendingAction.name}"?` :
+                'Confirm Edit Book'
+            }
+            message={
+                pendingAction?.type === 'delete' ? 'Are you sure you want to delete this book and all its related data? This action cannot be undone. Please enter your credentials to confirm.' :
+                pendingAction?.type === 'toggle' ? `Are you sure you want to ${pendingAction.isActive ? "deactivate" : "activate"} this book? Please enter your credentials to confirm.` :
+                `Please enter your credentials to confirm changes for book "${pendingAction?.data?.name}".`
+            }
+            is2FAEnabled={user?.is2FAEnabled}
           />
       </PageLayout>
     </LocalizationProvider>
