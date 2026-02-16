@@ -161,11 +161,11 @@ export default function CustomersPage() {
             }
             refetchCustomers();
             setOtpDialogOpen(false);
+            setPendingAction(null);
         } catch (error) {
              showSnackbar(extractApiErrorMessage(error, "Action failed"), 'error');
         } finally {
             setOtpLoading(false);
-            setPendingAction(null);
         }
     };
 

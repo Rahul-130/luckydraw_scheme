@@ -155,11 +155,11 @@ export default function BooksPage() {
       }
       refetchBooks();
       setOtpDialogOpen(false);
+      setPendingAction(null);
     } catch (err) {
       showSnackbar(extractApiErrorMessage(err, "Action failed"), "error");
     } finally {
       setOtpLoading(false);
-      setPendingAction(null);
     }
   };
 
