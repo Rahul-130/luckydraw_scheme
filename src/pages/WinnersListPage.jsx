@@ -1,55 +1,60 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { unmarkCustomerAsWinner } from '../services/api';
+import { unmarkCustomerAsWinner, verifyPassword } from '../services/api';
 import { Container, Typography, Alert, Button, Box, Stack, IconButton, Paper } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useWinners } from '../hooks/useWinners';
 import { useDebounce } from '../hooks/useDebounce';
-import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
 import StyledDataGrid from '../components/StyledDataGrid';
 import SummaryBox from '../components/SummaryBox';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { sendUnmarkWinnerMessage } from '../utils/whatsapp';
-import ConfirmationDialog from '../components/ConfirmationDialog';
 import PageLayout from '../components/PageLayout';
 import SearchAndSummaryBox from '../components/SearchAndSummaryBox';
+import PasswordOTPConfirmationDialog from '../components/PasswordOTPConfirmationDialog';
+import { extractApiErrorMessage } from '../utils/apiUtils';
 
 
 export default function WinnersListPage() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [searchText, setSearchText] = useState("");
     const debouncedSearch = useDebounce(searchText, 500);
-    const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
     const { showSnackbar } = useSnackbar();
 
     const { winners, loading, error, refetch: refetchWinners } = useWinners(debouncedSearch);
 
+    const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+
     const handleUnmarkAsWinner = useCallback((customer) => {
-        showConfirmation({
-            title: `Unmark ${customer.customerName} as Winner`,
-            message: `Are you sure you want to unmark ${customer.customerName} as a winner?`,
-            onConfirm: async () => {
-            try {
-                await unmarkCustomerAsWinner(token, {
-                    bookId: customer.bookId,
-                    customerId: customer.customerId
-                });
-                showSnackbar(`Unmarked ${customer.customerName} as a winner!`, 'success');
-    
-                // --- Send WhatsApp message based on selected method ---
-                sendUnmarkWinnerMessage(customer);
-    
-                refetchWinners();
-            } catch (err) {
-                showSnackbar(err.response?.data?.error || 'Failed to unmark customer as winner', 'error');
-            }
-            },
-            confirmColor: 'warning',
-            confirmText: 'Unmark'
-        });
-    }, [token, showSnackbar, refetchWinners, showConfirmation]);
+        setPendingAction({ type: 'unmark', data: customer });
+        setOtpDialogOpen(true);
+    }, []);
+
+    const handleConfirmOtp = async (password, otp) => {
+        setOtpLoading(true);
+        try {
+            await verifyPassword(token, password, otp);
+            const customer = pendingAction.data;
+
+            await unmarkCustomerAsWinner(token, {
+                bookId: customer.bookId,
+                customerId: customer.customerId
+            });
+            showSnackbar(`Unmarked ${customer.customerName} as a winner!`, 'success');
+            sendUnmarkWinnerMessage(customer);
+            refetchWinners();
+            setOtpDialogOpen(false);
+            setPendingAction(null);
+        } catch (err) {
+            showSnackbar(extractApiErrorMessage(err, "Action failed"), 'error');
+        } finally {
+            setOtpLoading(false);
+        }
+    };
 
     const columns = useMemo(() => [
         { field: 'id', headerName: 'ID', width: 80 },
@@ -132,14 +137,14 @@ export default function WinnersListPage() {
                 </Alert>
             )}
 
-            <ConfirmationDialog
-                open={dialogConfig.open}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                onClose={handleClose}
-                onConfirm={handleConfirm}
-                confirmColor="warning"
-                confirmText="Unmark"
+            <PasswordOTPConfirmationDialog
+                open={otpDialogOpen}
+                onClose={() => { setOtpDialogOpen(false); setPendingAction(null); }}
+                onConfirm={handleConfirmOtp}
+                loading={otpLoading}
+                title={`Unmark ${pendingAction?.data?.customerName} as Winner?`}
+                message={`Are you sure you want to unmark ${pendingAction?.data?.customerName} as a winner? Please enter your credentials to confirm.`}
+                is2FAEnabled={user?.is2FAEnabled}
             />
         </PageLayout>
     );

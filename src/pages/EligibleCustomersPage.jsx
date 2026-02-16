@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useAuth } from '../context/AuthContext';
-import { getEligibleCustomers, markCustomerAsWinner } from '../services/api';
+import { getEligibleCustomers, markCustomerAsWinner, verifyPassword } from '../services/api';
 import {
   Container,
   Typography,
@@ -12,53 +12,59 @@ import { useSnackbar } from '../context/SnackbarContext';
 import { Search, EmojiEvents } from "@mui/icons-material";
 import { useEligibleCustomers } from "../hooks/useEligibleCustomers";
 import { useDebounce } from "../hooks/useDebounce";
-import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
 import StyledDataGrid from "../components/StyledDataGrid";
 import { sendWinnerCongratulationsMessage } from "../utils/whatsapp";
-import ConfirmationDialog from "../components/ConfirmationDialog";
 import SummaryBox from "../components/SummaryBox";
 import PageLayout from "../components/PageLayout";
 import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
+import PasswordOTPConfirmationDialog from "../components/PasswordOTPConfirmationDialog";
+import { extractApiErrorMessage } from "../utils/apiUtils";
 
 // Add the manuall winner to the winner page
 export default function EligibleCustomersPage() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [searchText, setSearchText] = useState("");
     const debouncedSearch = useDebounce(searchText, 500);
-    const { dialogConfig, showConfirmation, handleClose, handleConfirm } = useConfirmationDialog();
 
     const { customers, loading, error, refetch: refetchEligibleCustomers } = useEligibleCustomers(debouncedSearch);
 
     const { showSnackbar } = useSnackbar();
 
-    const handleMarkAsWinner = async (customer) => {
-        const [bookId, customerId] = customer.id.split('-').map(Number);
-        showConfirmation({
-            title: `Mark ${customer.customerName} as Winner`,
-            message: `Are you sure you want to mark ${customer.customerName} as a winner?`,
-            onConfirm: async () => {
-            try {
-                await markCustomerAsWinner(token, {
-                    bookId,
-                    customerId,
-                    bookName: customer.bookName,
-                    customerName: customer.customerName,
-                    relationInfo: customer.relationInfo,
-                    address: customer.address,
-                    phone: customer.phone
-                });
-                showSnackbar(`Marked ${customer.customerName} as a winner!`, 'success');
+    const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
 
-                // --- Send WhatsApp message based on selected method ---
-                sendWinnerCongratulationsMessage(customer);
+    const handleMarkAsWinner = (customer) => {
+        setPendingAction({ type: 'mark', data: customer });
+        setOtpDialogOpen(true);
+    };
 
-                refetchEligibleCustomers(); // Refetch to update the list
-            } catch (err) {
-                showSnackbar(err.response?.data?.error || 'Failed to mark customer as winner', 'error');
-            }
-            }
-        });
-        
+    const handleConfirmOtp = async (password, otp) => {
+        setOtpLoading(true);
+        try {
+            await verifyPassword(token, password, otp);
+            const customer = pendingAction.data;
+            const [bookId, customerId] = customer.id.split('-').map(Number);
+
+            await markCustomerAsWinner(token, {
+                bookId,
+                customerId,
+                bookName: customer.bookName,
+                customerName: customer.customerName,
+                relationInfo: customer.relationInfo,
+                address: customer.address,
+                phone: customer.phone
+            });
+            showSnackbar(`Marked ${customer.customerName} as a winner!`, 'success');
+            sendWinnerCongratulationsMessage(customer);
+            refetchEligibleCustomers();
+            setOtpDialogOpen(false);
+            setPendingAction(null);
+        } catch (err) {
+            showSnackbar(extractApiErrorMessage(err, "Action failed"), 'error');
+        } finally {
+            setOtpLoading(false);
+        }
     };
 
 
@@ -128,12 +134,14 @@ export default function EligibleCustomersPage() {
                 </Alert>
             )}
 
-            <ConfirmationDialog
-                open={dialogConfig.open}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                onClose={handleClose}
-                onConfirm={handleConfirm}
+            <PasswordOTPConfirmationDialog
+                open={otpDialogOpen}
+                onClose={() => { setOtpDialogOpen(false); setPendingAction(null); }}
+                onConfirm={handleConfirmOtp}
+                loading={otpLoading}
+                title={`Mark ${pendingAction?.data?.customerName} as Winner?`}
+                message={`Are you sure you want to mark ${pendingAction?.data?.customerName} as a winner? Please enter your credentials to confirm.`}
+                is2FAEnabled={user?.is2FAEnabled}
             />
         </PageLayout>
     );
