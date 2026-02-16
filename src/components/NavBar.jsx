@@ -23,6 +23,7 @@ import MenuIcon from "@mui/icons-material/Menu";import CloseIcon from '@mui/icon
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PeopleIcon from '@mui/icons-material/People';
+
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -100,6 +101,7 @@ export default function NavBar() {
   };
 
   const navItems = [
+    { label: "Home", path: "/", auth: true },
     { label: "Dashboard", path: "/dashboard", auth: true, icon: <DashboardIcon /> },
     { label: "Books", path: "/books", auth: true, icon: <MenuBookIcon /> },
     { label: "Eligible Customers", path: "/eligible-customers", auth: true, icon: <PeopleIcon /> },

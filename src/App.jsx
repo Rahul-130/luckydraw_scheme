@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import BooksPage from './pages/BooksPage';
 import CustomersPage from './pages/CustomersPage';
+import HomePage from './pages/HomePage';
 import PaymentsPage from './pages/PaymentsPage';
 import LuckyDrawPage from './pages/LuckyDrawPage';
 import WinnersListPage from './pages/WinnersListPage';
@@ -40,6 +41,7 @@ const AppContent = () => {
 
           {/* Private routes using the MainLayout */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<HomePage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/setup-2fa" element={<Setup2FAPage />} />
             <Route path="/books" element={<BooksPage />} />
