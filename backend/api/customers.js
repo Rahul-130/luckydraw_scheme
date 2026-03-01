@@ -120,27 +120,44 @@ router.post('/:bookId', requireAuth, async (req, res) => {
     if (custCheck.rows.length)
       return res.status(409).json({ error: 'A customer with the same name, phone, and address already exists.' });
 
-    // 4. Insert new customer
-    const result = await conn.execute(
-      `INSERT INTO customers (book_id, name, relation_info, phone, address)
-       VALUES (:bid, :name, :relationInfo, :phone, :address)
+    // 4. Find the next available ID for this book
+    const nextIdResult = await conn.execute(
+        `SELECT MIN(num) as NEXT_ID
+         FROM (
+             SELECT LEVEL as num
+             FROM dual
+             CONNECT BY LEVEL <= :max_customers
+         ) nums
+         LEFT JOIN customers c ON nums.num = c.id AND c.book_id = :book_id
+         WHERE c.id IS NULL`,
+        { max_customers: Number(bookR.rows[0].MAX_CUSTOMERS), book_id: Number(req.params.bookId) }
+    );
 
-       RETURNING id INTO :id`,
+    const nextId = nextIdResult.rows[0].NEXT_ID;
+
+    if (nextId === null) {
+        return res.status(400).json({ error: 'Book is full, cannot find an available customer ID.' });
+    }
+
+    // 5. Insert new customer with the determined ID
+    await conn.execute(
+      `INSERT INTO customers (id, book_id, name, relation_info, phone, address)
+       VALUES (:id, :bid, :name, :relationInfo, :phone, :address)`,
       {
+        id: nextId,
         bid: Number(req.params.bookId),
         name: String(name),
         relationInfo: String(relationInfo || ''),
         phone: String(phone),
-        address: String(address),
-        id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+        address: String(address)
       }
     );
 
     await conn.commit();
 
-    // 5. Return inserted customer
+    // 6. Return inserted customer
     res.status(201).json({
-      id: String(result.outBinds.id[0]),
+      id: String(nextId),
       bookId: String(req.params.bookId),
       name: String(name),
       relationInfo: String(relationInfo || ''),
