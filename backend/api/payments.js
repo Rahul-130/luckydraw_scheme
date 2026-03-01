@@ -70,6 +70,32 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
       return res.status(400).json({ error: 'Maximum limit of 20 payments reached for this customer.' });
     }
 
+    // Check for duplicate receipt number globally
+    if (receiptNo) {
+      const receiptCheck = await conn.execute(
+        `SELECT p.id, p.book_id, p.customer_id, b.name as book_name, c.name as customer_name 
+         FROM payments p
+         JOIN books b ON p.book_id = b.id
+         JOIN customers c ON p.customer_id = c.id
+         WHERE p.receipt_no = :receiptNo`,
+        { receiptNo: String(receiptNo) }
+      );
+      
+      if (receiptCheck.rows.length > 0) {
+        const conflict = receiptCheck.rows[0];
+        return res.status(409).json({ 
+          error: 'Duplicate receipt number', 
+          details: {
+            receiptNo,
+            bookId: String(conflict.BOOK_ID),
+            customerId: String(conflict.CUSTOMER_ID),
+            bookName: conflict.BOOK_NAME,
+            customerName: conflict.CUSTOMER_NAME
+          }
+        });
+      }
+    }
+
     // Check if payment already exists for this monthIso
     const payCheck = await conn.execute(
       `SELECT id FROM payments WHERE customer_id=:cid AND book_id=:bid AND month_iso=:monthIso`,
@@ -199,6 +225,32 @@ router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, 
     const bookTotalAmount = Number(bookR.rows[0].TOTAL_AMOUNT || 0);
     if (amount && bookTotalAmount > 0 && Number(amount) !== bookTotalAmount) {
        return res.status(400).json({ error: `Invalid amount. This book requires a fixed monthly payment of ₹${bookTotalAmount}.` });
+    }
+
+    // Check for duplicate receipt number globally (excluding current payment)
+    if (receiptNo) {
+       const receiptCheck = await conn.execute(
+        `SELECT p.id, p.book_id, p.customer_id, b.name as book_name, c.name as customer_name 
+         FROM payments p
+         JOIN books b ON p.book_id = b.id
+         JOIN customers c ON p.customer_id = c.id
+         WHERE p.receipt_no = :receiptNo AND p.id != :pid`,
+        { receiptNo: String(receiptNo), pid: Number(req.params.paymentId) }
+      );
+
+      if (receiptCheck.rows.length > 0) {
+        const conflict = receiptCheck.rows[0];
+        return res.status(409).json({ 
+          error: 'Duplicate receipt number', 
+          details: {
+            receiptNo,
+            bookId: String(conflict.BOOK_ID),
+            customerId: String(conflict.CUSTOMER_ID),
+            bookName: conflict.BOOK_NAME,
+            customerName: conflict.CUSTOMER_NAME
+          }
+        });
+      }
     }
 
     if (receiptNo !== undefined) { fields.push('receipt_no=:receiptNo'); binds.receiptNo = receiptNo ? String(receiptNo) : null; }

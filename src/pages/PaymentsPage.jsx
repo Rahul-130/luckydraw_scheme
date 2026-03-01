@@ -8,7 +8,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../context/SnackbarContext';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { Button, Typography, Box, Stack, ButtonGroup, Tooltip} from '@mui/material';
+import { 
+  Button, 
+  Typography, 
+  Box, 
+  Stack, 
+  ButtonGroup, 
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
 import { Add, Edit, Delete, ArrowBack, Print } from "@mui/icons-material";
 import PageLayout from '../components/PageLayout';
 import BulkPaymentReceipt from '../components/BulkPaymentReceipt';
@@ -42,6 +53,7 @@ export default function PaymentsPage() {
     const [otpDialogOpen, setOtpDialogOpen] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
     const [pendingAction, setPendingAction] = useState(null);
+    const [duplicateError, setDuplicateError] = useState(null);
 
     // Fetch all agents for the user to populate autocomplete
     useEffect(() => {
@@ -167,7 +179,11 @@ export default function PaymentsPage() {
         refetch();
         showSnackbar('Payment successfully completed.', 'success');
       } catch (error) {
-        showSnackbar(error.response?.data?.error || "Failed to add payment", 'error');
+        if (error.response && error.response.status === 409 && error.response.data.details) {
+            setDuplicateError(error.response.data.details);
+        } else {
+            showSnackbar(error.response?.data?.error || "Failed to add payment", 'error');
+        }
       }
     };
 
@@ -250,7 +266,13 @@ export default function PaymentsPage() {
             setOtpDialogOpen(false);
             setPendingAction(null);
         } catch (err) {
-            showSnackbar(extractApiErrorMessage(err, "Action failed"), 'error');
+            if (err.response && err.response.status === 409 && err.response.data.details) {
+                setDuplicateError(err.response.data.details);
+                setOtpDialogOpen(false);
+                setPendingAction(null);
+            } else {
+                showSnackbar(extractApiErrorMessage(err, "Action failed"), 'error');
+            }
         } finally {
             setOtpLoading(false);
         }
@@ -477,6 +499,31 @@ export default function PaymentsPage() {
                 : 'Please enter your credentials to confirm changes to this payment.'}
             is2FAEnabled={user?.is2FAEnabled}
         />
+
+        <Dialog open={!!duplicateError} onClose={() => setDuplicateError(null)}>
+            <DialogTitle sx={{ color: 'error.main', fontWeight: 'bold' }}>Duplicate Receipt Number</DialogTitle>
+            <DialogContent>
+                <Typography>
+                    Receipt number <strong>{duplicateError?.receiptNo}</strong> is already used by:
+                </Typography>
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="body2" gutterBottom><strong>Customer:</strong> {duplicateError?.customerName}</Typography>
+                    <Typography variant="body2"><strong>Book:</strong> {duplicateError?.bookName}</Typography>
+                </Box>
+                <Typography sx={{ mt: 2 }} variant="body2" color="text.secondary">
+                    Please use a different receipt number or check the existing record.
+                </Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setDuplicateError(null)}>Close</Button>
+                <Button variant="contained" color="primary" onClick={() => {
+                    setDuplicateError(null);
+                    navigate(`/books/${duplicateError.bookId}/customers/${duplicateError.customerId}/payments`);
+                }}>
+                    Go to Record
+                </Button>
+            </DialogActions>
+        </Dialog>
       </PageLayout>
     </LocalizationProvider>
   )
