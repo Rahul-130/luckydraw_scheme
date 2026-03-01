@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     Container, 
@@ -12,11 +12,13 @@ import {
 } from '@mui/material';
 import { useBooks } from '../hooks/useBooks';
 import { useDebounce } from '../hooks/useDebounce';
+import { useAuth } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
-import { Payment, Book, Person } from '@mui/icons-material';
+import { Payment, Book, Person, AccountBalanceWallet, Savings, CardGiftcard } from '@mui/icons-material';
 
 export default function HomePage() {
     const navigate = useNavigate();
+    const { token } = useAuth();
     const [bookSearch, setBookSearch] = useState('');
     const debouncedBookSearch = useDebounce(bookSearch, 300);
     
@@ -25,6 +27,26 @@ export default function HomePage() {
     
     const [selectedBook, setSelectedBook] = useState(null);
     const [customerId, setCustomerId] = useState('');
+    const [stats, setStats] = useState(null);
+
+    useEffect(() => {
+        if (selectedBook && token) {
+            fetch(`/api/books/${selectedBook.id}/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error('Failed to fetch stats');
+            })
+            .then(data => setStats(data))
+            .catch(err => {
+                console.error(err);
+                setStats(null);
+            });
+        } else {
+            setStats(null);
+        }
+    }, [selectedBook, token]);
 
     const handleNavigate = (e) => {
         e.preventDefault();
@@ -86,6 +108,34 @@ export default function HomePage() {
                                 />
                             )}
                         />
+
+                        {stats && (
+                            <Box sx={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(3, 1fr)', 
+                                gap: 1,
+                                mt: -1,
+                                mb: 1
+                            }}>
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'primary.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'primary.100' }}>
+                                    <AccountBalanceWallet color="primary" fontSize="small" sx={{ mb: 0.5 }} />
+                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Collected</Typography>
+                                    <Typography variant="body2" color="primary.main" fontWeight="bold">₹{stats.totalCollected?.toLocaleString('en-IN')}</Typography>
+                                </Paper>
+                                
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'warning.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'warning.100' }}>
+                                    <Savings color="warning" fontSize="small" sx={{ mb: 0.5 }} />
+                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Settled</Typography>
+                                    <Typography variant="body2" color="warning.main" fontWeight="bold">₹{stats.totalSettled?.toLocaleString('en-IN')}</Typography>
+                                </Paper>
+
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'success.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'success.100' }}>
+                                    <CardGiftcard color="success" fontSize="small" sx={{ mb: 0.5 }} />
+                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Bonus</Typography>
+                                    <Typography variant="body2" color="success.main" fontWeight="bold">₹{stats.totalBonus?.toLocaleString('en-IN')}</Typography>
+                                </Paper>
+                            </Box>
+                        )}
 
                         <TextField
                             label="Customer ID"

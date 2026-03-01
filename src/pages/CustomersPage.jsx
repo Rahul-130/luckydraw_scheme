@@ -23,6 +23,7 @@ import {
   MenuItem,
   ListItemIcon,
   DialogActions,
+  InputAdornment,
   Tooltip,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -69,6 +70,10 @@ export default function CustomersPage() {
     const [otpLoading, setOtpLoading] = useState(false);
     const [pendingAction, setPendingAction] = useState(null);
 
+    const [settleDialogOpen, setSettleDialogOpen] = useState(false);
+    const [customerToSettle, setCustomerToSettle] = useState(null);
+    const [bonusAmount, setBonusAmount] = useState('');
+
     // Add keyboard shortcut for "Add Customer" (Ctrl + / or Cmd + /)
     useKeyShortcut(() => setOpen(true), { key: '/', ctrl: true, meta: true });
 
@@ -93,25 +98,29 @@ export default function CustomersPage() {
     };
 
     const handleSettle = useCallback((customer) => {
-        const isWinner = customer.isWinner;
-        showConfirmation({
-            open: true,
-            title: isWinner ? 'Settle Winner Account?' : `Settle & Close Account?`,
-            message: isWinner ? `Has ${customer.name} collected the prize? This will settle and close the account.` : `Are you sure you want to settle and close ${customer.name}'s account? This will freeze the account.`,
-            onConfirm: async () => {
-                try {
-                    // Use editCustomer to set isFrozen to true
-                    await editCustomer(bookId, customer.id, { ...customer, isFrozen: true }, token);
-                    refetchCustomers();
-                    showSnackbar('Account settled and closed.', 'success');
-                } catch (error) {
-                    showSnackbar(extractApiErrorMessage(error, "Failed to close account"), 'error');
-                }
-            },
-            confirmColor: 'warning',
-            confirmText: 'Settle & Close'
-        });
-    }, [bookId, token, refetchCustomers, showSnackbar, showConfirmation]);
+        setCustomerToSettle(customer);
+        setBonusAmount(''); // Reset bonus amount
+        setSettleDialogOpen(true);
+    }, []);
+
+    const handleConfirmSettle = async () => {
+        if (!customerToSettle) return;
+
+        try {
+            await editCustomer(bookId, customerToSettle.id, { 
+                isFrozen: true,
+                bonusAmount: Number(bonusAmount) || 0
+            }, token);
+            
+            refetchCustomers();
+            showSnackbar('Account settled and closed.', 'success');
+        } catch (error) {
+            showSnackbar(extractApiErrorMessage(error, "Failed to close account"), 'error');
+        } finally {
+            setSettleDialogOpen(false);
+            setCustomerToSettle(null);
+        }
+    };
 
     const handleMakeWinner = useCallback((customer) => {
          showConfirmation({
@@ -318,6 +327,38 @@ export default function CustomersPage() {
             confirmColor={dialogConfig.confirmColor || "error"}
             confirmText={dialogConfig.confirmText || "Delete"}
         />
+
+        <Dialog open={settleDialogOpen} onClose={() => setSettleDialogOpen(false)}>
+            <DialogTitle>
+                {customerToSettle?.isWinner ? 'Settle Winner Account' : 'Settle & Close Account'}
+            </DialogTitle>
+            <DialogContent>
+                <Typography gutterBottom>
+                    {customerToSettle?.isWinner 
+                        ? `Confirm that ${customerToSettle?.name} has collected the prize. You can add an optional bonus amount.` 
+                        : `You are about to settle and close ${customerToSettle?.name}'s account. This will freeze the account. You can add an optional final bonus amount.`}
+                </Typography>
+                <TextField
+                    autoFocus
+                    margin="dense"
+                    id="bonus"
+                    label="Bonus Amount (Optional)"
+                    type="number"
+                    fullWidth
+                    variant="outlined"
+                    value={bonusAmount}
+                    onChange={(e) => setBonusAmount(e.target.value)}
+                    InputProps={{
+                        startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                    }}
+                    sx={{mt: 2}}
+                />
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setSettleDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleConfirmSettle} color="warning" variant="contained">Settle & Close</Button>
+            </DialogActions>
+        </Dialog>
 
         <PasswordOTPConfirmationDialog
             open={otpDialogOpen}

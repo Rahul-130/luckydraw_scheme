@@ -131,6 +131,39 @@ router.get('/:bookId', requireAuth, async (req, res) => {
   }
 });
 
+// Get stats for a single book (collected, settled, bonus)
+router.get('/:bookId/stats', requireAuth, async (req, res) => {
+  const conn = await getConnection();
+  try {
+    const bid = Number(req.params.bookId);
+    const oid = Number(req.user.id);
+
+    // Check ownership
+    const bookCheck = await conn.execute('SELECT id FROM books WHERE id=:bid AND owner_id=:oid', { bid, oid });
+    if (!bookCheck.rows.length) return res.status(404).json({ error: 'Book not found' });
+
+    const result = await conn.execute(`
+      SELECT
+        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE book_id = :bid) AS total_collected,
+        (SELECT COALESCE(SUM(bonus_amount), 0) FROM customers WHERE book_id = :bid AND settled_date IS NOT NULL) AS total_bonus,
+        (SELECT COALESCE(SUM(p.amount), 0) FROM payments p JOIN customers c ON p.customer_id = c.id WHERE p.book_id = :bid AND c.settled_date IS NOT NULL) AS total_settled_principal
+      FROM dual
+    `, { bid });
+
+    const row = result.rows[0];
+    res.json({
+      totalCollected: row.TOTAL_COLLECTED,
+      totalBonus: row.TOTAL_BONUS,
+      totalSettled: row.TOTAL_SETTLED_PRINCIPAL
+    });
+  } catch (e) {
+    console.error('Get book stats error:', e);
+    res.status(500).json({ error: 'internal error' });
+  } finally {
+    if (conn) await conn.close();
+  }
+});
+
 // Books - create a new book for the authenticated user
 router.post('/', requireAuth, async (req, res) => {
   const { name, maxCustomers, startMonthIso, totalAmount } = req.body || {};
