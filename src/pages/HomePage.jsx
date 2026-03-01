@@ -14,7 +14,7 @@ import { useBooks } from '../hooks/useBooks';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
-import { Payment, Book, Person, AccountBalanceWallet, Savings, CardGiftcard } from '@mui/icons-material';
+import { Payment, Book, Person, AccountBalanceWallet, Savings, CardGiftcard, AccountBalance } from '@mui/icons-material';
 
 export default function HomePage() {
     const navigate = useNavigate();
@@ -112,8 +112,8 @@ export default function HomePage() {
                         {stats && (
                             <Box sx={{ 
                                 display: 'grid', 
-                                gridTemplateColumns: 'repeat(3, 1fr)', 
-                                gap: 1,
+                                gridTemplateColumns: 'repeat(2, 1fr)', 
+                                gap: 1.5,
                                 mt: -1,
                                 mb: 1
                             }}>
@@ -133,6 +133,12 @@ export default function HomePage() {
                                     <CardGiftcard color="success" fontSize="small" sx={{ mb: 0.5 }} />
                                     <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Bonus</Typography>
                                     <Typography variant="body2" color="success.main" fontWeight="bold">₹{stats.totalBonus?.toLocaleString('en-IN')}</Typography>
+                                </Paper>
+
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'info.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'info.100' }}>
+                                    <AccountBalance color="info" fontSize="small" sx={{ mb: 0.5 }} />
+                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Remaining</Typography>
+                                    <Typography variant="body2" color="info.main" fontWeight="bold">₹{(stats.totalCollected - stats.totalSettled)?.toLocaleString('en-IN')}</Typography>
                                 </Paper>
                             </Box>
                         )}
