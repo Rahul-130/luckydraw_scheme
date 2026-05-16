@@ -205,7 +205,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     if (address) { fields.push('address=:address'); binds.address = String(address); }
     if (bonusAmount !== undefined) { fields.push('bonus_amount=:bonusAmount'); binds.bonusAmount = Number(bonusAmount); }
     if (settlementReceiptNo !== undefined) { fields.push('settlement_receipt_no=:settlementReceiptNo'); binds.settlementReceiptNo = settlementReceiptNo; }
-    if (settlementAgentName !== undefined) { fields.push('settlement_agent_name=:settlementAgentName'); binds.settlementAgentName = settlementAgentName; }
+    if (settlementAgentName !== undefined) { fields.push('settlement_agent_name=:settlementAgentName'); binds.settlementAgentName = settlementAgentName ? settlementAgentName.trim().toUpperCase() : null; }
     if (isFrozen !== undefined) { 
       fields.push('is_frozen=:isFrozen'); 
       binds.isFrozen = isFrozen ? 1 : 0; 

@@ -94,10 +94,11 @@ router.get('/agents', requireAuth, async (req, res) => {
   const conn = await getConnection();
   try {
     const result = await conn.execute(
-      `SELECT DISTINCT p.agent_name 
-       FROM payments p
-       JOIN books b ON p.book_id = b.id
-       WHERE b.owner_id = :oid AND p.agent_name IS NOT NULL`,
+      `SELECT DISTINCT UPPER(agent_name) as agent_name FROM (
+         SELECT agent_name FROM payments p JOIN books b ON p.book_id = b.id WHERE b.owner_id = :oid
+         UNION
+         SELECT settlement_agent_name as agent_name FROM customers c JOIN books b ON c.book_id = b.id WHERE b.owner_id = :oid
+       ) WHERE agent_name IS NOT NULL`,
       { oid: Number(req.user.id) }
     );
     const agents = result.rows.map(row => row.AGENT_NAME).filter(name => name && name.trim() !== '').sort();

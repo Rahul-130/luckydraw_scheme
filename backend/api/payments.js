@@ -117,7 +117,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
         amountCash: amountCash,
         amountOnline: amountOnline,
         amountInstore: amountInstore,
-        agentName: agentName || null,
+        agentName: agentName ? agentName.trim().toUpperCase() : null,
         id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
         payment_date: { dir: oracledb.BIND_OUT, type: oracledb.DATE }
       }
@@ -257,7 +257,7 @@ router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, 
     if (amountCash !== undefined) { fields.push('amount_cash=:amountCash'); binds.amountCash = Number(amountCash); }
     if (amountOnline !== undefined) { fields.push('amount_online=:amountOnline'); binds.amountOnline = Number(amountOnline); }
     if (amountInstore !== undefined) { fields.push('amount_instore=:amountInstore'); binds.amountInstore = Number(amountInstore); }
-    if (agentName !== undefined) { fields.push('agent_name=:agentName'); binds.agentName = agentName; }
+    if (agentName !== undefined) { fields.push('agent_name=:agentName'); binds.agentName = agentName ? agentName.trim().toUpperCase() : null; }
 
     // Recalculate paymentType if amounts are being updated
     if (amountCash !== undefined || amountOnline !== undefined || amountInstore !== undefined) {
