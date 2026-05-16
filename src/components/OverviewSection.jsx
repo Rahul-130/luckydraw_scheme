@@ -8,10 +8,10 @@ const OverviewSection = ({ title, loading, stats, period }) => {
 
   return (
     <>
-      <Typography variant="h4" sx={{ mb: 2, fontWeight: '500', color: '#333' }}>
+      <Typography variant="h4" sx={{ mb: 1, fontWeight: '500', color: '#333' }}>
         {title}
       </Typography>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {loading ? (
           [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
         ) : (

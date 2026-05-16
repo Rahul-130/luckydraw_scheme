@@ -295,6 +295,16 @@ router.get('/stats', requireAuth, async (req, res) => {
        GROUP BY b.name ORDER BY win_count DESC`, { ownerId }
     );
 
+    // 12. Collections per Agent
+    const collectionsByAgentResult = await conn.execute(
+      `SELECT p.agent_name, SUM(p.amount) as total_amount 
+       FROM payments p 
+       JOIN books b ON p.book_id = b.id 
+       WHERE b.owner_id = :ownerId AND p.agent_name IS NOT NULL ${dateFilterClause}
+       GROUP BY p.agent_name ORDER BY total_amount DESC`, 
+      { ownerId, ...dateBinds }
+    );
+
     res.json({
       bookCounts: {
         total: bookCounts.TOTAL || 0,
@@ -324,6 +334,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       yearlyPayments,
       customerGrowth,
       winsPerBook: winsPerBookResult.rows,
+      collectionsByAgent: collectionsByAgentResult.rows,
     });
 
   } catch (e) {

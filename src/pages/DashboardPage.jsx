@@ -55,6 +55,7 @@ import CollapsibleSection from '../components/CollapsibleSection';
 import { CHART_COLORS } from '../theme/theme';
 import OverviewToggle from '../components/OverviewToggle';
 
+
 export default function DashboardPage() {
   const { token } = useAuth();
   const [stats, setStats] = useState(null);
@@ -106,6 +107,7 @@ export default function DashboardPage() {
     paymentMethodMixData,
     customerGrowthData,
     winsPerBookData,
+    collectionsByAgentData,
   } = useDashboardData(stats);
 
   const handleChartTypeChange = (chartName, newType) => {
@@ -176,6 +178,7 @@ export default function DashboardPage() {
             <OverviewSection title="Weekly Summary (Mon-Sun)" loading={loading} stats={stats?.weeklyPaymentStats} period="week" />
           )}
 
+
           {/* --- Monthly Payment Comparisons --- */}
           {overview === 'monthly' && (
             <OverviewSection
@@ -194,6 +197,24 @@ export default function DashboardPage() {
           {/* --- Yearly Overview --- */}
           {overview === 'yearly' && (
             <OverviewSection title="Yearly Overview" loading={loading} stats={stats?.yearlyOverviewStats} period="year" />
+          )}
+
+          {/* --- Agent Performance Summary --- */}
+          {!loading && collectionsByAgentData.length > 0 && (
+            <>
+              <Typography variant="h4" sx={{ mb: 1, fontWeight: '500', color: '#333' }}>
+                Agent Collections
+              </Typography>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
+                {collectionsByAgentData.map((agent, index) => (
+                  <StatCard 
+                    key={index}
+                    title={agent.name}
+                    value={`₹${agent.value.toLocaleString('en-IN')}`}
+                  />
+                ))}
+              </div>
+            </>
           )}
 
           {/* --- Trend Charts --- */}

@@ -66,7 +66,7 @@ const RecentActivity = () => {
 
   return (
     <>
-      <Typography variant="h4" sx={{ mb: 2, mt: 4, fontWeight: '500', color: '#000' }}>
+      <Typography variant="h4" sx={{ mb: 1, mt: 2, fontWeight: '500', color: '#000' }}>
         Recent Activity
       </Typography>
       <Paper elevation={3} sx={{ p: 2 }}>

@@ -26,6 +26,7 @@ export const useDashboardData = (stats) => {
         paymentMethodMixData: [],
         customerGrowthData: [],
         winsPerBookData: [],
+        collectionsByAgentData: [],
       };
     }
 
@@ -59,6 +60,10 @@ export const useDashboardData = (stats) => {
       .map(item => ({ name: item.BOOK_NAME, value: item.WIN_COUNT }))
       .slice(0, 10);
 
+    const collectionsByAgentData = (stats.collectionsByAgent || [])
+      .map(item => ({ name: item.AGENT_NAME, value: item.TOTAL_AMOUNT }))
+      .slice(0, 10); // Display top 10 agents
+
     return {
       bookChartData,
       winnerChartData,
@@ -69,6 +74,7 @@ export const useDashboardData = (stats) => {
       paymentMethodMixData,
       customerGrowthData,
       winsPerBookData,
+      collectionsByAgentData,
     };
   }, [stats]);
 };

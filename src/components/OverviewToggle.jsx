@@ -5,7 +5,7 @@ const overviewOptions = ['daily', 'weekly', 'monthly', 'yearly'];
 
 const OverviewToggle = ({ value, onChange }) => {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
       <ToggleButtonGroup
         value={value}
         exclusive
