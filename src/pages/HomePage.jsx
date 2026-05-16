@@ -14,7 +14,16 @@ import { useBooks } from '../hooks/useBooks';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../context/AuthContext';
 import PageLayout from '../components/PageLayout';
-import { Payment, Book, Person, AccountBalanceWallet, Savings, CardGiftcard, AccountBalance } from '@mui/icons-material';
+import { 
+    Payment, 
+    Book, 
+    Person, 
+    AccountBalanceWallet, 
+    Savings, 
+    CardGiftcard, 
+    AccountBalance,
+    CallMade
+} from '@mui/icons-material';
 
 export default function HomePage() {
     const navigate = useNavigate();
@@ -123,6 +132,12 @@ export default function HomePage() {
                                     <Typography variant="body2" color="primary.main" fontWeight="bold">₹{stats.totalCollected?.toLocaleString('en-IN')}</Typography>
                                 </Paper>
                                 
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'info.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'info.100' }}>
+                                    <AccountBalance color="info" fontSize="small" sx={{ mb: 0.5 }} />
+                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Remaining</Typography>
+                                    <Typography variant="body2" color="info.main" fontWeight="bold">₹{(stats.totalCollected - stats.totalSettled)?.toLocaleString('en-IN')}</Typography>
+                                </Paper>
+
                                 <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'warning.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'warning.100' }}>
                                     <Savings color="warning" fontSize="small" sx={{ mb: 0.5 }} />
                                     <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Settled</Typography>
@@ -135,10 +150,10 @@ export default function HomePage() {
                                     <Typography variant="body2" color="success.main" fontWeight="bold">₹{stats.totalBonus?.toLocaleString('en-IN')}</Typography>
                                 </Paper>
 
-                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'info.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'info.100' }}>
-                                    <AccountBalance color="info" fontSize="small" sx={{ mb: 0.5 }} />
-                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Remaining</Typography>
-                                    <Typography variant="body2" color="info.main" fontWeight="bold">₹{(stats.totalCollected - stats.totalSettled)?.toLocaleString('en-IN')}</Typography>
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'error.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'error.100', gridColumn: 'span 2' }}>
+                                    <CallMade color="error" fontSize="small" sx={{ mb: 0.5 }} />
+                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Outflow</Typography>
+                                    <Typography variant="body2" color="error.main" fontWeight="bold">₹{(stats.totalSettled + stats.totalBonus)?.toLocaleString('en-IN')}</Typography>
                                 </Paper>
                             </Box>
                         )}
