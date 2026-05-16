@@ -21,7 +21,7 @@ router.get('/', requireAuth, async (req, res) => {
       `SELECT w.ID, w.BOOK_ID, w.CUSTOMER_ID, w.CUSTOMER_NAME, w.RELATION_INFO, w.BOOK_NAME, w.ADDRESS, w.PHONE, w.WIN_DATE, b.IS_ACTIVE, c.SETTLED_DATE
        FROM winner w
        JOIN books b ON w.BOOK_ID = b.ID
-       JOIN customers c ON w.CUSTOMER_ID = c.ID
+       JOIN customers c ON w.CUSTOMER_ID = c.ID AND w.BOOK_ID = c.BOOK_ID
        WHERE b.OWNER_ID = :owner_id ${search ? searchClause : ''}
        ORDER BY w.WIN_DATE DESC`, {
       owner_id: req.user.id,

@@ -146,7 +146,7 @@ router.get('/:bookId/stats', requireAuth, async (req, res) => {
       SELECT
         (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE book_id = :bid) AS total_collected,
         (SELECT COALESCE(SUM(bonus_amount), 0) FROM customers WHERE book_id = :bid AND settled_date IS NOT NULL) AS total_bonus,
-        (SELECT COALESCE(SUM(p.amount), 0) FROM payments p JOIN customers c ON p.customer_id = c.id WHERE p.book_id = :bid AND c.settled_date IS NOT NULL) AS total_settled_principal
+        (SELECT COALESCE(SUM(p.amount), 0) FROM payments p JOIN customers c ON p.customer_id = c.id AND p.book_id = c.book_id WHERE p.book_id = :bid AND c.settled_date IS NOT NULL) AS total_settled_principal
       FROM dual
     `, { bid });
 
@@ -171,9 +171,10 @@ router.post('/', requireAuth, async (req, res) => {
   const conn = await getConnection();
   try {
     // Check if a book with the same details already exists for this user
+    const upperName = String(name).trim().toUpperCase();
     const existingBook = await conn.execute(
-      `SELECT id FROM books WHERE owner_id = :owner_id AND name = :name`,
-      { owner_id: Number(req.user.id), name: String(name) }
+      `SELECT id FROM books WHERE owner_id = :owner_id AND UPPER(name) = :name`,
+      { owner_id: Number(req.user.id), name: upperName }
     );
 
     if (existingBook.rows.length > 0) {
@@ -186,7 +187,7 @@ router.post('/', requireAuth, async (req, res) => {
        RETURNING id INTO :id`,
       {
         owner_id: Number(req.user.id),
-        name: String(name),
+        name: upperName,
         max_customers: Number(maxCustomers),
         start_month_iso: String(startMonthIso),
         total_amount: Number(totalAmount || 0),
@@ -195,7 +196,7 @@ router.post('/', requireAuth, async (req, res) => {
     );
     await conn.commit();
     const id = String(result.outBinds.id[0]);
-    res.status(201).json({ id, ownerId: req.user.id, name, maxCustomers: Number(maxCustomers), isActive: true, startMonthIso, totalAmount: Number(totalAmount || 0) });
+    res.status(201).json({ id, ownerId: req.user.id, name: upperName, maxCustomers: Number(maxCustomers), isActive: true, startMonthIso, totalAmount: Number(totalAmount || 0) });
   } catch (e) { console.error('Create book error:', e); res.status(500).json({ error: 'internal error' }); }
   finally { await conn.close(); }
 });
@@ -214,109 +215,6 @@ router.patch('/:bookId/toggle', requireAuth, async (req, res) => {
   finally { await conn.close(); }
 });
 
-// Customers - to list all customers for a book
-router.get('/:bookId/customers', requireAuth, async (req, res) => {
-  const conn = await getConnection();
-  try {
-    const book = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
-    if (!book.rows.length) return res.status(404).json({ error: 'book not found' });
-    const r = await conn.execute(`SELECT id, name, phone, address FROM customers WHERE book_id=:bid ORDER BY id`, { bid: Number(req.params.bookId) });
-    const rows = r.rows.map(row => ({ id: String(row.ID), bookId: String(req.params.bookId), name: row.NAME, phone: row.PHONE, address: row.ADDRESS }));
-    res.json(rows);
-  } catch (e) { console.error('List customers error:', e); res.status(500).json({ error: 'internal error' }); }
-  finally { await conn.close(); }
-});
-
-// Customers - to create a new customer for a book - if all the fields are same as existing customer, return error
-router.post('/:bookId/customers', requireAuth, async (req, res) => {
-  const { name, phone, address } = req.body || {};
-  const conn = await getConnection();
-  try {
-    // 1. Check book ownership and limits
-    const bookR = await conn.execute(
-      `SELECT id, max_customers 
-       FROM books 
-       WHERE id = :id AND owner_id = :oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
-    );
-    
-    if (!bookR.rows.length)
-      return res.status(404).json({ error: 'book not found' });
-
-    if (!name || !phone || !address)
-      return res.status(400).json({ error: 'name, phone, address required' });
-
-    // 2. Count existing customers for this book
-    const cntR = await conn.execute(
-      `SELECT COUNT(*) AS CNT FROM customers WHERE book_id = :bid`,
-      { bid: Number(req.params.bookId) }
-    );
-    const cnt = Number(
-      cntR.rows[0].CNT || cntR.rows[0]['COUNT(*)'] || cntR.rows[0].COUNT
-    );
-
-    if (cnt >= Number(bookR.rows[0].MAX_CUSTOMERS))
-      return res.status(400).json({ error: 'book reached max customers' });
-
-    // 3. Check if customer already exists
-    const custCheck = await conn.execute(
-      `SELECT id FROM customers WHERE book_id=:bid AND name=:name AND phone=:phone AND address=:address`,
-      { bid: Number(req.params.bookId), name: String(name), phone: String(phone), address: String(address) }
-    );
-    if (custCheck.rows.length)
-      return res.status(400).json({ error: 'customer already exists' });
-
-    // 4. Find the next available ID for this book
-    const nextIdResult = await conn.execute(
-        `SELECT MIN(num) as NEXT_ID
-         FROM (
-             SELECT LEVEL as num
-             FROM dual
-             CONNECT BY LEVEL <= :max_customers
-         ) nums
-         LEFT JOIN customers c ON nums.num = c.id AND c.book_id = :book_id
-         WHERE c.id IS NULL`,
-        { max_customers: Number(bookR.rows[0].MAX_CUSTOMERS), book_id: Number(req.params.bookId) }
-    );
-
-    const nextId = nextIdResult.rows[0].NEXT_ID;
-
-    if (nextId === null) {
-        return res.status(400).json({ error: 'Book is full, cannot find an available customer ID.' });
-    }
-
-    // 5. Insert new customer with the determined ID
-    await conn.execute(
-      `INSERT INTO customers (id, book_id, name, phone, address)
-       VALUES (:id, :bid, :name, :phone, :address)`,
-      {
-        id: nextId,
-        bid: Number(req.params.bookId),
-        name: String(name),
-        phone: String(phone),
-        address: String(address)
-      }
-    );
-
-    await conn.commit();
-
-    // 6. Return inserted customer
-    res.status(201).json({
-      id: String(nextId),
-      bookId: String(req.params.bookId),
-      name: String(name),
-      phone: String(phone),
-      address: String(address)
-    });
-  } catch (e) {
-    console.error('Create customer error:', e);
-    res.status(500).json({ error: 'internal error' });
-  } finally {
-    await conn.close();
-  }
-});
-
-
 // Edit book - to change name, maxCustomers, startMonthIso
 router.patch('/:bookId', requireAuth, async (req, res) => {
   const { name, maxCustomers, startMonthIso, totalAmount } = req.body || {};
@@ -327,14 +225,26 @@ router.patch('/:bookId', requireAuth, async (req, res) => {
     if (!r.rows.length) return res.status(404).json({ error: 'not found' });
     const updates = [];
     const params = { id: Number(req.params.bookId) };
-    if (name) { updates.push('name=:name'); params.name = String(name); }
+    let upperName;
+    if (name) {
+      upperName = String(name).trim().toUpperCase();
+      const duplicateCheck = await conn.execute(
+        `SELECT id FROM books WHERE owner_id = :owner_id AND UPPER(name) = :name AND id != :id`,
+        { owner_id: Number(req.user.id), name: upperName, id: Number(req.params.bookId) }
+      );
+      if (duplicateCheck.rows.length > 0) {
+        return res.status(409).json({ error: 'A book with this name already exists.' });
+      }
+      updates.push('name=:name');
+      params.name = upperName;
+    }
     if (maxCustomers) { updates.push('max_customers=:max_customers'); params.max_customers = Number(maxCustomers); }
     if (startMonthIso) { updates.push('start_month_iso=:start_month_iso'); params.start_month_iso = String(startMonthIso); }
     if (totalAmount !== undefined) { updates.push('total_amount=:total_amount'); params.total_amount = Number(totalAmount); }
     const sql = `UPDATE books SET ${updates.join(', ')} WHERE id=:id`;
     await conn.execute(sql, params);
     await conn.commit();
-    res.json({ id: String(req.params.bookId), name, maxCustomers: maxCustomers ? Number(maxCustomers) : undefined, startMonthIso, totalAmount: totalAmount ? Number(totalAmount) : undefined });
+    res.json({ id: String(req.params.bookId), name: upperName || name, maxCustomers: maxCustomers ? Number(maxCustomers) : undefined, startMonthIso, totalAmount: totalAmount ? Number(totalAmount) : undefined });
   } catch (e) { console.error('Edit book error:', e); res.status(500).json({ error: 'internal error' }); }
   finally { await conn.close(); }
 });

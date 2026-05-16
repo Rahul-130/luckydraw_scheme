@@ -53,7 +53,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       `SELECT
          c.id,
          FLOOR(MONTHS_BETWEEN(TRUNC(CURRENT_TIMESTAMP, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months, -- This is a lifetime calculation
-         (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id ${dateFilterClause}) as payment_count
+         (SELECT COUNT(*) FROM payments p WHERE p.customer_id = c.id AND p.book_id = c.book_id ${dateFilterClause}) as payment_count
        FROM customers c
        JOIN books b ON c.book_id = b.id
        WHERE b.owner_id = :ownerId AND b.is_active = 1 AND c.is_frozen = 0 `,
@@ -351,7 +351,7 @@ router.get('/activity', requireAuth, async (req, res) => {
         UNION ALL
         SELECT c.NAME as customer_name, b.NAME as book_name, p.PAYMENT_DATE as activity_date, 'payment' as activity_type, p.AMOUNT as amount
         FROM payments p
-        JOIN customers c ON p.customer_id = c.id
+        JOIN customers c ON p.customer_id = c.id AND p.book_id = c.book_id
         JOIN books b ON p.book_id = b.id
         WHERE b.owner_id = :ownerId
       )

@@ -12,40 +12,12 @@ router.get('/:bookId', requireAuth, async (req, res) => {
     const book = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
     if (!book.rows.length) return res.status(404).json({ error: 'book not found' });
 
-    let query;
-    const binds = { bid: Number(req.params.bookId) };
+    const binds = { 
+      bid: Number(req.params.bookId),
+      search: search ? `%${search}%` : null 
+    };
 
-    if (search) {
-      query = `
-        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount,
-               COUNT(p.id) as payment_count,
-               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
-               (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
-        FROM customers c
-        JOIN books b ON c.book_id = b.id
-        LEFT JOIN payments p ON p.customer_id = c.id
-        WHERE c.book_id = :bid
-          AND (
-            LOWER(c.name) LIKE LOWER(:search) OR
-            LOWER(c.phone) LIKE LOWER(:search) OR
-            LOWER(c.address) LIKE LOWER(:search)
-          )
-        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, b.START_MONTH_ISO, c.book_id
-        UNION ALL
-        SELECT c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount,
-               COUNT(p.id) as payment_count,
-               FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
-               (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
-        FROM customers c
-        JOIN books b ON c.book_id = b.id
-        LEFT JOIN payments p ON p.customer_id = c.id
-        WHERE c.book_id = :bid AND TO_CHAR(c.id) LIKE :search
-        GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, b.START_MONTH_ISO, c.book_id
-        ORDER BY id
-      `;
-      binds.search = `%${search}%`;
-    } else {
-      query = `
+    const query = `
       SELECT 
         c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount,
         COUNT(p.id) as payment_count,
@@ -53,12 +25,16 @@ router.get('/:bookId', requireAuth, async (req, res) => {
         (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
       FROM customers c
       JOIN books b ON c.book_id = b.id
-      LEFT JOIN payments p ON p.customer_id = c.id
+      LEFT JOIN payments p ON p.customer_id = c.id AND p.book_id = c.book_id
       WHERE c.book_id = :bid
+        AND (:search IS NULL OR 
+             LOWER(c.name) LIKE LOWER(:search) OR 
+             LOWER(c.phone) LIKE LOWER(:search) OR 
+             LOWER(c.address) LIKE LOWER(:search) OR 
+             TO_CHAR(c.id) LIKE :search)
       GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, b.START_MONTH_ISO, c.book_id
       ORDER BY c.id
-      `;
-    }
+    `;
 
     const r = await conn.execute(query, binds);
     
@@ -189,7 +165,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
       return res.status(400).json({ error: 'at least one field is required' });
     // 2. Check customer exists
     const custR = await conn.execute(
-      `SELECT id FROM customers WHERE id=:cid AND book_id=:bid`,
+      `SELECT id, name, phone, address FROM customers WHERE id=:cid AND book_id=:bid`,
       { cid: Number(req.params.customerId), bid: Number(req.params.bookId) }
     );
     if (!custR.rows.length)
@@ -197,10 +173,10 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
 
     // 3. Check for duplicates if name, phone, or address are being changed
     if (name || phone || address) {
-      const currentCustomer = await conn.execute(`SELECT name, phone, address FROM customers WHERE id = :cid`, { cid: Number(req.params.customerId) });
-      const newName = name || currentCustomer.rows[0].NAME;
-      const newPhone = phone || currentCustomer.rows[0].PHONE;
-      const newAddress = address || currentCustomer.rows[0].ADDRESS;
+      const current = custR.rows[0];
+      const newName = name || current.NAME;
+      const newPhone = phone || current.PHONE;
+      const newAddress = address || current.ADDRESS;
 
       const duplicateCheck = await conn.execute(
         `SELECT id FROM customers 
