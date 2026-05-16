@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogContent,
   MenuItem,
+  Divider,
   ListItemIcon,
   DialogActions,
   InputAdornment,
@@ -333,10 +334,17 @@ export default function CustomersPage() {
                 {customerToSettle?.isWinner ? 'Settle Winner Account' : 'Settle & Close Account'}
             </DialogTitle>
             <DialogContent>
-                <Typography gutterBottom>
+                <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                    Total Paid by Customer: <strong>₹{Number(customerToSettle?.totalPaid || 0).toLocaleString('en-IN')}</strong>
+                </Typography>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold', color: 'success.main' }}>
+                    Total Final Settlement: ₹{(Number(customerToSettle?.totalPaid || 0) + Number(bonusAmount || 0)).toLocaleString('en-IN')}
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="body1" sx={{ mb: 2 }}>
                     {customerToSettle?.isWinner 
-                        ? `Confirm that ${customerToSettle?.name} has collected the prize. You can add an optional bonus amount.` 
-                        : `You are about to settle and close ${customerToSettle?.name}'s account. This will freeze the account. You can add an optional final bonus amount.`}
+                        ? `Confirm that ${book?.name}-${customerToSettle?.id} (${customerToSettle?.name}) has collected the prize. You can add an optional bonus amount below.` 
+                        : `You are about to settle and close ${book?.name}-${customerToSettle?.id} (${customerToSettle?.name})'s account. This will freeze the account.`}
                 </Typography>
                 <TextField
                     autoFocus

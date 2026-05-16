@@ -21,6 +21,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       SELECT 
         c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount,
         COUNT(p.id) as payment_count,
+        SUM(p.amount) as total_paid,
         FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
         (SELECT COUNT(*) FROM winner w WHERE w.customer_id = c.id AND w.book_id = c.book_id) as is_winner
       FROM customers c
@@ -51,6 +52,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       TOTAL_MONTHS: row.TOTAL_MONTHS,
       isWinner: row.IS_WINNER > 0,
       PAYMENT_COUNT: row.PAYMENT_COUNT,
+      totalPaid: row.TOTAL_PAID || 0,
       missedPayments: Math.max(0, (row.TOTAL_MONTHS || 0) - row.PAYMENT_COUNT)
     }));
     res.json(rows);
