@@ -22,7 +22,8 @@ import {
     Savings, 
     CardGiftcard, 
     AccountBalance,
-    CallMade
+    CallMade,
+    MonetizationOn
 } from '@mui/icons-material';
 
 export default function HomePage() {
@@ -150,10 +151,16 @@ export default function HomePage() {
                                     <Typography variant="body2" color="success.main" fontWeight="bold">₹{stats.totalBonus?.toLocaleString('en-IN')}</Typography>
                                 </Paper>
 
-                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'error.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'error.100', gridColumn: 'span 2' }}>
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'error.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'error.100' }}>
                                     <CallMade color="error" fontSize="small" sx={{ mb: 0.5 }} />
                                     <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Outflow</Typography>
                                     <Typography variant="body2" color="error.main" fontWeight="bold">₹{(stats.totalSettled + stats.totalBonus)?.toLocaleString('en-IN')}</Typography>
+                                </Paper>
+
+                                <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'secondary.50', borderRadius: 2, textAlign: 'center', border: '1px solid', borderColor: 'secondary.100' }}>
+                                    <MonetizationOn color="secondary" fontSize="small" sx={{ mb: 0.5 }} />
+                                    <Typography variant="caption" display="block" color="text.secondary" fontWeight="bold">Profit</Typography>
+                                    <Typography variant="body2" color="secondary.main" fontWeight="bold">₹{(stats.totalCollected - (stats.totalSettled + stats.totalBonus))?.toLocaleString('en-IN')}</Typography>
                                 </Paper>
                             </Box>
                         )}
