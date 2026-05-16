@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         // In development, all /api requests will be forwarded to the backend on port 4000
         // This does not affect the production build, as the proxy is only for the dev server.
-        '/api': 'http://localhost:4000',
+        '/api': `http://localhost:${env.VITE_API_PORT || 4000}`,
       },
     },
   };

@@ -34,5 +34,6 @@ env.production
 sh
 
 Wallet_BILLINGDB
+Wallet_Scheme
 
 

@@ -4,12 +4,12 @@
   "private": true,
   "main": "backend/server.js",
   "scripts": {
-    "dev": "dotenv -e .env.development -- concurrently \"npm run server\" \"npm run client\"",
-    "server": "dotenv -e .env.development -- nodemon backend/server.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "dotenvx run -f .env.development -- nodemon backend/server.js",
     "client": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "dotenv -e .env.production -- node backend/server.js",
+    "start": "dotenvx run -f .env.production -- node backend/server.js",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -49,7 +49,7 @@
     "autoprefixer": "^10.4.21",
     "baseline-browser-mapping": "^2.9.19",
     "concurrently": "^8.2.0",
-    "dotenv-cli": "^11.0.0",
+    "@dotenvx/dotenvx": "^1.33.0",
     "eslint": "^9.35.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-// const dotenv = require('dotenv');
-// dotenv.config();
 
 const { initSchema, getConnection, oracledb } = require('./db');
 const authRoutes = require('./api/auth');
@@ -22,9 +20,9 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static files from the React build directory
-app.use(express.static(path.join(__dirname, '..', 'dist')));
-
-initSchema().catch(err => console.error('Schema init failed', err));
+const distPath = path.join(__dirname, '..', 'dist');
+console.log(`[SERVER] Serving static files from: ${distPath}`);
+app.use(express.static(distPath));
 
 // Health and DB checks
 app.get('/api/health', (req, res) => {
@@ -61,9 +59,21 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 
-
+// Ensure PORT is a number and matches the env injection
 const PORT = Number(process.env.PORT || 4000);
-app.listen(PORT, () => {
-  console.log(`[ENV] Running in ${process.env.NODE_ENV || 'development....'} mode.`);
-  console.log(`[SERVER] Listening on http://localhost:${process.env.PORT}`);
-});
+
+const startServer = async () => {
+  try {
+    // Ensure DB is ready before starting the server
+    await initSchema();
+    app.listen(PORT, () => {
+      console.log(`[ENV] Running in ${process.env.NODE_ENV || 'development....'} mode.`);
+      console.log(`[SERVER] Listening on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error('[FATAL] Database initialization failed. Server shutting down.', err);
+    process.exit(1);
+  }
+};
+
+startServer();
