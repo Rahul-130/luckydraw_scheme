@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSnackbar } from "../context/SnackbarContext";
@@ -26,10 +26,11 @@ import {
   DialogActions,
   InputAdornment,
   Tooltip,
+  Autocomplete,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
-import { Add, Edit, Delete, Payment, Search, ArrowBack, CheckCircle, EmojiEvents } from "@mui/icons-material";
+import { Add, Edit, Delete, Payment, Search, ArrowBack, CheckCircle, EmojiEvents, Print, Close } from "@mui/icons-material";
 import { addCustomer, editCustomer, deleteCustomer, markCustomerAsWinner, verifyPassword } from "../services/api";
 import StyledDataGrid from "../components/StyledDataGrid";
 import StyledSearchBar from "../components/StyledSearchBar";
@@ -44,6 +45,8 @@ import ActionMenu from "../components/ActionMenu";
 import StatusChip from "../components/StatusChip";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 import PasswordOTPConfirmationDialog from "../components/PasswordOTPConfirmationDialog";
+import SettlementReceipt from "../components/SettlementReceipt";
+import { renderComponentInNewWindow } from "../utils/printing";
 
 export default function CustomersPage() {
   const { token, user } = useAuth();
@@ -74,6 +77,36 @@ export default function CustomersPage() {
     const [settleDialogOpen, setSettleDialogOpen] = useState(false);
     const [customerToSettle, setCustomerToSettle] = useState(null);
     const [bonusAmount, setBonusAmount] = useState('');
+    const [settlementReceiptNo, setSettlementReceiptNo] = useState('');
+    const [settlementAgentName, setSettlementAgentName] = useState('');
+    const [allAgents, setAllAgents] = useState([]);
+    const [isCustomAgent, setIsCustomAgent] = useState(false);
+
+    // Fetch all agents for the user to populate autocomplete
+    useEffect(() => {
+        const fetchAgents = async () => {
+            if (!token) return;
+            try {
+                const response = await fetch('/api/books/agents', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const agents = await response.json();
+                    setAllAgents(agents);
+                }
+            } catch (err) {
+                console.error("Failed to fetch agents list", err);
+            }
+        };
+        fetchAgents();
+    }, [token]);
+
+    const agentOptions = useMemo(() => {
+        const optionsSet = new Set(allAgents.map(a => a.trim()));
+        // Add agent from current customer if it exists
+        if (customerToSettle?.settlementAgentName) optionsSet.add(customerToSettle.settlementAgentName.trim());
+        return Array.from(optionsSet).sort();
+    }, [allAgents, customerToSettle]);
 
     // Add keyboard shortcut for "Add Customer" (Ctrl + / or Cmd + /)
     useKeyShortcut(() => setOpen(true), { key: '/', ctrl: true, meta: true });
@@ -101,16 +134,27 @@ export default function CustomersPage() {
     const handleSettle = useCallback((customer) => {
         setCustomerToSettle(customer);
         setBonusAmount(''); // Reset bonus amount
+        setSettlementAgentName(''); // Reset agent
+        setIsCustomAgent(false);
+        // Auto-generate a unique settlement receipt number
+        setSettlementReceiptNo(`S-${bookId}-${customer.id}-${Date.now()}`);
         setSettleDialogOpen(true);
-    }, []);
+    }, [bookId]);
 
     const handleConfirmSettle = async () => {
         if (!customerToSettle) return;
 
         try {
+            if (!settlementAgentName || settlementAgentName.trim() === '') {
+                showSnackbar('Agent name is required for settlement.', 'error');
+                return;
+            }
+
             await editCustomer(bookId, customerToSettle.id, { 
                 isFrozen: true,
-                bonusAmount: Number(bonusAmount) || 0
+                bonusAmount: Number(bonusAmount) || 0,
+                settlementReceiptNo: settlementReceiptNo,
+                settlementAgentName: settlementAgentName
             }, token);
             
             refetchCustomers();
@@ -122,6 +166,10 @@ export default function CustomersPage() {
             setCustomerToSettle(null);
         }
     };
+
+    const handlePrintSettlement = useCallback((customer) => {
+        renderComponentInNewWindow(<SettlementReceipt customer={customer} book={book} user={user} />, 'Settlement Receipt');
+    }, [book, user]);
 
     const handleMakeWinner = useCallback((customer) => {
          showConfirmation({
@@ -230,6 +278,12 @@ export default function CustomersPage() {
                     icon: <CheckCircle fontSize="small" />,
                     onClick: () => handleSettle(row),
                     color: 'warning.main'
+                  }] : []),
+                  ...(row.isFrozen ? [{
+                    label: 'Print Settlement',
+                    icon: <Print fontSize="small" />,
+                    onClick: () => handlePrintSettlement(row),
+                    color: 'primary.main'
                   }] : []),
                   ...(!row.isFrozen && !row.isWinner && row.missedPayments <= 2 ? [{
                     label: 'Make Winner',
@@ -346,6 +400,60 @@ export default function CustomersPage() {
                         ? `Confirm that ${book?.name}-${customerToSettle?.id} (${customerToSettle?.name}) has collected the prize. You can add an optional bonus amount below.` 
                         : `You are about to settle and close ${book?.name}-${customerToSettle?.id} (${customerToSettle?.name})'s account. This will freeze the account.`}
                 </Typography>
+
+                <Box sx={{ mt: 2, mb: 1 }}>
+                    {isCustomAgent ? (
+                        <TextField
+                            label="Settlement Agent (Custom)"
+                            value={settlementAgentName}
+                            onChange={(e) => setSettlementAgentName(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={() => { setIsCustomAgent(false); setSettlementAgentName(''); }}>
+                                            <Close />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }}
+                        />
+                    ) : (
+                        <Autocomplete
+                            options={[...agentOptions, 'Custom']}
+                            value={settlementAgentName || null}
+                            onChange={(event, newValue) => {
+                                if (newValue === 'Custom') {
+                                    setIsCustomAgent(true);
+                                    setSettlementAgentName('');
+                                } else {
+                                    setSettlementAgentName(newValue || '');
+                                }
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Settlement Agent"
+                                    variant="outlined"
+                                    placeholder="Select agent who is settling"
+                                    required
+                                />
+                            )}
+                        />
+                    )}
+                </Box>
+
+                <TextField
+                    margin="dense"
+                    label="Settlement Receipt No"
+                    fullWidth
+                    variant="outlined"
+                    value={settlementReceiptNo}
+                    onChange={(e) => setSettlementReceiptNo(e.target.value)}
+                    helperText="Reference number for this settlement"
+                    sx={{ mt: 1 }}
+                />
                 <TextField
                     autoFocus
                     margin="dense"

@@ -103,6 +103,8 @@ async function initSchema() {
       settled_date TIMESTAMP WITH TIME ZONE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
       bonus_amount NUMBER DEFAULT 0,
+      settlement_receipt_no VARCHAR2(255),
+      settlement_agent_name VARCHAR2(255),
       CONSTRAINT pk_customers PRIMARY KEY (id, book_id),
       CONSTRAINT fk_customers_book FOREIGN KEY (book_id) REFERENCES books(id)
     )'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF; END;`);

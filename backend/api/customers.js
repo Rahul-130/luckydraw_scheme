@@ -19,7 +19,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
 
     const query = `
       SELECT 
-        c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount,
+        c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, c.settlement_receipt_no, c.settlement_agent_name,
         COUNT(p.id) as payment_count,
         SUM(p.amount) as total_paid,
         FLOOR(MONTHS_BETWEEN(TRUNC(SYSDATE, 'MM'), TO_DATE(b.START_MONTH_ISO, 'YYYY-MM'))) + 1 AS total_months,
@@ -33,7 +33,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
              LOWER(c.phone) LIKE LOWER(:search) OR 
              LOWER(c.address) LIKE LOWER(:search) OR 
              TO_CHAR(c.id) LIKE :search)
-      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, b.START_MONTH_ISO, c.book_id
+      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, c.settlement_receipt_no, c.settlement_agent_name, b.START_MONTH_ISO, c.book_id
       ORDER BY c.id
     `;
 
@@ -53,6 +53,8 @@ router.get('/:bookId', requireAuth, async (req, res) => {
       isWinner: row.IS_WINNER > 0,
       PAYMENT_COUNT: row.PAYMENT_COUNT,
       totalPaid: row.TOTAL_PAID || 0,
+      settlementReceiptNo: row.SETTLEMENT_RECEIPT_NO,
+      settlementAgentName: row.SETTLEMENT_AGENT_NAME,
       missedPayments: Math.max(0, (row.TOTAL_MONTHS || 0) - row.PAYMENT_COUNT)
     }));
     res.json(rows);
@@ -153,7 +155,7 @@ router.post('/:bookId', requireAuth, async (req, res) => {
 
 // Edit customer - only name, phone, address can be updated
 router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => {
-  const { name, relationInfo, phone, address, isFrozen, bonusAmount } = req.body || {};
+  const { name, relationInfo, phone, address, isFrozen, bonusAmount, settlementReceiptNo, settlementAgentName } = req.body || {};
   const conn = await getConnection();
   try {
     // 1. Check book ownership
@@ -163,7 +165,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     );
     if (!bookR.rows.length)
       return res.status(404).json({ error: 'book not found' });
-    if (!name && !phone && !address && relationInfo === undefined && isFrozen === undefined && bonusAmount === undefined)
+    if (!name && !phone && !address && relationInfo === undefined && isFrozen === undefined && bonusAmount === undefined && settlementReceiptNo === undefined && settlementAgentName === undefined)
       return res.status(400).json({ error: 'at least one field is required' });
     // 2. Check customer exists
     const custR = await conn.execute(
@@ -202,6 +204,8 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     if (phone) { fields.push('phone=:phone'); binds.phone = String(phone); }
     if (address) { fields.push('address=:address'); binds.address = String(address); }
     if (bonusAmount !== undefined) { fields.push('bonus_amount=:bonusAmount'); binds.bonusAmount = Number(bonusAmount); }
+    if (settlementReceiptNo !== undefined) { fields.push('settlement_receipt_no=:settlementReceiptNo'); binds.settlementReceiptNo = settlementReceiptNo; }
+    if (settlementAgentName !== undefined) { fields.push('settlement_agent_name=:settlementAgentName'); binds.settlementAgentName = settlementAgentName; }
     if (isFrozen !== undefined) { 
       fields.push('is_frozen=:isFrozen'); 
       binds.isFrozen = isFrozen ? 1 : 0; 
@@ -211,6 +215,8 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
       } else {
         fields.push('settled_date=NULL');
         fields.push('bonus_amount=NULL');
+        fields.push('settlement_receipt_no=NULL');
+        fields.push('settlement_agent_name=NULL');
       }
     }
     const sql = `UPDATE customers SET ${fields.join(', ')} WHERE id=:cid AND book_id=:bid`;
