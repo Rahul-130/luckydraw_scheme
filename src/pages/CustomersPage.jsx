@@ -28,7 +28,7 @@ import {
   Tooltip,
   Autocomplete,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { Add, Edit, Delete, Payment, Search, ArrowBack, CheckCircle, EmojiEvents, Print, Close } from "@mui/icons-material";
 import { addCustomer, editCustomer, deleteCustomer, markCustomerAsWinner, verifyPassword } from "../services/api";
@@ -45,6 +45,7 @@ import ActionMenu from "../components/ActionMenu";
 import StatusChip from "../components/StatusChip";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 import PasswordOTPConfirmationDialog from "../components/PasswordOTPConfirmationDialog";
+import { getAvailableCustomerIds } from "../services/api";
 import SettlementReceipt from "../components/SettlementReceipt";
 import { renderComponentInNewWindow } from "../utils/printing";
 
@@ -60,6 +61,7 @@ export default function CustomersPage() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({
+        id: '', // Add id to form state
         name: '',
         relationInfo: '',
         phone: '',
@@ -81,6 +83,7 @@ export default function CustomersPage() {
     const [settlementAgentName, setSettlementAgentName] = useState('');
     const [allAgents, setAllAgents] = useState([]);
     const [isCustomAgent, setIsCustomAgent] = useState(false);
+    const [availableCustomerIds, setAvailableCustomerIds] = useState([]); // New state for available IDs
 
     // Fetch all agents for the user to populate autocomplete
     useEffect(() => {
@@ -101,6 +104,24 @@ export default function CustomersPage() {
         fetchAgents();
     }, [token]);
 
+    // Fetch available customer IDs when bookId or customers change
+    useEffect(() => {
+        const fetchIds = async () => {
+            if (!token || !bookId) {
+                setAvailableCustomerIds([]);
+                return;
+            }
+            try {
+                const ids = await getAvailableCustomerIds(bookId, token);
+                setAvailableCustomerIds(ids.data.map(String)); // Convert to string for Autocomplete options
+            } catch (err) {
+                console.error("Failed to fetch available customer IDs", err);
+                setAvailableCustomerIds([]);
+            }
+        };
+        fetchIds();
+    }, [token, bookId, customers]); // Refetch when customers change to update available IDs
+
     const agentOptions = useMemo(() => {
         const optionsSet = new Set(allAgents.map(a => a.trim()));
         // Add agent from current customer if it exists
@@ -109,10 +130,23 @@ export default function CustomersPage() {
     }, [allAgents, customerToSettle]);
 
     // Add keyboard shortcut for "Add Customer" (Ctrl + / or Cmd + /)
-    useKeyShortcut(() => setOpen(true), { key: '/', ctrl: true, meta: true });
+    useKeyShortcut(() => {
+        setForm({ id: '', name: '', relationInfo: '', phone: '', address: '' }); // Reset form on open
+        setOpen(true);
+    }, { key: '/', ctrl: true, meta: true });
 
     const handleCreate = async () => {
       try {
+        // Validate ID if provided
+        if (form.id && (isNaN(Number(form.id)) || Number(form.id) < 1 || Number(form.id) > book?.maxCustomers)) {
+            showSnackbar(`Customer ID must be a number between 1 and ${book?.maxCustomers}.`, 'error');
+            return;
+        }
+        if (form.id && !availableCustomerIds.includes(form.id)) {
+            showSnackbar(`Customer ID ${form.id} is already taken or invalid.`, 'error');
+            return;
+        }
+
         await addCustomer(bookId, form, token);
         setOpen(false);
         refetchCustomers();
@@ -120,6 +154,15 @@ export default function CustomersPage() {
         showSnackbar(extractApiErrorMessage(error, "Failed to add customer"), 'error');
       }
     };
+
+    const isAddCustomerDisabled = useMemo(() => {
+        const baseDisabled = !form.name.trim() || !form.address.trim() || form.phone.length !== 10;
+        if (form.id) {
+            const idNum = Number(form.id);
+            return baseDisabled || isNaN(idNum) || idNum < 1 || idNum > book?.maxCustomers || !availableCustomerIds.includes(form.id);
+        }
+        return baseDisabled;
+    }, [form, book, availableCustomerIds]);
 
     const handleEdit = useCallback((customer) => {
         setEditForm(customer);
@@ -350,7 +393,7 @@ export default function CustomersPage() {
           </Tooltip>
         </SearchAndSummaryBox>
 
-        <StyledDataGrid
+        <StyledDataGrid // Ensure book?.maxCustomers is available for CustomerFormFields
                 rows={customers}
                 columns={columns}
                 loading={customersLoading}
@@ -365,12 +408,12 @@ export default function CustomersPage() {
           </Alert>
         )}
 
-        <FormDialog open={open} onClose={() => setOpen(false)} title={`Add Customer to "${book?.name}"`} onSubmit={handleCreate} submitText="Create" isSubmitDisabled={!form.name.trim() || !form.address.trim() || form.phone.length !== 10}>
-          <CustomerFormFields formState={form} onFormChange={setForm} />
+        <FormDialog open={open} onClose={() => setOpen(false)} title={`Add Customer to "${book?.name}"`} onSubmit={handleCreate} submitText="Create" isSubmitDisabled={isAddCustomerDisabled}>
+          <CustomerFormFields formState={form} onFormChange={setForm} availableCustomerIds={availableCustomerIds} maxCustomers={book?.maxCustomers} />
         </FormDialog>
 
         <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Customer" onSubmit={handleEditSave} isSubmitDisabled={!editForm.name.trim() || !editForm.address.trim() || editForm.phone.length !== 10}>
-          <CustomerFormFields formState={editForm} onFormChange={setEditForm} />
+          <CustomerFormFields formState={editForm} onFormChange={setEditForm} isEditing={true} />
         </FormDialog>
 
         <ConfirmationDialog

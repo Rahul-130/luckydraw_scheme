@@ -13,11 +13,11 @@ import {
   SvgIcon,
   IconButton,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { Autocomplete } from '@mui/material';
 import { Person, SupervisorAccount, Phone, Home } from '@mui/icons-material';
 import PreviewCopy from './PreviewCopyComponent';
 
-const CustomerFormFields = ({ formState, onFormChange }) => {
+const CustomerFormFields = ({ formState, onFormChange, availableCustomerIds = [], maxCustomers, isEditing = false }) => {
   // keep your phone handling logic untouched
   const handlePhoneChange = (e) => {
     const value = e.target.value.replace(/\D/g, ''); // keep only digits
@@ -25,28 +25,6 @@ const CustomerFormFields = ({ formState, onFormChange }) => {
       onFormChange({ ...formState, phone: value });
     }
   };
-
-  const IconBubble = ({ children }) => (
-    <Box
-      component="span"
-      aria-hidden="true"
-      sx={{
-        width: 40,
-        height: 40,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 1.5,
-        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.10),
-        color: (theme) => theme.palette.primary.main,
-        mr: 1.25,
-        flexShrink: 0,
-        boxShadow: (theme) => `inset 0 -1px 0 ${alpha(theme.palette.common.black, 0.02)}`,
-      }}
-    >
-      <SvgIcon fontSize="small">{children}</SvgIcon>
-    </Box>
-  );
 
   const commonSx = {
     '& .MuiOutlinedInput-root': {
@@ -104,6 +82,52 @@ const CustomerFormFields = ({ formState, onFormChange }) => {
       <Divider sx={{ mb: 2 }} />
 
       <Stack spacing={3}>
+        {/* Customer ID (Optional) */}
+        <Tooltip title={isEditing ? "Editing is disabled for ID field" : ""} placement="top" arrow>
+          <Box>
+            <Autocomplete
+              options={availableCustomerIds}
+              value={formState.id || null}
+              onChange={(event, newValue) => {
+                if (!isEditing) { // Only allow change if not in editing mode
+                  onFormChange({ ...formState, id: newValue || '' });
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Customer ID (Optional)"
+                  fullWidth
+                  variant="outlined"
+                  helperText={`Choose an ID from 1 to ${maxCustomers}. Available: ${availableCustomerIds.join(', ')}`}
+                  InputProps={{
+                    ...params.InputProps,
+                    readOnly: isEditing, // Make the input read-only when editing
+                    startAdornment: (
+                      <InputAdornment position="start" sx={{ mr: 1 }}>
+                        <Person color={isEditing ? "action" : "primary"} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  inputProps={{
+                      ...params.inputProps,
+                      readOnly: isEditing, // Ensure input element is also read-only
+                      type: 'number',
+                      min: 1,
+                      max: maxCustomers,
+                  }}
+                  sx={commonSx}
+                />
+              )}
+              freeSolo // Allows typing custom IDs not in the options list
+              selectOnFocus
+              clearOnBlur
+              handleHomeEndKeys
+              disabled={isEditing} // Disable Autocomplete interaction completely
+            />
+          </Box>
+        </Tooltip>
+
         {/* Name */}
         <Box>
           <TextField
@@ -197,6 +221,7 @@ const CustomerFormFields = ({ formState, onFormChange }) => {
         <PreviewCopy
           formState={formState}
           fields={[
+            { key: 'id', fallback: '— ID' }, // Add ID to preview
             { key: 'name', fallback: '— name' },
             { key: 'phone', fallback: '— phone' },
             { key: 'address', fallback: '— address' },

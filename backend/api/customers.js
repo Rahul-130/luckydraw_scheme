@@ -62,9 +62,40 @@ router.get('/:bookId', requireAuth, async (req, res) => {
   finally { await conn.close(); }
 });
 
+// Get available customer IDs for a book
+router.get('/:bookId/available-ids', requireAuth, async (req, res) => {
+  const conn = await getConnection();
+  try {
+    const bookR = await conn.execute(
+      `SELECT id, max_customers FROM books WHERE id=:id AND owner_id=:oid`,
+      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+    );
+    if (!bookR.rows.length) {
+      return res.status(404).json({ error: 'book not found' });
+    }
+    const maxCustomers = Number(bookR.rows[0].MAX_CUSTOMERS);
+
+    const existingIdsR = await conn.execute(
+      `SELECT id FROM customers WHERE book_id=:bid ORDER BY id ASC`,
+      { bid: Number(req.params.bookId) }
+    );
+    const existingIds = new Set(existingIdsR.rows.map(row => Number(row.ID)));
+
+    const allPossibleIds = Array.from({ length: maxCustomers }, (_, i) => i + 1);
+    const availableIds = allPossibleIds.filter(id => !existingIds.has(id));
+
+    res.json(availableIds);
+  } catch (e) {
+    console.error('Get available customer IDs error:', e);
+    res.status(500).json({ error: 'internal error' });
+  } finally {
+    await conn.close();
+  }
+});
+
 // Customers - to create a new customer for a book - if all the fields are same as existing customer, return error
 router.post('/:bookId', requireAuth, async (req, res) => {
-  const { name, relationInfo, phone, address } = req.body || {};
+  const { id, name, relationInfo, phone, address } = req.body || {}; // Added 'id' to destructuring
   const conn = await getConnection();
   try {
     // 1. Check book ownership and limits
@@ -77,6 +108,8 @@ router.post('/:bookId', requireAuth, async (req, res) => {
     
     if (!bookR.rows.length)
       return res.status(404).json({ error: 'book not found' });
+    
+    const maxCustomers = Number(bookR.rows[0].MAX_CUSTOMERS);
 
     if (!name || !phone || !address)
       return res.status(400).json({ error: 'name, phone, address required' });
@@ -90,7 +123,7 @@ router.post('/:bookId', requireAuth, async (req, res) => {
       cntR.rows[0].CNT || cntR.rows[0]['COUNT(*)'] || cntR.rows[0].COUNT
     );
 
-    if (cnt >= Number(bookR.rows[0].MAX_CUSTOMERS))
+    if (cnt >= maxCustomers) // Use maxCustomers from bookR
       return res.status(400).json({ error: 'book reached max customers' });
 
     // 3. Check if customer already exists
@@ -101,31 +134,50 @@ router.post('/:bookId', requireAuth, async (req, res) => {
     if (custCheck.rows.length)
       return res.status(409).json({ error: 'A customer with the same name, phone, and address already exists.' });
 
-    // 4. Find the next available ID for this book
-    const nextIdResult = await conn.execute(
-        `SELECT MIN(num) as NEXT_ID
-         FROM (
-             SELECT LEVEL as num
-             FROM dual
-             CONNECT BY LEVEL <= :max_customers
-         ) nums
-         LEFT JOIN customers c ON nums.num = c.id AND c.book_id = :book_id
-         WHERE c.id IS NULL`,
-        { max_customers: Number(bookR.rows[0].MAX_CUSTOMERS), book_id: Number(req.params.bookId) }
-    );
+    let customerIdToUse;
 
-    const nextId = nextIdResult.rows[0].NEXT_ID;
+    if (id !== undefined && id !== null && id !== '') {
+      // User provided an ID
+      customerIdToUse = Number(id);
+      if (isNaN(customerIdToUse) || customerIdToUse < 1 || customerIdToUse > maxCustomers) {
+        return res.status(400).json({ error: `Customer ID must be a number between 1 and ${maxCustomers}.` });
+      }
 
-    if (nextId === null) {
-        return res.status(400).json({ error: 'Book is full, cannot find an available customer ID.' });
+      // Check if the provided ID is already taken
+      const idTakenCheck = await conn.execute(
+        `SELECT id FROM customers WHERE id=:cid AND book_id=:bid`,
+        { cid: customerIdToUse, bid: Number(req.params.bookId) }
+      );
+      if (idTakenCheck.rows.length) {
+        return res.status(409).json({ error: `Customer ID ${customerIdToUse} is already taken in this book.` });
+      }
+    } else {
+      // Auto-assign ID if not provided
+      const nextIdResult = await conn.execute(
+          `SELECT MIN(num) as NEXT_ID
+           FROM (
+               SELECT LEVEL as num
+               FROM dual
+               CONNECT BY LEVEL <= :max_customers
+           ) nums
+           LEFT JOIN customers c ON nums.num = c.id AND c.book_id = :book_id
+           WHERE c.id IS NULL`,
+          { max_customers: maxCustomers, book_id: Number(req.params.bookId) }
+      );
+
+      customerIdToUse = nextIdResult.rows[0].NEXT_ID;
+
+      if (customerIdToUse === null) {
+          return res.status(400).json({ error: 'Book is full, cannot find an available customer ID.' });
+      }
     }
 
     // 5. Insert new customer with the determined ID
     await conn.execute(
       `INSERT INTO customers (id, book_id, name, relation_info, phone, address)
-       VALUES (:id, :bid, :name, :relationInfo, :phone, :address)`,
+       VALUES (:id, :bid, :name, :relationInfo, :phone, :address)`, // Use customerIdToUse
       {
-        id: nextId,
+        id: customerIdToUse,
         bid: Number(req.params.bookId),
         name: String(name),
         relationInfo: String(relationInfo || ''),
@@ -138,7 +190,7 @@ router.post('/:bookId', requireAuth, async (req, res) => {
 
     // 6. Return inserted customer
     res.status(201).json({
-      id: String(nextId),
+      id: String(customerIdToUse),
       bookId: String(req.params.bookId),
       name: String(name),
       relationInfo: String(relationInfo || ''),
@@ -169,7 +221,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
       return res.status(400).json({ error: 'at least one field is required' });
     // 2. Check customer exists
     const custR = await conn.execute(
-      `SELECT id, name, phone, address FROM customers WHERE id=:cid AND book_id=:bid`,
+      `SELECT id, name, phone, address, is_frozen FROM customers WHERE id=:cid AND book_id=:bid`,
       { cid: Number(req.params.customerId), bid: Number(req.params.bookId) }
     );
     if (!custR.rows.length)
@@ -203,22 +255,24 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     if (relationInfo !== undefined) { fields.push('relation_info=:relationInfo'); binds.relationInfo = String(relationInfo); }
     if (phone) { fields.push('phone=:phone'); binds.phone = String(phone); }
     if (address) { fields.push('address=:address'); binds.address = String(address); }
-    if (bonusAmount !== undefined) { fields.push('bonus_amount=:bonusAmount'); binds.bonusAmount = Number(bonusAmount); }
-    if (settlementReceiptNo !== undefined) { fields.push('settlement_receipt_no=:settlementReceiptNo'); binds.settlementReceiptNo = settlementReceiptNo; }
-    if (settlementAgentName !== undefined) { fields.push('settlement_agent_name=:settlementAgentName'); binds.settlementAgentName = settlementAgentName ? settlementAgentName.trim().toUpperCase() : null; }
-    if (isFrozen !== undefined) { 
-      fields.push('is_frozen=:isFrozen'); 
-      binds.isFrozen = isFrozen ? 1 : 0; 
-      // Automatically set or clear settled_date when freezing/unfreezing
-      if (isFrozen) {
-        fields.push('settled_date=CURRENT_TIMESTAMP');
-      } else {
-        fields.push('settled_date=NULL');
-        fields.push('bonus_amount=NULL');
-        fields.push('settlement_receipt_no=NULL');
-        fields.push('settlement_agent_name=NULL');
+
+    if (isFrozen === false) {
+      // Unfreezing or editing non-frozen: explicitly clear or ensure settlement fields are NULL
+      fields.push('is_frozen=0', 'settled_date=NULL', 'bonus_amount=NULL', 'settlement_receipt_no=NULL', 'settlement_agent_name=NULL');
+    } else {
+      // Handle case where isFrozen is true (settling) or undefined (normal field update)
+      if (isFrozen === true) {
+        fields.push('is_frozen=1');
+        // Only update settled_date if the customer is transitioning to a frozen state
+        if (custR.rows[0].IS_FROZEN !== 1) {
+          fields.push('settled_date=CURRENT_TIMESTAMP');
+        }
       }
+      if (bonusAmount !== undefined) { fields.push('bonus_amount=:bonusAmount'); binds.bonusAmount = Number(bonusAmount); }
+      if (settlementReceiptNo !== undefined) { fields.push('settlement_receipt_no=:settlementReceiptNo'); binds.settlementReceiptNo = settlementReceiptNo; }
+      if (settlementAgentName !== undefined) { fields.push('settlement_agent_name=:settlementAgentName'); binds.settlementAgentName = settlementAgentName ? settlementAgentName.trim().toUpperCase() : null; }
     }
+
     const sql = `UPDATE customers SET ${fields.join(', ')} WHERE id=:cid AND book_id=:bid`;
     await conn.execute(sql, binds);
     await conn.commit();

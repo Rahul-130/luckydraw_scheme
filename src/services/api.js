@@ -90,6 +90,11 @@ export const getCustomers = (bookId, token, search) =>
         params: { search: search || undefined }
     });
 
+export const getAvailableCustomerIds = (bookId, token) =>
+    api.get(`/customers/${bookId}/available-ids`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
 export const addCustomer = (bookId, data, token) =>
     api.post(`/customers/${bookId}`, data, {
         headers: { Authorization: `Bearer ${token}` }
@@ -237,4 +242,3 @@ export const updateProfile = (data, token) =>
     });
 
 export default api;
-
