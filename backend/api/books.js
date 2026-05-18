@@ -1,6 +1,15 @@
 const express = require('express');
 const { getConnection, oracledb } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.userRole === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required for this action' });
+  }
+};
 const router = express.Router();
 
 
@@ -8,9 +17,10 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   const { page = 1, pageSize = 10, search = '' } = req.query;
   const conn = await getConnection();
-  try {
+  try { // Agents and Admins can view books
     const offset = (Number(page) - 1) * Number(pageSize);
-    const binds = { owner_id: req.user.id };
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
+    const binds = { owner_id: effectiveOwnerId };
     let resultQuery, countQuery;
     let searchClause = '';
 
@@ -30,7 +40,7 @@ router.get('/', requireAuth, async (req, res) => {
     binds.pageSize = Number(pageSize);
 
     const result = await conn.execute(resultQuery, binds);
-    const countResult = await conn.execute(countQuery, { owner_id: req.user.id, ...(search && { search: binds.search }) });
+    const countResult = await conn.execute(countQuery, { owner_id: effectiveOwnerId, ...(search && { search: binds.search }) });
 
     const books = result.rows.map(row => ({
       id: row.ID,
@@ -91,15 +101,16 @@ router.get('/', requireAuth, async (req, res) => {
 
 // Get all unique agents used in payments for the authenticated user
 router.get('/agents', requireAuth, async (req, res) => {
-  const conn = await getConnection();
+  const conn = await getConnection(); // Agents and Admins can view agents
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     const result = await conn.execute(
       `SELECT DISTINCT UPPER(agent_name) as agent_name FROM (
-         SELECT agent_name FROM payments p JOIN books b ON p.book_id = b.id WHERE b.owner_id = :oid
+         SELECT agent_name FROM payments p JOIN books b ON p.book_id = b.id WHERE b.owner_id = :effectiveOwnerId
          UNION
-         SELECT settlement_agent_name as agent_name FROM customers c JOIN books b ON c.book_id = b.id WHERE b.owner_id = :oid
+         SELECT settlement_agent_name as agent_name FROM customers c JOIN books b ON c.book_id = b.id WHERE b.owner_id = :effectiveOwnerId
        ) WHERE agent_name IS NOT NULL`,
-      { oid: Number(req.user.id) }
+      { effectiveOwnerId: Number(effectiveOwnerId) }
     );
     const agents = result.rows.map(row => row.AGENT_NAME).filter(name => name && name.trim() !== '').sort();
     res.json(agents);
@@ -113,13 +124,14 @@ router.get('/agents', requireAuth, async (req, res) => {
 
 // Get a single book by ID
 router.get('/:bookId', requireAuth, async (req, res) => {
-  const conn = await getConnection();
+  const conn = await getConnection(); // Agents and Admins can view a single book
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     const r = await conn.execute(
       `SELECT id, owner_id, name, max_customers, is_active, start_month_iso, total_amount 
        FROM books 
        WHERE id = :id AND owner_id = :oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) }
     );
     if (!r.rows.length) return res.status(404).json({ error: 'book not found' });
     const book = r.rows[0];
@@ -134,13 +146,14 @@ router.get('/:bookId', requireAuth, async (req, res) => {
 
 // Get stats for a single book (collected, settled, bonus)
 router.get('/:bookId/stats', requireAuth, async (req, res) => {
-  const conn = await getConnection();
+  const conn = await getConnection(); // Agents and Admins can view book stats
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     const bid = Number(req.params.bookId);
-    const oid = Number(req.user.id);
+    const oid = Number(effectiveOwnerId);
 
     // Check ownership
-    const bookCheck = await conn.execute('SELECT id FROM books WHERE id=:bid AND owner_id=:oid', { bid, oid });
+    const bookCheck = await conn.execute('SELECT id FROM books WHERE id=:bid AND owner_id=:oid', { bid, oid }); // Use effectiveOwnerId
     if (!bookCheck.rows.length) return res.status(404).json({ error: 'Book not found' });
 
     const result = await conn.execute(`
@@ -166,16 +179,17 @@ router.get('/:bookId/stats', requireAuth, async (req, res) => {
 });
 
 // Books - create a new book for the authenticated user
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => { // Agents and Admins can create books
   const { name, maxCustomers, startMonthIso, totalAmount } = req.body || {};
   if (!name || !maxCustomers || !startMonthIso) return res.status(400).json({ error: 'name, maxCustomers, startMonthIso required' });
   const conn = await getConnection();
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // Check if a book with the same details already exists for this user
     const upperName = String(name).trim().toUpperCase();
     const existingBook = await conn.execute(
-      `SELECT id FROM books WHERE owner_id = :owner_id AND UPPER(name) = :name`,
-      { owner_id: Number(req.user.id), name: upperName }
+      `SELECT id FROM books WHERE owner_id = :owner_id AND UPPER(name) = :name`, // Use effectiveOwnerId
+      { owner_id: Number(effectiveOwnerId), name: upperName }
     );
 
     if (existingBook.rows.length > 0) {
@@ -187,7 +201,7 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES (:owner_id, :name, :max_customers, 1, :start_month_iso, :total_amount)
        RETURNING id INTO :id`,
       {
-        owner_id: Number(req.user.id),
+        owner_id: Number(effectiveOwnerId), // Use effectiveOwnerId
         name: upperName,
         max_customers: Number(maxCustomers),
         start_month_iso: String(startMonthIso),
@@ -203,10 +217,11 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Toggle book - to activate or deactivate a book
-router.patch('/:bookId/toggle', requireAuth, async (req, res) => {
+router.patch('/:bookId/toggle', requireAuth, requireAdmin, async (req, res) => { // Only Admin can toggle books
   const conn = await getConnection();
   try {
-    const r = await conn.execute(`SELECT id, is_active FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
+    const r = await conn.execute(`SELECT id, is_active FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) });
     if (!r.rows.length) return res.status(404).json({ error: 'not found' });
     const isActive = r.rows[0].IS_ACTIVE === 1 ? 0 : 1;
     await conn.execute(`UPDATE books SET is_active=:a WHERE id=:id`, { a: isActive, id: Number(req.params.bookId) });
@@ -217,12 +232,13 @@ router.patch('/:bookId/toggle', requireAuth, async (req, res) => {
 });
 
 // Edit book - to change name, maxCustomers, startMonthIso
-router.patch('/:bookId', requireAuth, async (req, res) => {
+router.patch('/:bookId', requireAuth, requireAdmin, async (req, res) => { // Only Admin can edit books
   const { name, maxCustomers, startMonthIso, totalAmount } = req.body || {};
   if (!name && !maxCustomers && !startMonthIso && totalAmount === undefined) return res.status(400).json({ error: 'at least one field required' });
   const conn = await getConnection();
   try {
-    const r = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
+    const r = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) });
     if (!r.rows.length) return res.status(404).json({ error: 'not found' });
     const updates = [];
     const params = { id: Number(req.params.bookId) };
@@ -230,8 +246,8 @@ router.patch('/:bookId', requireAuth, async (req, res) => {
     if (name) {
       upperName = String(name).trim().toUpperCase();
       const duplicateCheck = await conn.execute(
-        `SELECT id FROM books WHERE owner_id = :owner_id AND UPPER(name) = :name AND id != :id`,
-        { owner_id: Number(req.user.id), name: upperName, id: Number(req.params.bookId) }
+        `SELECT id FROM books WHERE owner_id = :owner_id AND UPPER(name) = :name AND id != :id`, // Use effectiveOwnerId
+        { owner_id: Number(effectiveOwnerId), name: upperName, id: Number(req.params.bookId) }
       );
       if (duplicateCheck.rows.length > 0) {
         return res.status(409).json({ error: 'A book with this name already exists.' });
@@ -251,10 +267,11 @@ router.patch('/:bookId', requireAuth, async (req, res) => {
 });
 
 // Delete book - to delete a book and all its customers and payments
-router.delete('/:bookId', requireAuth, async (req, res) => {
+router.delete('/:bookId', requireAuth, requireAdmin, async (req, res) => { // Only Admin can delete books
   const conn = await getConnection();
   try {
-    const r = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
+    const r = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) });
     if (!r.rows.length) return res.status(404).json({ error: 'not found' });
     // Delete payments
     await conn.execute(`DELETE FROM payments WHERE book_id=:bid`, { bid: Number(req.params.bookId) });

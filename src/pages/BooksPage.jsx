@@ -191,22 +191,24 @@ export default function BooksPage() {
         renderCell: (params) => {
           const { row } = params;
           const actionItems = [
-            {
-              label: 'Edit',
-              icon: <Edit fontSize="small" />,
-              onClick: () => { setEditForm(row); setEditOpen(true); },
-            },
-            {
-              label: 'Delete',
-              icon: <Delete fontSize="small" />,
-              onClick: () => handleDelete(row.id, row.name),
-              color: 'error.main',
-            },
-            {
-              label: row.isActive ? 'Deactivate' : 'Activate',
-              icon: row.isActive ? <ToggleOff fontSize="small" /> : <ToggleOn fontSize="small" />,
-              onClick: () => handleToggle(row.id, row.name, row.isActive),
-            },
+            ...(user?.userRole === 'admin' ? [
+              {
+                label: 'Edit',
+                icon: <Edit fontSize="small" />,
+                onClick: () => { setEditForm(row); setEditOpen(true); },
+              },
+              {
+                label: 'Delete',
+                icon: <Delete fontSize="small" />,
+                onClick: () => handleDelete(row.id, row.name),
+                color: 'error.main',
+              },
+              {
+                label: row.isActive ? 'Deactivate' : 'Activate',
+                icon: row.isActive ? <ToggleOff fontSize="small" /> : <ToggleOn fontSize="small" />,
+                onClick: () => handleToggle(row.id, row.name, row.isActive),
+              },
+            ] : []),
           ];
 
           return (
@@ -219,7 +221,7 @@ export default function BooksPage() {
               >
                 Customers
               </Button>
-              <ActionMenu items={actionItems} />
+              {actionItems.length > 0 && <ActionMenu items={actionItems} />}
             </Stack>
           );
         },
@@ -271,17 +273,19 @@ export default function BooksPage() {
               { label: 'Inactive', value: bookSummary.inactive, color: 'error.main' },
             ]}
           >
-            <Tooltip title="Add Book (Ctrl + /)">
-              <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)} sx={{
-                  transition: (theme) => theme.transitions.create(['transform', 'box-shadow'], { duration: theme.transitions.duration.short }),
-                  '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: (theme) => theme.shadows[4],
-                  }
-              }}>
-                Add Book
-              </Button>
-            </Tooltip>
+            {(user?.userRole === 'admin' || user?.userRole === 'agent') && (
+              <Tooltip title="Add Book (Ctrl + /)">
+                <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)} sx={{
+                    transition: (theme) => theme.transitions.create(['transform', 'box-shadow']),
+                    '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: (theme) => theme.shadows[4],
+                    }
+                }}>
+                  Add Book
+                </Button>
+              </Tooltip>
+            )}
           </SearchAndSummaryBox>
 
           <StyledDataGrid

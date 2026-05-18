@@ -75,7 +75,7 @@ export default function LuckyDrawPage() {
             color="primary"
             size="large"
             onClick={() => setDialogOpen(true)}
-            disabled={loading}
+            disabled={loading || user?.userRole !== 'admin'}
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <EmojiEvents />}
             sx={{
               px: 4,

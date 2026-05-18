@@ -1,6 +1,15 @@
 const express = require('express');
 const { getConnection } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.userRole === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required for this action' });
+  }
+};
 const router = express.Router();
 
 // Get all winners across all books for the logged-in user
@@ -15,6 +24,7 @@ router.get('/', requireAuth, async (req, res) => {
       LOWER(w.PHONE) LIKE LOWER(:search)
     )`;
 
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // This query reads directly from the denormalized winner table,
     // filtered by books owned by the user.
     const result = await conn.execute(
@@ -22,9 +32,9 @@ router.get('/', requireAuth, async (req, res) => {
        FROM winner w
        JOIN books b ON w.BOOK_ID = b.ID
        JOIN customers c ON w.CUSTOMER_ID = c.ID AND w.BOOK_ID = c.BOOK_ID
-       WHERE b.OWNER_ID = :owner_id ${search ? searchClause : ''}
+       WHERE b.OWNER_ID = :effectiveOwnerId ${search ? searchClause : ''}
        ORDER BY w.WIN_DATE DESC`, {
-      owner_id: req.user.id,
+      effectiveOwnerId: effectiveOwnerId,
       ...(search && { search: `%${search}%` })
     }
     );
@@ -81,7 +91,7 @@ router.post('/mark', requireAuth, async (req, res) => {
 });
 
 // Unmark a customer as a winner
-router.post('/unmark', requireAuth, async (req, res) => {
+router.post('/unmark', requireAuth, requireAdmin, async (req, res) => { // Only Admin can unmark winners
   const { bookId, customerId } = req.body;
   const conn = await getConnection();
   try {

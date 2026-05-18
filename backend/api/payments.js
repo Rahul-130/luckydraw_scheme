@@ -1,11 +1,20 @@
 const express = require('express');
 const { getConnection, oracledb } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.userRole === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required for this action' });
+  }
+};
 const router = express.Router();
 
 // Payments - to create a payment for a customer in a book
 router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, res) => {
-  let { amount, monthIso, receiptNo, paymentType, amountCash, amountOnline, amountInstore, agentName } = req.body || {};
+  let { amount, monthIso, receiptNo, paymentType, amountCash, amountOnline, amountInstore } = req.body || {};
   
   // Auto-calculate total amount from splits if provided to ensure data consistency
   amountCash = Number(amountCash || 0);
@@ -32,11 +41,12 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
 
   if (!amount || !monthIso) return res.status(400).json({ error: 'amount and monthIso are required' });
   const conn = await getConnection();
-  try {
+  try { // Agents and Admins can create payments
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // Check book ownership
     const bookR = await conn.execute(
       `SELECT id, start_month_iso, total_amount FROM books WHERE id=:id AND owner_id=:oid AND is_active=1`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) }
     );
     if (!bookR.rows.length) return res.status(404).json({ error: 'book not found or inactive' });
 
@@ -117,7 +127,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
         amountCash: amountCash,
         amountOnline: amountOnline,
         amountInstore: amountInstore,
-        agentName: agentName ? agentName.trim().toUpperCase() : null,
+        agentName: req.user.name || req.user.email,
         id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
         payment_date: { dir: oracledb.BIND_OUT, type: oracledb.DATE }
       }
@@ -125,6 +135,7 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
     await conn.commit();
     const paymentDate = result.outBinds.payment_date[0];
     res.status(201).json({
+      agentName: req.user.name || req.user.email,
       id: String(result.outBinds.id[0]),
       customerId: String(req.params.customerId),
       bookId: String(req.params.bookId),
@@ -135,7 +146,6 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
       amountCash: amountCash,
       amountOnline: amountOnline,
       amountInstore: amountInstore,
-      agentName,
       paymentDate: paymentDate.toISOString() // Return full ISO string
     });
   } catch (e) {
@@ -146,12 +156,13 @@ router.post('/:bookId/customers/:customerId/payments', requireAuth, async (req, 
 
 // get payments for a customer in a book
 router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, res) => {
-  const conn = await getConnection();
+  const conn = await getConnection(); // Agents and Admins can view payments
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // Check book ownership
     const bookR = await conn.execute(
       `SELECT id, total_amount FROM books WHERE id=:id AND owner_id=:oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) }
     );
     if (!bookR.rows.length) return res.status(404).json({ error: 'book not found' });
     // Check customer exists
@@ -193,15 +204,16 @@ router.get('/:bookId/customers/:customerId/payments', requireAuth, async (req, r
 });
 
 // Edit payment - amount and receipt number can be updated
-router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, async (req, res) => {
-  const { amount, paymentType, receiptNo, amountCash, amountOnline, amountInstore, agentName } = req.body || {};
-  if (!amount && paymentType === undefined && receiptNo === undefined && amountCash === undefined && amountOnline === undefined && amountInstore === undefined && agentName === undefined) return res.status(400).json({ error: 'no fields to update' });
+router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, requireAdmin, async (req, res) => { // Only Admin can edit payments
+  const { amount, paymentType, receiptNo, amountCash, amountOnline, amountInstore } = req.body || {};
+  if (!amount && paymentType === undefined && receiptNo === undefined && amountCash === undefined && amountOnline === undefined && amountInstore === undefined) return res.status(400).json({ error: 'no fields to update' });
   const conn = await getConnection();
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // Check book ownership
     const bookR = await conn.execute(
       `SELECT id FROM books WHERE id=:id AND owner_id=:oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) }
     );
     if (!bookR.rows.length) return res.status(404).json({ error: 'book not found' });
     // Check customer exists
@@ -257,7 +269,9 @@ router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, 
     if (amountCash !== undefined) { fields.push('amount_cash=:amountCash'); binds.amountCash = Number(amountCash); }
     if (amountOnline !== undefined) { fields.push('amount_online=:amountOnline'); binds.amountOnline = Number(amountOnline); }
     if (amountInstore !== undefined) { fields.push('amount_instore=:amountInstore'); binds.amountInstore = Number(amountInstore); }
-    if (agentName !== undefined) { fields.push('agent_name=:agentName'); binds.agentName = agentName ? agentName.trim().toUpperCase() : null; }
+
+    // Always use the logged-in user's name for security, fallback to email
+    fields.push('agent_name=:agentName'); binds.agentName = req.user.name || req.user.email;
 
     // Recalculate paymentType if amounts are being updated
     if (amountCash !== undefined || amountOnline !== undefined || amountInstore !== undefined) {
@@ -291,13 +305,14 @@ router.patch('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, 
 });
 
 // Delete payment
-router.delete('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, async (req, res) => {
+router.delete('/:bookId/customers/:customerId/payments/:paymentId', requireAuth, requireAdmin, async (req, res) => { // Only Admin can delete payments
   const conn = await getConnection();
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // Check book ownership
     const bookR = await conn.execute(
       `SELECT id, total_amount FROM books WHERE id=:id AND owner_id=:oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) }
     );
     if (!bookR.rows.length) return res.status(404).json({ error: 'book not found' });
     // Check customer exists

@@ -5,8 +5,17 @@ const bcrypt = require('bcryptjs');
 const speakeasy = require('speakeasy');
 const router = express.Router();
 
-router.post('/', requireAuth, async (req, res) => {
-  const conn = await getConnection();
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.userRole === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required for this action' });
+  }
+};
+
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
+  const conn = await getConnection(); // Only Admin can initiate lucky draw
   try {
     const { password, otp } = req.body;
     if (!password || !otp) {
@@ -37,9 +46,10 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     // 1. Get active books that are at least 1 month old
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     const booksR = await conn.execute(
       `SELECT id, name, start_month_iso FROM books WHERE owner_id=:oid AND is_active=1`,
-      { oid: Number(req.user.id) }
+      { oid: Number(effectiveOwnerId) }
     );
     const now = new Date();
     const eligibleBooks = booksR.rows.filter(book => {

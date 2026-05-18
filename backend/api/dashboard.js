@@ -1,13 +1,22 @@
 const express = require('express');
 const { getConnection } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.userRole === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required for this action' });
+  }
+};
 const router = express.Router();
 
 router.get('/stats', requireAuth, async (req, res) => {
   const { startDate, endDate } = req.query;
   const conn = await getConnection();
   try {
-    const ownerId = req.user.id;
+    const ownerId = requireAuth.getEffectiveOwnerId(req); // Use effective owner ID
     const dateFilterClause = startDate && endDate ? 'AND p.payment_date >= TO_DATE(:startDate, \'YYYY-MM-DD\') AND p.payment_date < TO_DATE(:endDate, \'YYYY-MM-DD\') + 1' : '';
     const dateBinds = startDate && endDate ? { startDate, endDate } : {};
 
@@ -349,7 +358,7 @@ router.get('/activity', requireAuth, async (req, res) => {
   const page = Number.parseInt(req.query.page, 10) || 1;
   const pageSize = Number.parseInt(req.query.pageSize, 10) || 10;
   const offset = (page - 1) * pageSize;
-  const ownerId = req.user.id;
+  const ownerId = requireAuth.getEffectiveOwnerId(req); // Use effective owner ID
 
   const conn = await getConnection();
   try {

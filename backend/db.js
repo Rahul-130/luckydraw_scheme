@@ -74,6 +74,8 @@ async function initSchema() {
       is_2fa_enabled NUMBER(1) DEFAULT 0 NOT NULL,
       two_fa_secret VARCHAR2(255),
       two_fa_recovery_codes CLOB,
+      user_role VARCHAR2(50) DEFAULT ''admin'' NOT NULL,
+      user_parent_id NUMBER,
       company_name VARCHAR2(255),
       company_address VARCHAR2(500),
       company_cell VARCHAR2(20),

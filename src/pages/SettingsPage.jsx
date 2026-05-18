@@ -106,18 +106,22 @@ export default function SettingsPage() {
           </Button>
 
           {/* Add other settings like backup here if desired */}
-          <Typography variant="h6" sx={{ mt: 4, borderTop: '1px solid #eee', pt: 3 }}>Application Backup</Typography>
-                  <Box sx={{ mt: 2 }}>
-                      <Alert severity="info">Create a complete backup of your application data. You can download it directly or save it to your configured Google Drive.</Alert>
-                      <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                        <Button variant="contained" startIcon={<CloudDownload />} onClick={handleDownloadBackup} disabled={loading}>
-                          {loading ? 'Generating...' : 'Download Backup'}
-                        </Button>
-                        <Button variant="outlined" startIcon={<CloudDownload />} onClick={handleGoogleDriveBackup} disabled={loading}>
-                          {loading ? 'Saving...' : 'Save to Drive'}
-                        </Button>
-                      </Box>
+          {user?.userRole === 'admin' && (
+            <>
+              <Typography variant="h6" sx={{ mt: 4, borderTop: '1px solid #eee', pt: 3 }}>Application Backup</Typography>
+              <Box sx={{ mt: 2 }}>
+                  <Alert severity="info">Create a complete backup of your application data. You can download it directly or save it to your configured Google Drive.</Alert>
+                  <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                    <Button variant="contained" startIcon={<CloudDownload />} onClick={handleDownloadBackup} disabled={loading}>
+                      {loading ? 'Generating...' : 'Download Backup'}
+                    </Button>
+                    <Button variant="outlined" startIcon={<CloudDownload />} onClick={handleGoogleDriveBackup} disabled={loading}>
+                      {loading ? 'Saving...' : 'Save to Drive'}
+                    </Button>
                   </Box>
+              </Box>
+            </>
+          )}
 
         </Paper>
       </Container>

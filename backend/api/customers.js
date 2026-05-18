@@ -1,15 +1,24 @@
 const express = require('express');
 const { getConnection, oracledb } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.userRole === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required for this action' });
+  }
+};
 const router = express.Router();
 
 // Customers - to list all customers for a book
 router.get('/:bookId', requireAuth, async (req, res) => {
   const { search = '' } = req.query;
   const conn = await getConnection();
-  try {
-
-    const book = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(req.user.id) });
+  try { // Agents and Admins can view customers
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
+    const book = await conn.execute(`SELECT id FROM books WHERE id=:id AND owner_id=:oid`, { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) });
     if (!book.rows.length) return res.status(404).json({ error: 'book not found' });
 
     const binds = { 
@@ -33,7 +42,7 @@ router.get('/:bookId', requireAuth, async (req, res) => {
              LOWER(c.phone) LIKE LOWER(:search) OR 
              LOWER(c.address) LIKE LOWER(:search) OR 
              TO_CHAR(c.id) LIKE :search)
-      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, c.settlement_receipt_no, c.settlement_agent_name, b.START_MONTH_ISO, c.book_id
+      GROUP BY c.id, c.name, c.relation_info, c.phone, c.address, c.is_frozen, c.settled_date, c.bonus_amount, c.settlement_receipt_no, c.settlement_agent_name, b.START_MONTH_ISO, c.book_id, b.owner_id
       ORDER BY c.id
     `;
 
@@ -64,11 +73,12 @@ router.get('/:bookId', requireAuth, async (req, res) => {
 
 // Get available customer IDs for a book
 router.get('/:bookId/available-ids', requireAuth, async (req, res) => {
-  const conn = await getConnection();
+  const conn = await getConnection(); // Agents and Admins can view available IDs
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     const bookR = await conn.execute(
       `SELECT id, max_customers FROM books WHERE id=:id AND owner_id=:oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) }
     );
     if (!bookR.rows.length) {
       return res.status(404).json({ error: 'book not found' });
@@ -94,16 +104,17 @@ router.get('/:bookId/available-ids', requireAuth, async (req, res) => {
 });
 
 // Customers - to create a new customer for a book - if all the fields are same as existing customer, return error
-router.post('/:bookId', requireAuth, async (req, res) => {
+router.post('/:bookId', requireAuth, async (req, res) => { // Agents and Admins can create customers
   const { id, name, relationInfo, phone, address } = req.body || {}; // Added 'id' to destructuring
   const conn = await getConnection();
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // 1. Check book ownership and limits
     const bookR = await conn.execute(
       `SELECT id, max_customers 
        FROM books 
        WHERE id = :id AND owner_id = :oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) }
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) }
     );
     
     if (!bookR.rows.length)
@@ -210,10 +221,16 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
   const { name, relationInfo, phone, address, isFrozen, bonusAmount, settlementReceiptNo, settlementAgentName } = req.body || {};
   const conn = await getConnection();
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
+
+    if (req.user.userRole === 'agent' && (name || relationInfo || phone || address)) {
+        return res.status(403).json({ error: 'Agents are not authorized to edit customer profile information. Only settlement is allowed.' });
+    }
+
     // 1. Check book ownership
     const bookR = await conn.execute(
       `SELECT id FROM books WHERE id=:id AND owner_id=:oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) } // Ensure user owns the book
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) } // Ensure user owns the book
     );
     if (!bookR.rows.length)
       return res.status(404).json({ error: 'book not found' });
@@ -270,7 +287,8 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
       }
       if (bonusAmount !== undefined) { fields.push('bonus_amount=:bonusAmount'); binds.bonusAmount = Number(bonusAmount); }
       if (settlementReceiptNo !== undefined) { fields.push('settlement_receipt_no=:settlementReceiptNo'); binds.settlementReceiptNo = settlementReceiptNo; }
-      if (settlementAgentName !== undefined) { fields.push('settlement_agent_name=:settlementAgentName'); binds.settlementAgentName = settlementAgentName ? settlementAgentName.trim().toUpperCase() : null; }
+      // Always use the logged-in user's name for settlements, fallback to email
+      fields.push('settlement_agent_name=:settlementAgentName'); binds.settlementAgentName = req.user.name || req.user.email;
     }
 
     const sql = `UPDATE customers SET ${fields.join(', ')} WHERE id=:cid AND book_id=:bid`;
@@ -286,13 +304,14 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
 });
 
 // Delete customer - also delete all payments of this customer
-router.delete('/:bookId/customers/:customerId', requireAuth, async (req, res) => {
+router.delete('/:bookId/customers/:customerId', requireAuth, requireAdmin, async (req, res) => { // Only Admin can delete customers
   const conn = await getConnection();
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     // 1. Check book ownership
     const bookR = await conn.execute(
       `SELECT id FROM books WHERE id=:id AND owner_id=:oid`,
-      { id: Number(req.params.bookId), oid: Number(req.user.id) } // Ensure user owns the book
+      { id: Number(req.params.bookId), oid: Number(effectiveOwnerId) } // Ensure user owns the book
     );
     if (!bookR.rows.length)
       return res.status(404).json({ error: 'book not found' });

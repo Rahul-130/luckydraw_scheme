@@ -19,8 +19,10 @@ import {
 import { AccountCircle, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { getProfile, updateProfile, verifyPassword } from '../services/api';
 import PasswordOrRecoveryCodeOrOTP from './PasswordOrRecoveryCodeOrOTP';
+import { useAuth } from '../context/AuthContext';
 
 const EditProfile = ({ token, showSnackbar }) => {
+  const { user: authUser } = useAuth();
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -39,6 +41,8 @@ const EditProfile = ({ token, showSnackbar }) => {
   const [confirmOtp, setConfirmOtp] = useState('');
   const [confirmError, setConfirmError] = useState('');
   const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const isAgent = authUser?.userRole === 'agent';
 
   // Fetch initial profile data
   useEffect(() => {
@@ -131,20 +135,20 @@ const EditProfile = ({ token, showSnackbar }) => {
         </Typography>
         {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
-          <TextField margin="normal" required fullWidth id="name" label="Name" name="name" value={profile.name} onChange={handleChange} autoFocus />
+          <TextField margin="normal" required fullWidth id="name" label="Name" name="name" value={profile.name} onChange={handleChange} autoFocus disabled={isAgent} />
           <TextField margin="normal" required fullWidth id="email" label="Email Address" name="email" value={profile.email} disabled />
           <TextField margin="normal" required fullWidth id="phone" label="Phone Number" name="phone" type="tel" value={profile.phone} onChange={handleChange} />
 
           <Accordion sx={{ mt: 2, boxShadow: 'none', '&:before': { display: 'none' }, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>Company Details (for Billing)</Typography>
+              <Typography>Company Details {isAgent ? '(Inherited)' : '(for Billing)'}</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Box>
-                <TextField margin="normal" fullWidth id="company_name" label="Company Name" name="company_name" value={profile.company_name || ''} onChange={handleChange} />
-                <TextField margin="normal" fullWidth id="company_address" label="Company Address" name="company_address" value={profile.company_address || ''} onChange={handleChange} multiline rows={2} />
-                <TextField margin="normal" fullWidth id="company_cell" label="Company Cell" name="company_cell" value={profile.company_cell || ''} onChange={handleChange} />
-                <TextField margin="normal" fullWidth id="company_phone" label="Company Phone" name="company_phone" value={profile.company_phone || ''} onChange={handleChange} />
+                <TextField margin="normal" fullWidth id="company_name" label="Company Name" name="company_name" value={profile.company_name || ''} onChange={handleChange} disabled={isAgent} />
+                <TextField margin="normal" fullWidth id="company_address" label="Company Address" name="company_address" value={profile.company_address || ''} onChange={handleChange} multiline rows={2} disabled={isAgent} />
+                <TextField margin="normal" fullWidth id="company_cell" label="Company Cell" name="company_cell" value={profile.company_cell || ''} onChange={handleChange} disabled={isAgent} />
+                <TextField margin="normal" fullWidth id="company_phone" label="Company Phone" name="company_phone" value={profile.company_phone || ''} onChange={handleChange} disabled={isAgent} />
               </Box>
             </AccordionDetails>
           </Accordion>

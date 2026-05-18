@@ -7,6 +7,15 @@ const archiver = require('archiver');
 const { format } = require('fast-csv');
 const { getConnection } = require('../db');
 const axios = require('axios');
+
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.userRole === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required for this action' });
+  }
+};
 const requireAuth = require('../middleware/requireAuth');
 
 const TABLES_TO_BACKUP = ['users', 'books', 'customers', 'payments', 'winner'];
@@ -87,7 +96,7 @@ async function createBackupArchive() {
   return zipPath;
 }
 
-router.post('/download', requireAuth, async (req, res) => {
+router.post('/download', requireAuth, requireAdmin, async (req, res) => { // Only Admin can download backups
   // Expose the Content-Disposition header so the frontend can read the filename
   res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
@@ -107,7 +116,7 @@ router.post('/download', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/googledrive', requireAuth, async (req, res) => {
+router.post('/googledrive', requireAuth, requireAdmin, async (req, res) => { // Only Admin can upload to Google Drive
   const webhookUrl = process.env.N8N_BACKUP_WEBHOOK_URL;
 
   if (!webhookUrl) {

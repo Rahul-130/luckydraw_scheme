@@ -21,6 +21,7 @@ import SecurityPage from './pages/SecurityPage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
+import AgentManagement from './pages/AgentManagement';
 import NotFoundPage from './pages/NotFoundPage';
 import { setupInterceptors } from './services/api';
 
@@ -53,6 +54,7 @@ const AppContent = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/admin/agents" element={<AgentManagement />} />
             <Route path="/security" element={<SecurityPage />} />
           </Route>
 

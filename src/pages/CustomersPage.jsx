@@ -80,29 +80,7 @@ export default function CustomersPage() {
     const [customerToSettle, setCustomerToSettle] = useState(null);
     const [bonusAmount, setBonusAmount] = useState('');
     const [settlementReceiptNo, setSettlementReceiptNo] = useState('');
-    const [settlementAgentName, setSettlementAgentName] = useState('');
-    const [allAgents, setAllAgents] = useState([]);
-    const [isCustomAgent, setIsCustomAgent] = useState(false);
     const [availableCustomerIds, setAvailableCustomerIds] = useState([]); // New state for available IDs
-
-    // Fetch all agents for the user to populate autocomplete
-    useEffect(() => {
-        const fetchAgents = async () => {
-            if (!token) return;
-            try {
-                const response = await fetch('/api/books/agents', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const agents = await response.json();
-                    setAllAgents(agents);
-                }
-            } catch (err) {
-                console.error("Failed to fetch agents list", err);
-            }
-        };
-        fetchAgents();
-    }, [token]);
 
     // Fetch available customer IDs when bookId or customers change
     useEffect(() => {
@@ -121,13 +99,6 @@ export default function CustomersPage() {
         };
         fetchIds();
     }, [token, bookId, customers]); // Refetch when customers change to update available IDs
-
-    const agentOptions = useMemo(() => {
-        const optionsSet = new Set(allAgents.map(a => a.trim()));
-        // Add agent from current customer if it exists
-        if (customerToSettle?.settlementAgentName) optionsSet.add(customerToSettle.settlementAgentName.trim());
-        return Array.from(optionsSet).sort();
-    }, [allAgents, customerToSettle]);
 
     // Add keyboard shortcut for "Add Customer" (Ctrl + / or Cmd + /)
     useKeyShortcut(() => {
@@ -177,8 +148,6 @@ export default function CustomersPage() {
     const handleSettle = useCallback((customer) => {
         setCustomerToSettle(customer);
         setBonusAmount(''); // Reset bonus amount
-        setSettlementAgentName(''); // Reset agent
-        setIsCustomAgent(false);
         // Auto-generate a unique settlement receipt number
         setSettlementReceiptNo(`S-${bookId}-${customer.id}-${Date.now()}`);
         setSettleDialogOpen(true);
@@ -188,16 +157,11 @@ export default function CustomersPage() {
         if (!customerToSettle) return;
 
         try {
-            if (!settlementAgentName || settlementAgentName.trim() === '') {
-                showSnackbar('Agent name is required for settlement.', 'error');
-                return;
-            }
-
             await editCustomer(bookId, customerToSettle.id, { 
                 isFrozen: true,
                 bonusAmount: Number(bonusAmount) || 0,
                 settlementReceiptNo: settlementReceiptNo,
-                settlementAgentName: settlementAgentName
+                settlementAgentName: user?.name || user?.email
             }, token);
             
             refetchCustomers();
@@ -311,7 +275,7 @@ export default function CustomersPage() {
             renderCell: (params) => {
                 const { row } = params;
                 const actionItems = [
-                  ...((!row.isFrozen || (row.isWinner && !row.settledDate)) ? [{
+                  ...((user?.userRole === 'admin' && (!row.isFrozen || (row.isWinner && !row.settledDate))) ? [{
                     label: 'Edit',
                     icon: <Edit fontSize="small" />,
                     onClick: () => handleEdit(row),
@@ -334,12 +298,12 @@ export default function CustomersPage() {
                     onClick: () => handleMakeWinner(row),
                     color: 'success.main'
                   }] : []),
-                  {
+                  ...(user?.userRole === 'admin' ? [{
                     label: 'Delete',
                     icon: <Delete fontSize="small" />,
                     onClick: () => handleDelete(row.id, row.name),
                     color: 'error.main',
-                  },
+                  }] : []),
                 ];
                 return (
                     <Stack direction="row" spacing={0.5} alignItems="center">
@@ -351,7 +315,7 @@ export default function CustomersPage() {
                         >
                             Payments
                         </Button>
-                        <ActionMenu items={actionItems} />
+                        {actionItems.length > 0 && <ActionMenu items={actionItems} />}
                     </Stack>
                 );
             }
@@ -443,49 +407,10 @@ export default function CustomersPage() {
                         ? `Confirm that ${book?.name}-${customerToSettle?.id} (${customerToSettle?.name}) has collected the prize. You can add an optional bonus amount below.` 
                         : `You are about to settle and close ${book?.name}-${customerToSettle?.id} (${customerToSettle?.name})'s account. This will freeze the account.`}
                 </Typography>
-
-                <Box sx={{ mt: 2, mb: 1 }}>
-                    {isCustomAgent ? (
-                        <TextField
-                            label="Settlement Agent (Custom)"
-                            value={settlementAgentName}
-                            onChange={(e) => setSettlementAgentName(e.target.value)}
-                            fullWidth
-                            variant="outlined"
-                            InputProps={{
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton onClick={() => { setIsCustomAgent(false); setSettlementAgentName(''); }}>
-                                            <Close />
-                                        </IconButton>
-                                    </InputAdornment>
-                                )
-                            }}
-                        />
-                    ) : (
-                        <Autocomplete
-                            options={[...agentOptions, 'Custom']}
-                            value={settlementAgentName || null}
-                            onChange={(event, newValue) => {
-                                if (newValue === 'Custom') {
-                                    setIsCustomAgent(true);
-                                    setSettlementAgentName('');
-                                } else {
-                                    setSettlementAgentName(newValue || '');
-                                }
-                            }}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Settlement Agent"
-                                    variant="outlined"
-                                    placeholder="Select agent who is settling"
-                                    required
-                                />
-                            )}
-                        />
-                    )}
-                </Box>
+                
+                <Alert severity="info" sx={{ mb: 2 }}>
+                    Settling as: <strong>{user?.name}</strong>
+                </Alert>
 
                 <TextField
                     margin="dense"

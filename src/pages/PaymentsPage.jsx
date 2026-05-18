@@ -48,53 +48,10 @@ export default function PaymentsPage() {
     const { payments, customer, book, loading, error, refetch } = usePayments(bookId, customerId);
     const navigate = useNavigate();
     const [selectionModel, setSelectionModel] = useState([]);
-    const [allAgents, setAllAgents] = useState([]);
-
     const [otpDialogOpen, setOtpDialogOpen] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
     const [pendingAction, setPendingAction] = useState(null);
     const [duplicateError, setDuplicateError] = useState(null);
-
-    // Fetch all agents for the user to populate autocomplete
-    useEffect(() => {
-        const fetchAgents = async () => {
-            if (!token) return;
-            try {
-                const response = await fetch('/api/books/agents', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const agents = await response.json();
-                    setAllAgents(agents);
-                }
-            } catch (err) {
-                console.error("Failed to fetch agents list", err);
-            }
-        };
-        fetchAgents();
-    }, [token]);
-
-    const agentOptions = useMemo(() => {
-        const optionsMap = new Map();
-        // Add agents from backend
-        allAgents.forEach(name => {
-             if (name) optionsMap.set(name.toLowerCase(), name);
-        });
-        // Add agents from current view (fallback/realtime)
-        if (payments) {
-            payments.forEach(p => {
-                if (p.agentName) {
-                    const lower = p.agentName.toLowerCase();
-                    const current = p.agentName;
-                    if (!optionsMap.has(lower) || (optionsMap.get(lower)[0] === optionsMap.get(lower)[0].toLowerCase() && current[0] === current[0].toUpperCase())) {
-                        optionsMap.set(lower, current);
-                    }
-                }
-            });
-        }
-        return Array.from(optionsMap.values()).sort();
-    }, [payments, allAgents]);
-
     const getNextPaymentDetails = useCallback(() => {
         const fixedAmount = book?.totalAmount || '';
         if (!book || payments.length === 0) {
@@ -123,8 +80,7 @@ export default function PaymentsPage() {
             amount,
             monthIso: month,
             receiptNo: uniqueReceiptNo,
-            splits: [{ amount: amount, paymentType: 'cash' }], // Initialize with splits
-            agentName: ''
+            splits: [{ amount: amount, paymentType: 'cash' }] // Initialize with splits
         });
         setOpen(true);
     }, [customerId, getNextPaymentDetails]);
@@ -136,11 +92,6 @@ export default function PaymentsPage() {
     const handleCreate = async () => {
       try {
         let payload = { ...form };
-
-        if (!payload.agentName || payload.agentName.trim() === '') {
-            showSnackbar('Agent name is required.', 'error');
-            return;
-        }
 
         // Calculate amounts based on splits or fallback to single amount/type
         let cash = 0, online = 0, instore = 0;
@@ -205,11 +156,6 @@ export default function PaymentsPage() {
 
     const handleEditSave = async () => {
         let payload = { ...editForm };
-
-        if (!payload.agentName || payload.agentName.trim() === '') {
-            showSnackbar('Agent name is required.', 'error');
-            return;
-        }
 
         let cash = 0, online = 0, instore = 0;
 
@@ -366,17 +312,19 @@ export default function PaymentsPage() {
           renderCell: (params) => {
             const { row } = params;
             const actionItems = [
-              {
-                label: 'Edit',
-                icon: <Edit fontSize="small" />,
-                onClick: () => handleEdit(row),
-              },
-              {
-                label: 'Delete',
-                icon: <Delete fontSize="small" />,
-                onClick: () => handleDelete(row.id),
-                color: 'error.main',
-              },
+              ...(user?.userRole === 'admin' ? [
+                {
+                  label: 'Edit',
+                  icon: <Edit fontSize="small" />,
+                  onClick: () => handleEdit(row),
+                },
+                {
+                  label: 'Delete',
+                  icon: <Delete fontSize="small" />,
+                  onClick: () => handleDelete(row.id),
+                  color: 'error.main',
+                },
+              ] : []),
               {
                 label: 'Print Receipt',
                 icon: <Print fontSize="small" />,
@@ -471,11 +419,11 @@ export default function PaymentsPage() {
               />
       {/* Dialogs */}
         <FormDialog open={open} onClose={() => setOpen(false)} title="Add Payment" onSubmit={handleCreate} submitText="Create">
-          <PaymentFormFields formState={form} onFormChange={setForm} agentOptions={agentOptions} bookTotalAmount={book?.totalAmount} />
+          <PaymentFormFields formState={form} onFormChange={setForm} user={user} bookTotalAmount={book?.totalAmount} />
         </FormDialog>
 
         <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Payment" onSubmit={handleEditSave}>
-          <PaymentFormFields formState={editForm} onFormChange={setEditForm} isMonthDisabled={true} agentOptions={agentOptions} bookTotalAmount={book?.totalAmount} />
+          <PaymentFormFields formState={editForm} onFormChange={setEditForm} isMonthDisabled={true} user={user} bookTotalAmount={book?.totalAmount} />
         </FormDialog>
 
         <ConfirmationDialog

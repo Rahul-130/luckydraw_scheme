@@ -15,10 +15,11 @@ router.get('/', requireAuth, async (req, res) => {
   const conn = await getConnection();
   const { search = '' } = req.query;
   try {
+    const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
     //1. Get active books
     const booksR = await conn.execute(
       `SELECT id, name, start_month_iso FROM books WHERE owner_id=:oid AND is_active=1`,
-      { oid: Number(req.user.id) }
+      { oid: Number(effectiveOwnerId) }
     );
 
     const now = new Date();

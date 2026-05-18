@@ -4,11 +4,20 @@ const axios = require('axios');
 const { body, validationResult } = require('express-validator');
 const requireAuth = require('../middleware/requireAuth'); // Assuming you have an auth middleware
 
+// Middleware to check if the user is an admin
+const requireAdmin = (req, res, next) => {
+    if (req.user && req.user.userRole === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ error: 'Admin access required for this action' });
+    }
+};
+
 // POST /api/notifications/whatsapp
 // Sends a WhatsApp message using the Cloud API
 router.post(
     '/whatsapp',
-    requireAuth, // Protect the route
+    requireAuth, requireAdmin, // Only Admin can send notifications
     [
         // Basic validation for incoming data
         body('phone', 'Phone number is required').notEmpty(),
@@ -75,7 +84,7 @@ router.post(
 // Sends a WhatsApp message when a winner is unmarked
 router.post(
     '/whatsapp/unmark',
-    requireAuth, // Protect the route
+    requireAuth, requireAdmin, // Only Admin can send unmark notifications
     [
         body('phone', 'Phone number is required').notEmpty(),
         body('customerName', 'Customer name is required').notEmpty(),
@@ -166,4 +175,3 @@ router.post('/whatsapp/webhook', (req, res) => {
 });
 
 module.exports = router;
-

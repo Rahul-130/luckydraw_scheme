@@ -23,6 +23,8 @@ import MenuIcon from "@mui/icons-material/Menu";import CloseIcon from '@mui/icon
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PeopleIcon from '@mui/icons-material/People';
+import HomeIcon from '@mui/icons-material/Home';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
@@ -101,12 +103,13 @@ export default function NavBar() {
   };
 
   const navItems = [
-    { label: "Home", path: "/", auth: true },
+    { label: "Home", path: "/", auth: true, icon: <HomeIcon /> },
     { label: "Dashboard", path: "/dashboard", auth: true, icon: <DashboardIcon /> },
     { label: "Books", path: "/books", auth: true, icon: <MenuBookIcon /> },
     { label: "Eligible Customers", path: "/eligible-customers", auth: true, icon: <PeopleIcon /> },
     { label: "Winners", path: "/winners", auth: true, icon: <EmojiEventsIcon /> },
-    { label: "Lucky Draw", path: "/lucky-draw", auth: true, icon: <ConfirmationNumberIcon /> }
+    { label: "Lucky Draw", path: "/lucky-draw", auth: true, icon: <ConfirmationNumberIcon /> },
+    { label: "Agents", path: "/admin/agents", auth: true, icon: <SupervisorAccountIcon />, adminOnly: true }
   ];
 
   return (
@@ -149,6 +152,7 @@ export default function NavBar() {
 
                 <List>
                   {navItems
+                    .filter(item => !item.adminOnly || (user && user.userRole === 'admin'))
                     .map((item, index) => (
                       <DrawerItem
                         key={item.label}
@@ -207,22 +211,24 @@ export default function NavBar() {
           <Box>
             {token && user ? (
               <>
-                {navItems.map((item) => (
-                  <Button
-                    key={item.label}
-                    color="inherit"
-                    component={Link}
-                    to={item.path}
-                    sx={{
-                      backgroundColor:
-                        pathname === item.path
-                          ? alpha(theme.palette.common.white, 0.15)
-                          : "transparent",
-                    }}
-                  >
-                    {item.label}
-                  </Button>
-                ))}
+                {navItems
+                  .filter(item => !item.adminOnly || (user && user.userRole === 'admin'))
+                  .map((item) => (
+                    <Button
+                      key={item.label}
+                      color="inherit"
+                      component={Link}
+                      to={item.path}
+                      sx={{
+                        backgroundColor:
+                          pathname === item.path
+                            ? alpha(theme.palette.common.white, 0.15)
+                            : "transparent",
+                      }}
+                    >
+                      {item.label}
+                    </Button>
+                  ))}
                 <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, ml: 2 }}>
                   <Avatar src={user.avatarUrl} alt={user.name}>
                     {user.name ? user.name[0].toUpperCase() : 'U'}
