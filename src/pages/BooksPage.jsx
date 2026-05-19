@@ -143,15 +143,15 @@ export default function BooksPage() {
 
       if (pendingAction.type === 'edit') {
         await editBook(pendingAction.data.id, pendingAction.data, token);
-        showSnackbar("Book updated successfully!", "success");
+        showSnackbar("Group updated successfully!", "success");
         setEditOpen(false);
       } else if (pendingAction.type === 'delete') {
         await deleteBook(pendingAction.id, token);
-        showSnackbar(`Book "${pendingAction.name}" deleted successfully.`, "success");
+        showSnackbar(`Group "${pendingAction.name}" deleted successfully.`, "success");
       } else if (pendingAction.type === 'toggle') {
         await toggleBookActive(pendingAction.id, token);
         const action = pendingAction.isActive ? "deactivate" : "activate";
-        showSnackbar(`Book "${pendingAction.name}" has been ${action}d.`, "success");
+        showSnackbar(`Group "${pendingAction.name}" has been ${action}d.`, "success");
       }
       refetchBooks();
       setOtpDialogOpen(false);
@@ -255,16 +255,16 @@ export default function BooksPage() {
                 textShadow: (theme) => `1px 1px 2px ${alpha(theme.palette.primary.light, 0.1)}`,
               }}
             >
-              Manage Your Books
+              Manage Your Groups
             </Typography>
             <Typography variant="subtitle1" color="text.secondary">
-              All your lucky draw books in one place.
+              All your scheme groups in one place.
             </Typography>
           </Box>
 
           <SearchAndSummaryBox
             sx={{ animation: `${fadeIn} 0.5s ease-out 0.1s`, animationFillMode: 'backwards' }}
-            searchLabel="Search Books"
+            searchLabel="Search Groups"
             searchText={searchText}
             onSearchChange={(e) => setSearchText(e.target.value)}
             summaryItems={[
@@ -274,7 +274,7 @@ export default function BooksPage() {
             ]}
           >
             {(user?.userRole === 'admin' || user?.userRole === 'agent') && (
-              <Tooltip title="Add Book (Ctrl + /)">
+              <Tooltip title="Add Group (Ctrl + /)">
                 <Button variant="contained" startIcon={<Add />} color="primary" onClick={() => setOpen(true)} sx={{
                     transition: (theme) => theme.transitions.create(['transform', 'box-shadow']),
                     '&:hover': {
@@ -282,7 +282,7 @@ export default function BooksPage() {
                         boxShadow: (theme) => theme.shadows[4],
                     }
                 }}>
-                  Add Book
+                  Add Group
                 </Button>
               </Tooltip>
             )}
@@ -319,17 +319,17 @@ export default function BooksPage() {
 
           {booksError && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              Failed to load books.
+              Failed to load groups.
             </Alert>
           )}
 
-          {/* Add Book Dialog */}
-          <FormDialog open={open} onClose={() => setOpen(false)} title="Add Book" onSubmit={handleCreate} submitText="Create">
+          {/* Add Group Dialog */}
+          <FormDialog open={open} onClose={() => setOpen(false)} title="Add Group" onSubmit={handleCreate} submitText="Create">
             <BookFormFields formState={form} onFormChange={setForm} />
           </FormDialog>
 
-          {/* Edit Book Dialog */}
-          <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Book" onSubmit={handleEdit}>
+          {/* Edit Group Dialog */}
+          <FormDialog open={editOpen} onClose={() => setEditOpen(false)} title="Edit Group" onSubmit={handleEdit}>
             <BookFormFields formState={editForm} onFormChange={setEditForm} />
           </FormDialog>
 
@@ -339,14 +339,14 @@ export default function BooksPage() {
             onConfirm={handleConfirmOtp}
             loading={otpLoading}
             title={
-                pendingAction?.type === 'delete' ? `Delete Book "${pendingAction.name}"?` :
+                pendingAction?.type === 'delete' ? `Delete Group "${pendingAction.name}"?` :
                 pendingAction?.type === 'toggle' ? `${pendingAction.isActive ? "Deactivate" : "Activate"} "${pendingAction.name}"?` :
-                'Confirm Edit Book'
+                'Confirm Edit Group'
             }
             message={
-                pendingAction?.type === 'delete' ? 'Are you sure you want to delete this book and all its related data? This action cannot be undone. Please enter your credentials to confirm.' :
-                pendingAction?.type === 'toggle' ? `Are you sure you want to ${pendingAction.isActive ? "deactivate" : "activate"} this book? Please enter your credentials to confirm.` :
-                `Please enter your credentials to confirm changes for book "${pendingAction?.data?.name}".`
+                pendingAction?.type === 'delete' ? 'Are you sure you want to delete this group and all its related data? This action cannot be undone. Please enter your credentials to confirm.' :
+                pendingAction?.type === 'toggle' ? `Are you sure you want to ${pendingAction.isActive ? "deactivate" : "activate"} this group? Please enter your credentials to confirm.` :
+                `Please enter your credentials to confirm changes for group "${pendingAction?.data?.name}".`
             }
             is2FAEnabled={user?.is2FAEnabled}
           />

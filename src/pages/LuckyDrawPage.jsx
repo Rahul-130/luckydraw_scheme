@@ -27,7 +27,7 @@ export default function LuckyDrawPage() {
     setLoading(true);
     setDialogOpen(false); // close dialog
     setWinners([]);
-    showSnackbar('Running Lucky Draw...', 'info');
+    showSnackbar('Running Scheme...', 'info');
 
     try {
       const res = await runLuckyDraw(token, password, otp);
@@ -35,10 +35,10 @@ export default function LuckyDrawPage() {
       setWinners(newWinners);
 
       if (newWinners.length > 0) {
-        showSnackbar('Lucky Draw completed! Winners list will be downloaded.', 'success');
+        showSnackbar('Scheme completed! Winners list will be downloaded.', 'success');
 
         // Create CSV content
-        const headers = ['Book Name', 'Customer Name', 'Address', 'Phone'];
+        const headers = ['Group Name', 'Customer Name', 'Address', 'Phone'];
         const csvRows = [
           headers.join(','),
           ...newWinners.map((row) =>
@@ -57,7 +57,7 @@ export default function LuckyDrawPage() {
         showSnackbar('No eligible winners found.', 'info');
       }
     } catch (err) {
-      showSnackbar(err.response?.data?.error || 'Failed to run lucky draw', 'error');
+      showSnackbar(err.response?.data?.error || 'Failed to run scheme', 'error');
     }
 
     setLoading(false);
@@ -66,7 +66,7 @@ export default function LuckyDrawPage() {
   return (
     <PageLayout>
         <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: 'text.primary' }}>
-          Lucky Draw
+          Scheme
         </Typography>
 
         <Stack direction="row" justifyContent="center" sx={{ mb: 3 }}>
@@ -89,15 +89,15 @@ export default function LuckyDrawPage() {
               },
             }}
           >
-            {loading ? 'Running...' : 'Run Lucky Draw'}
+            {loading ? 'Running...' : 'Run Scheme'}
           </Button>
         </Stack>
 
         <StyledDataGrid
           rows={winners.map((w, idx) => ({ id: idx + 1, ...w }))}
           columns={[
-            { field: 'bookId', headerName: 'Book ID', width: 100 },
-            { field: 'bookName', headerName: 'Book Name', width: 180 },
+            { field: 'bookId', headerName: 'Group ID', width: 100 },
+            { field: 'bookName', headerName: 'Group Name', width: 180 },
             { field: 'customerId', headerName: 'Customer ID', width: 120 },
             { field: 'customerName', headerName: 'Name', width: 180 },
             { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
@@ -114,7 +114,7 @@ export default function LuckyDrawPage() {
           onClose={() => setDialogOpen(false)}
           onConfirm={handleConfirmRun}
           loading={loading}
-          title="Confirm Lucky Draw"
+          title="Confirm Scheme"
           message={user?.is2FAEnabled 
             ? "To ensure security, please enter your password and a one-time password (OTP) from your authenticator app to proceed."
             : "To ensure security, please enter your password to proceed."

@@ -8,7 +8,7 @@ const SearchAndSummaryBox = ({
   searchText,
   onSearchChange,
   summaryItems,
-  children, // For action buttons like "Add Book"
+  children, // For action buttons like "Add Group"
 }) => {
   return (
     <Stack

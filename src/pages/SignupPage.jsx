@@ -89,7 +89,7 @@ export default function SignupPage() {
     form.password !== form.confirmPassword;
 
   return (
-    <AuthLayout branding={{ title: "Join Us!", description: "Become a part of our community and start managing your lucky draws with ease and confidence." }}>
+    <AuthLayout branding={{ title: "Join Us!", description: "Become a part of our community and start managing your schemes with ease and confidence." }}>
       <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 2 }}>
         <div className="flex flex-col items-center">
           <PersonAdd color="primary" className="!text-4xl mb-2" />

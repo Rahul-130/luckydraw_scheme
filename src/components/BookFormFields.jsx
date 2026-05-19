@@ -75,16 +75,16 @@ const BookFormFields = ({ formState, onFormChange }) => {
           )})`,
       }}
       role="region"
-      aria-label="Book details form"
+      aria-label="Group details form"
     >
       {/* Header */}
       <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={1} alignItems="center" justifyContent="space-between" mb={1}>
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.2px' }}>
-            Book details
+            Group details
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Provide the book name, capacity, and the first billing month.
+            Provide the group name, capacity, and the first billing month.
           </Typography>
         </Box>
 
@@ -106,7 +106,7 @@ const BookFormFields = ({ formState, onFormChange }) => {
             fullWidth
             variant="outlined"
             value={formState.name}
-            helperText="e.g., 'Morning Group' or 'Main Book' — useful for staff and receipts."
+            helperText="e.g., 'Morning Group' or 'Main Group' — useful for staff and receipts."
             onChange={(e) => onFormChange({ ...formState, name: e.target.value })}
             InputProps={{
               startAdornment: (
@@ -130,7 +130,7 @@ const BookFormFields = ({ formState, onFormChange }) => {
                 },
               },
             }}
-            inputProps={{ 'aria-label': 'Book name' }}
+            inputProps={{ 'aria-label': 'Group name' }}
           />
         </Box>
 
@@ -142,7 +142,7 @@ const BookFormFields = ({ formState, onFormChange }) => {
             fullWidth
             variant="outlined"
             value={formState.maxCustomers}
-            helperText="The total number of customers this book can have. Use numeric values only."
+            helperText="The total number of customers this group can have. Use numeric values only."
             onChange={(e) => onFormChange({ ...formState, maxCustomers: e.target.value })}
             InputProps={{
               startAdornment: (

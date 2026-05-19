@@ -105,10 +105,10 @@ export default function NavBar() {
   const navItems = [
     { label: "Home", path: "/", auth: true, icon: <HomeIcon /> },
     { label: "Dashboard", path: "/dashboard", auth: true, icon: <DashboardIcon /> },
-    { label: "Books", path: "/books", auth: true, icon: <MenuBookIcon /> },
+    { label: "Groups", path: "/books", auth: true, icon: <MenuBookIcon /> },
     { label: "Eligible Customers", path: "/eligible-customers", auth: true, icon: <PeopleIcon /> },
     { label: "Winners", path: "/winners", auth: true, icon: <EmojiEventsIcon /> },
-    { label: "Lucky Draw", path: "/lucky-draw", auth: true, icon: <ConfirmationNumberIcon /> },
+    { label: "Scheme", path: "/lucky-draw", auth: true, icon: <ConfirmationNumberIcon /> },
     { label: "Agents", path: "/admin/agents", auth: true, icon: <SupervisorAccountIcon />, adminOnly: true }
   ];
 
@@ -116,7 +116,7 @@ export default function NavBar() {
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Lucky Draw
+          Scheme
         </Typography>
         {isMobile ? (
           <>

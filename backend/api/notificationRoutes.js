@@ -22,7 +22,7 @@ router.post(
         // Basic validation for incoming data
         body('phone', 'Phone number is required').notEmpty(),
         body('customerName', 'Customer name is required').notEmpty(),
-        body('bookName', 'Book name is required').notEmpty(),
+        body('bookName', 'Group name is required').notEmpty(),
         body('address', 'Address is required').notEmpty(),
     ],
     async (req, res) => {

@@ -148,7 +148,7 @@ export default function DashboardPage() {
               [...Array(3)].map((_, i) => <SkeletonCard key={i} />)
             ) : (
                 <>
-                  <StatCard title="Total Books" value={`${stats.bookCounts.total} (${stats.bookCounts.active} Active)`} />
+                  <StatCard title="Total Groups" value={`${stats.bookCounts.total} (${stats.bookCounts.active} Active)`} />
                   <StatCard title="Total Customers" value={`${stats.customerCounts.total} (${stats.customerCounts.active} Active)`} />
                   <StatCard title="Total Winners" value={stats.winnerCounts.total} />
                   <StatCard title="Eligible Customers" value={stats.eligibilityCounts.eligible} color={CHART_COLORS.eligible} />
@@ -304,7 +304,7 @@ export default function DashboardPage() {
           </Box>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <PieChartCard
-              title="Book Status"
+              title="Groups Status"
               loading={loading}
               data={bookChartData}
               colors={[CHART_COLORS.active, CHART_COLORS.inactive]}
@@ -318,7 +318,7 @@ export default function DashboardPage() {
               tooltipFormatter={(value, name) => [value, name]}
             />
             <PieChartCard
-              title="Eligibility (Active Books)"
+              title="Eligibility (Active Groups)"
               loading={loading}
               data={eligibilityChartData}
               colors={[CHART_COLORS.eligible, CHART_COLORS.notEligible]}
@@ -349,7 +349,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <PieChartCard
-                title="Wins in Active Books"
+                title="Wins in Active Groups"
                 loading={loading}
                 data={winsPerBookData}
                 colors={Object.values(CHART_COLORS)}

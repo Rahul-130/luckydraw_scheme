@@ -107,7 +107,7 @@ export default function WinnersListPage() {
     return (
         <PageLayout>
             <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: 'text.primary' }}>
-                Lucky Draw Winners
+                Scheme Winners
             </Typography>
 
             <SearchAndSummaryBox

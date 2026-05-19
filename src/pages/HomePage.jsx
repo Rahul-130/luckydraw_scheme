@@ -82,7 +82,7 @@ export default function HomePage() {
                             Make Payment
                         </Typography>
                         <Typography variant="body1" color="text.secondary">
-                            Select a book and enter customer ID to proceed.
+                            Select a group and enter customer ID to proceed.
                         </Typography>
                     </Box>
                     

@@ -71,7 +71,7 @@ export default function EligibleCustomersPage() {
 
     const columns = useMemo(() => [
 
-        { field: 'bookName', headerName: 'Book Name', width: 100 },
+        { field: 'bookName', headerName: 'Group Name', width: 100 },
         { field: 'customerName', headerName: 'Customer Name', width: 200 },
         { field: 'relationInfo', headerName: 'S/o, D/o, W/o', width: 180 },
         { field: 'phone', headerName: 'Phone', width: 150 },
@@ -109,7 +109,7 @@ export default function EligibleCustomersPage() {
     return (
         <PageLayout>
             <Typography variant="h4" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold', color: 'text.primary' }}>
-                Eligible for Lucky Draw
+                Eligible for Scheme
             </Typography>
 
             <SearchAndSummaryBox

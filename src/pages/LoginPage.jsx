@@ -60,7 +60,7 @@ export default function LoginPage() {
     };
 
   return (
-    <AuthLayout branding={{ title: "Lucky Draw App", description: "Manage your books and customers with ease." }}>
+    <AuthLayout branding={{ title: "Scheme App", description: "Manage your groups and customers with ease." }}>
       <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 2 }}>
         <div className="flex flex-col items-center">
           <LoginIcon color="primary" className="!text-4xl mb-2" />

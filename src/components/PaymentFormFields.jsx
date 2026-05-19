@@ -225,7 +225,7 @@ const PaymentFormFields = ({ formState, onFormChange, isMonthDisabled = false, u
                 <Typography fontWeight="bold">Total Amount</Typography>
                 {bookTotalAmount > 0 && (
                   <Typography variant="caption" sx={{ opacity: 0.9, display: 'block' }}>
-                    {totalAmount === Number(bookTotalAmount) ? 'Matches book amount' : `Expected: ₹${bookTotalAmount}`}
+                    {totalAmount === Number(bookTotalAmount) ? 'Matches group amount' : `Expected: ₹${bookTotalAmount}`}
                   </Typography>
                 )}
               </Box>
