@@ -6,9 +6,10 @@ const StatusChip = ({ customer, onClick }) => {
   const chipSx = { width: '100%', justifyContent: 'center', fontWeight: 'bold', cursor: onClick ? 'pointer' : 'inherit' };
   
   let props = { label: '', color: 'default', icon: null };
+  const settledDate = customer.settledDate || customer.settled_date;
 
   if (customer.isWinner) {
-    if (customer.settledDate) {
+    if (settledDate) {
       props = { label: "Winner Closed", color: "success", icon: <EmojiEvents fontSize="small" /> };
     } else {
       props = { label: "Winner", color: "success", icon: <EmojiEvents fontSize="small" /> };
@@ -30,9 +31,9 @@ const StatusChip = ({ customer, onClick }) => {
 
   const chip = <Chip {...props} size="small" sx={chipSx} onClick={onClick ? handleClick : undefined} />;
 
-  if (customer.isFrozen && customer.settledDate) {
+  if (customer.isFrozen && settledDate) {
     return (
-      <Tooltip title={`Settled: ${new Date(customer.settledDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })}`} arrow>
+      <Tooltip title={`Settled: ${new Date(settledDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })}`} arrow>
         {chip}
       </Tooltip>
     );

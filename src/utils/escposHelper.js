@@ -69,10 +69,15 @@ export const generateEscPos = (payment, customer, book, user) => {
   return encoder.encode(cmds);
 };
 
-export const generateSettlementEscPos = (customer, book, user) => {
+export const generateSettlementEscPos = (customer, book, user, isDuplicate = false) => {
   const encoder = new TextEncoder();
   let cmds = '';
-  const totalSettlement = Number(customer.totalPaid || 0) + Number(customer.bonusAmount || 0);
+  const bonusAmount = customer.bonusAmount || customer.bonus_amount || 0;
+  const settledDate = customer.settledDate || customer.settled_date;
+  const settlementReceiptNo = customer.settlementReceiptNo || customer.settlement_receipt_no;
+  const settlementAgentName = customer.settlementAgentName || customer.settlement_agent_name;
+
+  const totalSettlement = Number(customer.totalPaid || 0) + Number(bonusAmount);
 
   // Initialize printer
   cmds += ESC + '@';
@@ -95,12 +100,17 @@ export const generateSettlementEscPos = (customer, book, user) => {
   cmds += ESC + 'a' + '\u0001'; // Center
   cmds += GS + '!' + '\u0001'; // Double height
   cmds += 'SETTLEMENT RECEIPT\n';
+  if (isDuplicate) {
+    cmds += ESC + 'E' + '\u0001'; // Bold ON
+    cmds += '*** DUPLICATE ***\n';
+    cmds += ESC + 'E' + '\u0000'; // Bold OFF
+  }
   cmds += GS + '!' + '\u0000'; // Normal size
   cmds += ESC + 'a' + '\u0000'; // Left align
   
-  cmds += `Rec No: ${customer.settlementReceiptNo || 'N/A'}\n`;
-  cmds += `Date:   ${new Date(customer.settledDate || Date.now()).toLocaleDateString('en-IN')}\n`;
-  cmds += `Agent:  ${customer.settlementAgentName || 'N/A'}\n`;
+  cmds += `Rec No: ${settlementReceiptNo || 'N/A'}\n`;
+  cmds += `Date:   ${new Date(settledDate || Date.now()).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}\n`;
+  cmds += `Agent:  ${settlementAgentName || 'N/A'}\n`;
   
   cmds += '\n' + ESC + 'a' + '\u0001'; // Center
   cmds += ESC + 'E' + '\u0001'; // Bold
@@ -127,7 +137,7 @@ export const generateSettlementEscPos = (customer, book, user) => {
   cmds += ESC + 'a' + '\u0000'; // Left
   const pCount = customer.paymentCount || customer.PAYMENT_COUNT || 0;
   cmds += `Paid (${pCount} mths): RS.${customer.totalPaid}\n`;
-  cmds += `Bonus Amount:     RS.${customer.bonusAmount || 0}\n`;
+  cmds += `Bonus Amount:     RS.${bonusAmount}\n`;
   
   cmds += '-'.repeat(32) + '\n';
   

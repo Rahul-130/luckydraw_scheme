@@ -1,8 +1,13 @@
 import React from 'react';
 import { Box, Typography, Divider, Grid, Paper, Stack } from '@mui/material';
 
-const SettlementReceipt = ({ customer, book, user }) => {
-    const totalSettlement = Number(customer.totalPaid || 0) + Number(customer.bonusAmount || 0);
+const SettlementReceipt = ({ customer, book, user, isDuplicate = false }) => {
+    const bonusAmount = customer.bonusAmount || customer.bonus_amount || 0;
+    const settledDate = customer.settledDate || customer.settled_date;
+    const settlementReceiptNo = customer.settlementReceiptNo || customer.settlement_receipt_no;
+    const settlementAgentName = customer.settlementAgentName || customer.settlement_agent_name;
+
+    const totalSettlement = Number(customer.totalPaid || 0) + Number(bonusAmount);
 
     return (
         <Paper 
@@ -12,14 +17,35 @@ const SettlementReceipt = ({ customer, book, user }) => {
                 width: '72mm', 
                 maxWidth: '72mm', // Fixed width for printer
                 margin: 'auto', 
+                position: 'relative',
+                overflow: 'hidden',
                 backgroundColor: '#fff', 
                 color: '#000',
                 "@media print": {
                     maxWidth: '100%',
-                    p: 1
+                    p: 1,
+                    overflow: 'hidden'
                 }
             }}
         >
+            {isDuplicate && (
+                <Typography
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%) rotate(-45deg)',
+                        fontSize: '3.5rem',
+                        fontWeight: 900,
+                        color: 'rgba(0,0,0,0.08)',
+                        zIndex: 0,
+                        pointerEvents: 'none',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    DUPLICATE
+                </Typography>
+            )}
             {/* Header / Company Details */}
             <Box sx={{ textAlign: 'center', mb: 0.5, borderBottom: '1px solid #000', pb: 0.2 }}> {/* Reduced pb */}
                 <Typography variant="h6" sx={{ fontWeight: 'bold', textTransform: 'uppercase', lineHeight: 1, fontSize: '0.75rem' }}> {/* Smaller font */}
@@ -41,15 +67,15 @@ const SettlementReceipt = ({ customer, book, user }) => {
                 <Box sx={{ mt: 0.1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="caption" sx={{ fontSize: '0.55rem' }}>Rec. No:</Typography>
-                        <Typography variant="caption" sx={{ fontSize: '0.55rem', fontWeight: 'bold' }}>{customer.settlementReceiptNo}</Typography>
+                        <Typography variant="caption" sx={{ fontSize: '0.55rem', fontWeight: 'bold' }}>{settlementReceiptNo}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="caption" sx={{ fontSize: '0.55rem' }}>DATE:</Typography>
-                        <Typography variant="caption" sx={{ fontSize: '0.55rem', fontWeight: 'bold' }}>{new Date(customer.settledDate || Date.now()).toLocaleDateString('en-IN')}</Typography>
+                        <Typography variant="caption" sx={{ fontSize: '0.55rem', fontWeight: 'bold' }}>{new Date(settledDate || Date.now()).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="caption" sx={{ fontSize: '0.55rem' }}>AGENT:</Typography>
-                        <Typography variant="caption" sx={{ fontSize: '0.55rem', fontWeight: 'bold' }}>{customer.settlementAgentName || 'N/A'}</Typography>
+                        <Typography variant="caption" sx={{ fontSize: '0.55rem', fontWeight: 'bold' }}>{settlementAgentName || 'N/A'}</Typography>
                     </Box>
                 </Box>
                 <Box sx={{ textAlign: 'center', mt: 0.5 }}> {/* Reduced mt */}
@@ -87,7 +113,7 @@ const SettlementReceipt = ({ customer, book, user }) => {
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.2 }}> {/* Reduced mb */}
                     <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>Bonus Amount:</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '0.7rem' }}>₹{Number(customer.bonusAmount || 0).toLocaleString('en-IN')}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '0.7rem' }}>₹{Number(bonusAmount).toLocaleString('en-IN')}</Typography>
                 </Box>
 
                 <Divider sx={{ my: 0.1, borderColor: '#000' }} /> {/* Reduced my */}

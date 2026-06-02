@@ -218,7 +218,17 @@ router.post('/:bookId', requireAuth, async (req, res) => { // Agents and Admins 
 
 // Edit customer - only name, phone, address can be updated
 router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => {
-  const { name, relationInfo, phone, address, isFrozen, bonusAmount, settlementReceiptNo, settlementAgentName } = req.body || {};
+  const body = req.body || {};
+  const name = body.name;
+  const phone = body.phone;
+  const address = body.address;
+  const relationInfo = body.relationInfo !== undefined ? body.relationInfo : body.relation_info;
+  const isFrozen = body.isFrozen !== undefined ? body.isFrozen : body.is_frozen;
+  const bonusAmount = body.bonusAmount !== undefined ? body.bonusAmount : body.bonus_amount;
+  const settlementReceiptNo = body.settlementReceiptNo !== undefined ? body.settlementReceiptNo : body.settlement_receipt_no;
+  const settlementAgentName = body.settlementAgentName !== undefined ? body.settlementAgentName : body.settlement_agent_name;
+  const settledDateInput = body.settledDate || body.settled_date;
+
   const conn = await getConnection();
   try {
     const effectiveOwnerId = requireAuth.getEffectiveOwnerId(req);
@@ -234,7 +244,7 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
     );
     if (!bookR.rows.length)
       return res.status(404).json({ error: 'book not found' });
-    if (!name && !phone && !address && relationInfo === undefined && isFrozen === undefined && bonusAmount === undefined && settlementReceiptNo === undefined && settlementAgentName === undefined)
+    if (!name && !phone && !address && relationInfo === undefined && isFrozen === undefined && bonusAmount === undefined && settlementReceiptNo === undefined && settlementAgentName === undefined && settledDateInput === undefined)
       return res.status(400).json({ error: 'at least one field is required' });
     // 2. Check customer exists
     const custR = await conn.execute(
@@ -280,8 +290,11 @@ router.patch('/:bookId/customers/:customerId', requireAuth, async (req, res) => 
       // Handle case where isFrozen is true (settling) or undefined (normal field update)
       if (isFrozen === true) {
         fields.push('is_frozen=1');
-        // Only update settled_date if the customer is transitioning to a frozen state
-        if (custR.rows[0].IS_FROZEN !== 1) {
+        // Update settled_date if explicitly provided by frontend, or if transitioning from non-frozen
+        if (settledDateInput) {
+          fields.push('settled_date=:settledDate');
+          binds.settledDate = new Date(settledDateInput);
+        } else if (custR.rows[0].IS_FROZEN !== 1) {
           fields.push('settled_date=CURRENT_TIMESTAMP');
         }
       }

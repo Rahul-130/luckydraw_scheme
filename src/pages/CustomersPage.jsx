@@ -158,11 +158,13 @@ export default function CustomersPage() {
         if (!customerToSettle) return;
 
         try {
+            const now = new Date().toISOString();
             const updatedData = { 
                 isFrozen: true,
-                bonusAmount: Number(bonusAmount) || 0,
-                settlementReceiptNo: settlementReceiptNo,
-                settlementAgentName: user?.name || user?.email
+                bonus_amount: Number(bonusAmount) || 0,
+                settlement_receipt_no: settlementReceiptNo,
+                settlement_agent_name: user?.name || user?.email,
+                settled_date: now
             };
             await editCustomer(bookId, customerToSettle.id, updatedData, token);
             
@@ -170,7 +172,7 @@ export default function CustomersPage() {
             showSnackbar('Account settled and closed.', 'success');
             
             // Auto-trigger the print
-            handlePrintSettlement({ ...customerToSettle, ...updatedData, settledDate: new Date().toISOString() });
+            handlePrintSettlement({ ...customerToSettle, ...updatedData }, false);
         } catch (error) {
             showSnackbar(extractApiErrorMessage(error, "Failed to close account"), 'error');
         } finally {
@@ -179,14 +181,14 @@ export default function CustomersPage() {
         }
     };
 
-    const handlePrintSettlement = useCallback(async (customer) => {
+    const handlePrintSettlement = useCallback(async (customer, isDuplicate = true) => {
         try {
-            const rawData = generateSettlementEscPos(customer, book, user);
+            const rawData = generateSettlementEscPos(customer, book, user, isDuplicate);
             await printRawUSB(rawData);
-            showSnackbar('Settlement receipt printed.', 'success');
+            showSnackbar(isDuplicate ? 'Duplicate receipt printed.' : 'Settlement receipt printed.', 'success');
         } catch (err) {
             // Fallback to browser print if USB fails
-            renderComponentInNewWindow(<SettlementReceipt customer={customer} book={book} user={user} />, 'Settlement Receipt');
+            renderComponentInNewWindow(<SettlementReceipt customer={customer} book={book} user={user} isDuplicate={isDuplicate} />, 'Settlement Receipt');
         }
     }, [book, user, showSnackbar]);
 
@@ -286,19 +288,20 @@ export default function CustomersPage() {
             width: 225,
             renderCell: (params) => {
                 const { row } = params;
+                const settledDate = row.settledDate || row.settled_date;
                 const actionItems = [
-                  ...((user?.userRole === 'admin' && (!row.isFrozen || (row.isWinner && !row.settledDate))) ? [{
+                  ...((user?.userRole === 'admin' && (!row.isFrozen || (row.isWinner && !settledDate))) ? [{
                     label: 'Edit',
                     icon: <Edit fontSize="small" />,
                     onClick: () => handleEdit(row),
                   }] : []),
-                  ...((!row.isFrozen || (row.isWinner && !row.settledDate)) ? [{
+                  ...((!row.isFrozen || (row.isWinner && !settledDate)) ? [{
                     label: row.isWinner ? 'Settle Winner' : 'Settle & Close',
                     icon: <CheckCircle fontSize="small" />,
                     onClick: () => handleSettle(row),
                     color: 'warning.main'
                   }] : []),
-                  ...(row.isFrozen ? [{
+                  ...(settledDate ? [{
                     label: 'Print Settlement',
                     icon: <Print fontSize="small" />,
                     onClick: () => handlePrintSettlement(row),
