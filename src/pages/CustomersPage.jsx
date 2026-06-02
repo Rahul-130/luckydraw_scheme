@@ -43,6 +43,7 @@ import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import PageHeader from "../components/PageHeader";
 import ActionMenu from "../components/ActionMenu";
 import StatusChip from "../components/StatusChip";
+import { generateSettlementEscPos, printRawUSB } from "../utils/escposHelper";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 import PasswordOTPConfirmationDialog from "../components/PasswordOTPConfirmationDialog";
 import { getAvailableCustomerIds } from "../services/api";
@@ -157,15 +158,19 @@ export default function CustomersPage() {
         if (!customerToSettle) return;
 
         try {
-            await editCustomer(bookId, customerToSettle.id, { 
+            const updatedData = { 
                 isFrozen: true,
                 bonusAmount: Number(bonusAmount) || 0,
                 settlementReceiptNo: settlementReceiptNo,
                 settlementAgentName: user?.name || user?.email
-            }, token);
+            };
+            await editCustomer(bookId, customerToSettle.id, updatedData, token);
             
             refetchCustomers();
             showSnackbar('Account settled and closed.', 'success');
+            
+            // Auto-trigger the print
+            handlePrintSettlement({ ...customerToSettle, ...updatedData, settledDate: new Date().toISOString() });
         } catch (error) {
             showSnackbar(extractApiErrorMessage(error, "Failed to close account"), 'error');
         } finally {
@@ -174,9 +179,16 @@ export default function CustomersPage() {
         }
     };
 
-    const handlePrintSettlement = useCallback((customer) => {
-        renderComponentInNewWindow(<SettlementReceipt customer={customer} book={book} user={user} />, 'Settlement Receipt');
-    }, [book, user]);
+    const handlePrintSettlement = useCallback(async (customer) => {
+        try {
+            const rawData = generateSettlementEscPos(customer, book, user);
+            await printRawUSB(rawData);
+            showSnackbar('Settlement receipt printed.', 'success');
+        } catch (err) {
+            // Fallback to browser print if USB fails
+            renderComponentInNewWindow(<SettlementReceipt customer={customer} book={book} user={user} />, 'Settlement Receipt');
+        }
+    }, [book, user, showSnackbar]);
 
     const handleMakeWinner = useCallback((customer) => {
          showConfirmation({

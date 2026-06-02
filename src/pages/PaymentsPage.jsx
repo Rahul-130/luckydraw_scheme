@@ -32,6 +32,7 @@ import PaymentFormFields from '../components/PaymentFormFields';
 import PageHeader from '../components/PageHeader';
 import ActionMenu from '../components/ActionMenu';
 import { renderComponentInNewWindow } from '../utils/printing';
+import { generateEscPos, printRawUSB } from '../utils/escposHelper';
 import PasswordOTPConfirmationDialog from '../components/PasswordOTPConfirmationDialog';
 import { extractApiErrorMessage } from '../utils/apiUtils';
 
@@ -125,10 +126,11 @@ export default function PaymentsPage() {
         // paymentType will be derived by backend or we can omit it, but let's clean it up
         delete payload.paymentType; 
 
-        await addPayment(bookId, customerId, payload, token);
+        const res = await addPayment(bookId, customerId, payload, token);
         setOpen(false);
         refetch();
         showSnackbar('Payment successfully completed.', 'success');
+        handlePrint(res.data);
       } catch (error) {
         if (error.response && error.response.status === 409 && error.response.data.details) {
             setDuplicateError(error.response.data.details);
@@ -224,9 +226,15 @@ export default function PaymentsPage() {
         }
     };
 
-    const handlePrint = (payment) => {
-        // Use BulkPaymentReceipt for single prints by wrapping the payment in an array
-        renderComponentInNewWindow(<BulkPaymentReceipt payments={[payment]} customer={customer} book={book} user={user} />, 'Payment Receipt');
+    const handlePrint = async (payment) => {
+        try {
+            const rawData = generateEscPos(payment, customer, book, user);
+            await printRawUSB(rawData);
+            showSnackbar('Receipt printed successfully.', 'success');
+        } catch (err) {
+            // Fallback to browser print if USB fails or user cancels
+            renderComponentInNewWindow(<BulkPaymentReceipt payments={[payment]} customer={customer} book={book} user={user} />, 'Payment Receipt');
+        }
     };
 
     const handlePrintSelected = () => {
