@@ -19,9 +19,14 @@ import {
   CircularProgress,
   Alert,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import LockResetIcon from '@mui/icons-material/LockReset';
 
 const AgentManagement = () => {
   const { user } = useAuth();
@@ -36,6 +41,10 @@ const AgentManagement = () => {
   });
   const [formErrors, setFormErrors] = useState({});
   const [isAddingAgent, setIsAddingAgent] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   // Ensure only admins can access this page
   useEffect(() => {
@@ -116,6 +125,37 @@ const AgentManagement = () => {
       setError(errorMessage);
     } finally {
       setIsAddingAgent(false);
+    }
+  };
+
+  const handleOpenResetDialog = (agent) => {
+    setSelectedAgent(agent);
+    setResetPasswordValue('');
+    setResetDialogOpen(true);
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    if (!resetPasswordValue.trim() || resetPasswordValue.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
+    setIsResetting(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`/api/auth/agents/${selectedAgent.id}/reset-password`, {
+        password: resetPasswordValue,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert('Password reset successfully!');
+      setResetDialogOpen(false);
+    } catch (err) {
+      console.error('Error resetting password:', err);
+      setError(err.response?.data?.error || 'Failed to reset password.');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -271,6 +311,14 @@ const AgentManagement = () => {
                       <TableCell>{agent.is2FAEnabled ? 'Yes' : 'No'}</TableCell>
                       <TableCell align="right">
                         <IconButton
+                          aria-label="reset password"
+                          color="primary"
+                          onClick={() => handleOpenResetDialog(agent)}
+                          title="Reset Password"
+                        >
+                          <LockResetIcon />
+                        </IconButton>
+                        <IconButton
                           aria-label="delete"
                           color="error"
                           onClick={() => handleDeleteAgent(agent.id)}
@@ -286,6 +334,34 @@ const AgentManagement = () => {
           </TableContainer>
         </>
       )}
+
+      <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
+        <DialogTitle>Reset Password for {selectedAgent?.name}</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="reset-password"
+            label="New Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={resetPasswordValue}
+            onChange={(e) => setResetPasswordValue(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleResetPasswordSubmit} 
+            variant="contained" 
+            disabled={isResetting || !resetPasswordValue}
+          >
+            {isResetting ? 'Resetting...' : 'Reset Password'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
