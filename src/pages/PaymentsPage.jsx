@@ -32,7 +32,7 @@ import PaymentFormFields from '../components/PaymentFormFields';
 import PageHeader from '../components/PageHeader';
 import ActionMenu from '../components/ActionMenu';
 import { renderComponentInNewWindow } from '../utils/printing';
-import { generateEscPos, printRawUSB } from '../utils/escposHelper';
+import { generateEscPos, printRawUSB, printRawNetwork, printRawBluetooth } from '../utils/escposHelper';
 import PasswordOTPConfirmationDialog from '../components/PasswordOTPConfirmationDialog';
 import { extractApiErrorMessage } from '../utils/apiUtils';
 
@@ -227,12 +227,30 @@ export default function PaymentsPage() {
     };
 
     const handlePrint = async (payment) => {
+        const method = localStorage.getItem('preferredPrintMethod') || 'wifi';
+        const savedIp = localStorage.getItem('printerIpAddress') || '192.168.1.16';
+
         try {
             const rawData = generateEscPos(payment, customer, book, user);
-            await printRawUSB(rawData);
+            
+            switch (method) {
+                case 'usb': 
+                    await printRawUSB(rawData); 
+                    break;
+                case 'wifi': 
+                    await printRawNetwork(rawData, token, savedIp); 
+                    break;
+                case 'bluetooth': 
+                    await printRawBluetooth(rawData); 
+                    break;
+                default:
+                    renderComponentInNewWindow(<BulkPaymentReceipt payments={[payment]} customer={customer} book={book} user={user} />, 'Payment Receipt');
+                    return;
+            }
             showSnackbar('Receipt printed successfully.', 'success');
         } catch (err) {
-            // Fallback to browser print if USB fails or user cancels
+            console.error("Print failed:", err);
+            showSnackbar(`Raw print failed: ${err.message}. Opening browser print...`, 'warning');
             renderComponentInNewWindow(<BulkPaymentReceipt payments={[payment]} customer={customer} book={book} user={user} />, 'Payment Receipt');
         }
     };

@@ -43,7 +43,7 @@ import SearchAndSummaryBox from "../components/SearchAndSummaryBox";
 import PageHeader from "../components/PageHeader";
 import ActionMenu from "../components/ActionMenu";
 import StatusChip from "../components/StatusChip";
-import { generateSettlementEscPos, printRawUSB } from "../utils/escposHelper";
+import { generateSettlementEscPos, printRawUSB, printRawNetwork, printRawBluetooth } from "../utils/escposHelper";
 import { extractApiErrorMessage } from "../utils/apiUtils";
 import PasswordOTPConfirmationDialog from "../components/PasswordOTPConfirmationDialog";
 import { getAvailableCustomerIds } from "../services/api";
@@ -182,15 +182,25 @@ export default function CustomersPage() {
     };
 
     const handlePrintSettlement = useCallback(async (customer, isDuplicate = true) => {
+        const method = localStorage.getItem('preferredPrintMethod') || 'wifi';
+        const savedIp = localStorage.getItem('printerIpAddress') || '192.168.1.16';
+        
         try {
             const rawData = generateSettlementEscPos(customer, book, user, isDuplicate);
-            await printRawUSB(rawData);
+            
+            switch (method) {
+                case 'usb': await printRawUSB(rawData); break;
+                case 'wifi': await printRawNetwork(rawData, token, savedIp); break;
+                case 'bluetooth': await printRawBluetooth(rawData); break;
+                default: 
+                    renderComponentInNewWindow(<SettlementReceipt customer={customer} book={book} user={user} isDuplicate={isDuplicate} />, 'Settlement Receipt');
+                    return;
+            }
             showSnackbar(isDuplicate ? 'Duplicate receipt printed.' : 'Settlement receipt printed.', 'success');
         } catch (err) {
-            // Fallback to browser print if USB fails
             renderComponentInNewWindow(<SettlementReceipt customer={customer} book={book} user={user} isDuplicate={isDuplicate} />, 'Settlement Receipt');
         }
-    }, [book, user, showSnackbar]);
+    }, [book, user, token, showSnackbar]);
 
     const handleMakeWinner = useCallback((customer) => {
          showConfirmation({

@@ -8,7 +8,16 @@ import {
     Box, 
     Paper, 
     Autocomplete,
-    InputAdornment 
+    InputAdornment,
+    ToggleButtonGroup,
+    ToggleButton,
+    Stack,
+    Divider,
+    Alert,
+    AlertTitle,
+    IconButton,
+    ListItemIcon,
+    ListItemText
 } from '@mui/material';
 import { useBooks } from '../hooks/useBooks';
 import { useDebounce } from '../hooks/useDebounce';
@@ -23,8 +32,13 @@ import {
     CardGiftcard, 
     AccountBalance,
     CallMade,
-    MonetizationOn
+    MonetizationOn,
+    Print,
+    Wifi,
+    Usb,
+    Bluetooth
 } from '@mui/icons-material';
+import { useSnackbar } from '../context/SnackbarContext';
 
 export default function HomePage() {
     const navigate = useNavigate();
@@ -38,6 +52,10 @@ export default function HomePage() {
     const [selectedBook, setSelectedBook] = useState(null);
     const [customerId, setCustomerId] = useState('');
     const [stats, setStats] = useState(null);
+    const { showSnackbar } = useSnackbar();
+
+    const [printMethod, setPrintMethod] = useState(localStorage.getItem('preferredPrintMethod') || 'wifi');
+    const [printerIp, setPrinterIp] = useState(localStorage.getItem('printerIpAddress') || '192.168.1.16');
 
     useEffect(() => {
         if (selectedBook && token) {
@@ -58,6 +76,18 @@ export default function HomePage() {
         }
     }, [selectedBook, token]);
 
+    const handlePrintMethodChange = (event, newMethod) => {
+        if (newMethod !== null) {
+            setPrintMethod(newMethod);
+            localStorage.setItem('preferredPrintMethod', newMethod);
+        }
+    };
+
+    const handleIpChange = (e) => {
+        setPrinterIp(e.target.value);
+        localStorage.setItem('printerIpAddress', e.target.value);
+    };
+
     const handleNavigate = (e) => {
         e.preventDefault();
         if (selectedBook && customerId) {
@@ -67,16 +97,16 @@ export default function HomePage() {
 
     return (
         <PageLayout>
-            <Container maxWidth="sm" sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
-                <Paper 
-                    elevation={4} 
-                    sx={{ 
-                        p: 5, 
-                        borderRadius: 4, 
-                        width: '100%',
-                        background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`
-                    }}
-                >
+            <Container maxWidth="sm" sx={{ mt: 4 }}>
+                <Stack spacing={3}>
+                    <Paper 
+                        elevation={4} 
+                        sx={{ 
+                            p: 4, 
+                            borderRadius: 4, 
+                            background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`
+                        }}
+                    >
                     <Box sx={{ textAlign: 'center', mb: 4 }}>
                         <Typography variant="h4" component="h1" sx={{ fontWeight: 800, color: 'primary.main', mb: 1 }}>
                             Make Payment
@@ -200,7 +230,59 @@ export default function HomePage() {
                             Go to Payments
                         </Button>
                     </Box>
-                </Paper>
+                    </Paper>
+
+                    {/* Printer Selection Settings */}
+                    <Paper sx={{ p: 3, borderRadius: 4 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Print fontSize="small" /> Printer Settings
+                        </Typography>
+                        <ToggleButtonGroup
+                            value={printMethod}
+                            exclusive
+                            onChange={handlePrintMethodChange}
+                            color="primary"
+                            fullWidth
+                            size="small"
+                        >
+                            <ToggleButton value="wifi"><Wifi sx={{ mr: 1 }} fontSize="small" /> Wi-Fi</ToggleButton>
+                            <ToggleButton value="usb"><Usb sx={{ mr: 1 }} fontSize="small" /> USB</ToggleButton>
+                            <ToggleButton value="bluetooth"><Bluetooth sx={{ mr: 1 }} fontSize="small" /> BT</ToggleButton>
+                            <ToggleButton value="browser"><Print sx={{ mr: 1 }} fontSize="small" /> Browser</ToggleButton>
+                        </ToggleButtonGroup>
+
+                        {printMethod === 'usb' && (
+                            <Alert severity="warning" icon={<Usb />} sx={{ mt: 2, '& .MuiAlert-message': { fontSize: '0.75rem' } }}>
+                                <AlertTitle sx={{ fontSize: '0.85rem', fontWeight: 'bold' }}>USB Configuration Required</AlertTitle>
+                                If you see 'Access Denied', Windows is blocking the browser. 
+                                You must use <strong>Zadig</strong> to change the printer driver to <strong>WinUSB</strong>.
+                            </Alert>
+                        )}
+
+                        {printMethod === 'bluetooth' && (
+                            <Alert severity="info" icon={<Bluetooth />} sx={{ mt: 2, '& .MuiAlert-message': { fontSize: '0.75rem' } }}>
+                                <AlertTitle sx={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Bluetooth Chooser</AlertTitle>
+                                If no devices appear, ensure your printer supports <strong>Bluetooth Low Energy (BLE)</strong>. 
+                                Classic Bluetooth printers (SPP) are not supported by web browsers.
+                            </Alert>
+                        )}
+                        
+                        {printMethod === 'wifi' && (
+                            <TextField
+                                label="Printer IP Address"
+                                variant="standard"
+                                fullWidth
+                                size="small"
+                                value={printerIp}
+                                onChange={handleIpChange}
+                                sx={{ mt: 2 }}
+                            />
+                        )}
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
+                            Preferred method will be used for all receipts.
+                        </Typography>
+                    </Paper>
+                </Stack>
             </Container>
         </PageLayout>
     );

@@ -38,11 +38,12 @@ export const generateEscPos = (payment, customer, book, user) => {
 
   // Payment Details
   cmds += ESC + 'E' + '\u0001'; // Bold ON
-  cmds += `RECEIPT NO: ${payment.receiptNo}\n`;
+  cmds += `RECEIPT NO: ${payment.receiptNo || payment.receipt_no || payment.RECEIPT_NO || 'N/A'}\n`;
   cmds += ESC + 'E' + '\u0000'; // Bold OFF
-  cmds += `Date:  ${new Date(payment.paymentDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}\n`;
-  cmds += `Month: ${payment.monthIso}\n`;
-  cmds += `Agent: ${payment.agentName}\n`;
+  const pDate = payment.paymentDate || payment.payment_date || payment.PAYMENT_DATE || new Date();
+  cmds += `Date:  ${new Date(pDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}\n`;
+  cmds += `Month: ${payment.monthIso || payment.month_iso || 'N/A'}\n`;
+  cmds += `Agent: ${payment.agentName || payment.agent_name || 'N/A'}\n`;
   
   // Mode of Payment Details (Split Details)
   if (Number(payment.amountCash) > 0 || Number(payment.amountOnline) > 0 || Number(payment.amountInstore) > 0) {
@@ -121,8 +122,8 @@ export const generateSettlementEscPos = (customer, book, user, isDuplicate = fal
 
   // Customer Details
   cmds += `Cust:  ${customer.name}\n`;
-  cmds += `Cust ID: ${customer.id}\n`;
-  cmds += `Phone:   ${customer.phone}\n`;
+  cmds += `Cust ID: ${customer.id || ''}\n`;
+  cmds += `Phone:   ${customer.phone || ''}\n`;
   if (customer.address) cmds += `Addr:  ${customer.address}\n`;
   cmds += '-'.repeat(32) + '\n';
 
@@ -155,16 +156,19 @@ export const generateSettlementEscPos = (customer, book, user, isDuplicate = fal
   cmds += '\n\n\n\n'; // Feed lines
   cmds += GS + 'V' + '\u0000'; // Full cut
 
-  return encoder.encode(cmds);
+  // Add a small buffer of null bytes to ensure the cut command is processed
+  const finalData = encoder.encode(cmds + '\u0000\u0000\u0000');
+  return finalData;
 };
 
 export const printRawUSB = async (data) => {
   try {
-    // Request device - Browser will show a popup to pick the TVS printer
+    // Always request device to ensure the user picks the correct printer.
+    // This avoids accidentally trying to open a mouse or other non-printer USB device.
     const device = await navigator.usb.requestDevice({ filters: [] });
     
     await device.open();
-    
+
     if (device.configuration === null) {
       await device.selectConfiguration(1);
     }
@@ -189,14 +193,128 @@ export const printRawUSB = async (data) => {
     }
 
     await device.claimInterface(interfaceNumber);
-    await device.transferOut(endpointNumber, data);
+    const result = await device.transferOut(endpointNumber, data);
     
+    if (result.status !== 'ok') {
+      throw new Error(`Print failed with status: ${result.status}`);
+    }
+
     // Clean up
     await device.releaseInterface(interfaceNumber);
     await device.close();
     return true;
   } catch (err) {
-    console.error("USB Print Error:", err);
+    if (err.name === 'SecurityError' || err.message.includes('Access denied')) {
+      throw new Error("USB Access Denied: Another application (like Windows Print Spooler) is using the printer. Please close other apps or update the driver to WinUSB using Zadig.");
+    }
+    console.error("USB Error:", err);
+    throw err;
+  }
+};
+
+export const printRawNetwork = async (data, token, printerIp) => {
+  try {
+    const ipToUse = printerIp || localStorage.getItem('printerIpAddress') || '192.168.1.16';
+    // Efficient conversion for network transmission
+    const base64Data = btoa(Array.from(data).map(b => String.fromCharCode(b)).join(''));
+
+    const response = await fetch(`/api/print/network`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ printerIp: ipToUse, rawData: base64Data })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Network print failed');
+    }
+    return true;
+  } catch (err) {
+    console.error("Network Print Error:", err);
+    throw err;
+  }
+};
+
+export const printRawBluetooth = async (data) => {
+  try {
+    if (!navigator.bluetooth) {
+      throw new Error("Bluetooth is not supported in this browser. Use Chrome or Edge.");
+    }
+
+    // Use acceptAllDevices to ensure the chooser shows all hardware. 
+    // Some printers don't advertise standard POS UUIDs.
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [
+        '000018f0-0000-1000-8000-00805f9b34fb', 
+        '00001101-0000-1000-8000-00805f9b34fb',
+        'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+      ]
+    });
+
+    let server;
+    let attempts = 0;
+
+    while (attempts < 3) {
+      try {
+        attempts++;
+        console.log(`Bluetooth: Connection attempt ${attempts}/3...`);
+        server = await device.gatt.connect();
+        
+        // Increased stabilization delay for finicky printer firmware
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        if (!server.connected) throw new Error("GATT Server disconnected after handshake");
+
+        console.log("Bluetooth: Discovering primary services...");
+        const services = await server.getPrimaryServices();
+        let writeChar = null;
+        
+        for (const service of services) {
+          const chars = await service.getCharacteristics().catch(() => []);
+          writeChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+          if (writeChar) break;
+        }
+
+        if (!writeChar) throw new Error("No writable characteristic found");
+
+        console.log("Bluetooth: Transmitting print data...");
+        // BLE usually has a 20-byte MTU limit.
+        const chunkSize = 20;
+        for (let i = 0; i < data.length; i += chunkSize) {
+          if (!server.connected) throw new Error("GATT Server disconnected during data transfer");
+          
+          const chunk = data.slice(i, i + chunkSize);
+          // Prefer writeValueWithoutResponse for significantly better stability and speed
+          if (writeChar.properties.writeWithoutResponse) {
+            await writeChar.writeValueWithoutResponse(chunk);
+          } else {
+            await writeChar.writeValue(chunk);
+          }
+          // Further increased delay between chunks to prevent buffer congestion
+          await new Promise(resolve => setTimeout(resolve, 50)); 
+        }
+
+        console.log("Bluetooth: Print job delivered.");
+        if (server.connected) server.disconnect();
+        return true;
+      } catch (err) {
+        console.warn(`Bluetooth Attempt ${attempts} failed:`, err.message);
+        if (server && server.connected) server.disconnect();
+        if (attempts >= 3) throw err;
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    return true;
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      throw new Error("Bluetooth print cancelled: No device was selected from the list.");
+    }
+    console.error("Bluetooth Error:", err);
     throw err;
   }
 };
