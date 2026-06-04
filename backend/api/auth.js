@@ -525,6 +525,50 @@ router.post('/agents', requireAuth, requireAdmin,
   }
 );
 
+// Reset an agent's password (Admin Only)
+router.patch('/agents/:agentId/reset-password', requireAuth, requireAdmin, async (req, res) => {
+  const { agentId } = req.params;
+  const { password } = req.body;
+  const adminId = req.user.id;
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+  }
+
+  const conn = await getConnection();
+  try {
+    const aid = Number(agentId);
+    const aidAdmin = Number(adminId);
+
+    if (isNaN(aid) || isNaN(aidAdmin)) {
+      return res.status(400).json({ error: 'Invalid ID format' });
+    }
+
+    const hash = await bcrypt.hash(String(password), 10);
+    const result = await conn.execute(
+      `UPDATE users 
+       SET password_hash = :hash
+       WHERE id = :agentId AND user_parent_id = :adminId AND user_role = 'agent'`,
+      { 
+        hash: hash, 
+        agentId: aid, 
+        adminId: aidAdmin 
+      },
+      { autoCommit: true }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: 'Agent not found or not associated with this admin' });
+    }
+    res.json({ message: 'Agent password reset successfully' });
+  } catch (e) {
+    console.error('Reset agent password error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    await conn.close();
+  }
+});
+
 // List agents for the current admin (Admin Only)
 router.get('/agents', requireAuth, requireAdmin, async (req, res) => {
   const adminId = req.user.id;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useSnackbar } from '../context/SnackbarContext';
 import {
   Container,
   Typography,
@@ -23,13 +24,17 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  InputAdornment,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 const AgentManagement = () => {
   const { user } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,6 +49,7 @@ const AgentManagement = () => {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
   // Ensure only admins can access this page
@@ -116,7 +122,7 @@ const AgentManagement = () => {
       await axios.post('/api/auth/agents', newAgent, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert('Agent added successfully!');
+      showSnackbar('Agent added successfully!', 'success');
       setNewAgent({ name: '', phone: '', email: '', password: '' });
       fetchAgents(); // Refresh the list
     } catch (err) {
@@ -131,12 +137,13 @@ const AgentManagement = () => {
   const handleOpenResetDialog = (agent) => {
     setSelectedAgent(agent);
     setResetPasswordValue('');
+    setShowResetPassword(false);
     setResetDialogOpen(true);
   };
 
   const handleResetPasswordSubmit = async () => {
     if (!resetPasswordValue.trim() || resetPasswordValue.length < 6) {
-      alert('Password must be at least 6 characters long');
+      showSnackbar('Password must be at least 6 characters long', 'error');
       return;
     }
 
@@ -144,16 +151,23 @@ const AgentManagement = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`/api/auth/agents/${selectedAgent.id}/reset-password`, {
+      const response = await axios.patch(`/api/auth/agents/${selectedAgent.id}/reset-password`, {
         password: resetPasswordValue,
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert('Password reset successfully!');
-      setResetDialogOpen(false);
+
+      if (response.status === 200) {
+        showSnackbar(response.data.message || 'Agent password changed successfully', 'success');
+        setResetDialogOpen(false);
+      } else {
+        showSnackbar('Password was not changed. Server returned status: ' + response.status, 'error');
+      }
     } catch (err) {
       console.error('Error resetting password:', err);
-      setError(err.response?.data?.error || 'Failed to reset password.');
+      const errMsg = err.response?.data?.error || 'Failed to reset password. The backend did not change the password.';
+      setError(errMsg);
+      showSnackbar(errMsg, 'error');
     } finally {
       setIsResetting(false);
     }
@@ -170,7 +184,7 @@ const AgentManagement = () => {
       await axios.delete(`/api/auth/agents/${agentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert('Agent deleted successfully!');
+      showSnackbar('Agent deleted successfully!', 'success');
       fetchAgents(); // Refresh the list
     } catch (err) {
       console.error('Error deleting agent:', err);
@@ -343,12 +357,25 @@ const AgentManagement = () => {
             margin="dense"
             id="reset-password"
             label="New Password"
-            type="password"
+            type={showResetPassword ? 'text' : 'password'}
             fullWidth
             variant="outlined"
             value={resetPasswordValue}
             onChange={(e) => setResetPasswordValue(e.target.value)}
             sx={{ mt: 1 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    edge="end"
+                  >
+                    {showResetPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
         </DialogContent>
         <DialogActions>
